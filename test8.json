@@ -1,0 +1,381 @@
+{
+  "id": "rec_1763917642910",
+  "version": "1.0.0",
+  "testName": "test2",
+  "url": "https://www.rightbiz.co.uk/",
+  "startTime": "2025-11-23T17:07:22.910Z",
+  "endTime": "2025-11-23T17:07:38.840Z",
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "actions": [
+    {
+      "button": "left",
+      "clickCount": 1,
+      "coordinates": {
+        "x": 226,
+        "y": -0.796875
+      },
+      "coordinatesRelativeTo": "element",
+      "id": "act_001",
+      "modifiers": [],
+      "selector": {
+        "ariaLabel": "Sector",
+        "css": "div.form-wrapper > form#form-business > div.form-group > div.relative > div.form-search-sector > input.text-sm.with-placeholder[type=\"text\"]",
+        "id": "sector-input",
+        "name": "category",
+        "position": {
+          "index": 0,
+          "parent": "div.form-search-sector"
+        },
+        "priority": [
+          "id",
+          "ariaLabel",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"sector-input\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/input[1]"
+      },
+      "tagName": "input",
+      "text": "",
+      "timestamp": 1763917644429,
+      "type": "click",
+      "url": "https://www.rightbiz.co.uk/"
+    },
+    {
+      "id": "act_002",
+      "inputType": "text",
+      "isSensitive": false,
+      "selector": {
+        "ariaLabel": "Sector",
+        "css": "div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > div.form-search-sector > input.text-sm.with-placeholder[type=\"text\"]",
+        "id": "sector-input",
+        "name": "category",
+        "position": {
+          "index": 0,
+          "parent": "div.form-search-sector"
+        },
+        "priority": [
+          "id",
+          "ariaLabel",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"sector-input\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/input[1]"
+      },
+      "simulationType": "type",
+      "tagName": "input",
+      "timestamp": 1763917647087,
+      "type": "input",
+      "typingDelay": 178,
+      "url": "https://www.rightbiz.co.uk/",
+      "value": "Resturant"
+    },
+    {
+      "button": "left",
+      "clickCount": 1,
+      "coordinates": {
+        "x": 164,
+        "y": 33.203125
+      },
+      "coordinatesRelativeTo": "element",
+      "id": "act_003",
+      "modifiers": [],
+      "selector": {
+        "css": "form#form-business > div.form-group.mobile-active > div.relative > div.form-search-sector > ul.form__autocomplete > li",
+        "position": {
+          "index": 3,
+          "parent": "ul.form__autocomplete"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Restaurants for Sale",
+        "xpath": "//li[4]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/ul[1]/li[4]"
+      },
+      "tagName": "li",
+      "text": "Restaurants for Sale",
+      "timestamp": 1763917647791,
+      "type": "click",
+      "url": "https://www.rightbiz.co.uk/"
+    },
+    {
+      "button": "left",
+      "clickCount": 1,
+      "coordinates": {
+        "x": 167,
+        "y": 45.203125
+      },
+      "coordinatesRelativeTo": "element",
+      "id": "act_004",
+      "modifiers": [],
+      "selector": {
+        "ariaLabel": "Location",
+        "css": "div.form > div.form-wrapper > form#form-business > div.form-group > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
+        "id": "location-input",
+        "name": "search-locs",
+        "position": {
+          "index": 2,
+          "parent": "div.relative"
+        },
+        "priority": [
+          "id",
+          "ariaLabel",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"location-input\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "tagName": "input",
+      "text": "",
+      "timestamp": 1763917648286,
+      "type": "click",
+      "url": "https://www.rightbiz.co.uk/"
+    },
+    {
+      "button": "left",
+      "clickCount": 1,
+      "coordinates": {
+        "x": 167,
+        "y": 45.203125
+      },
+      "coordinatesRelativeTo": "element",
+      "id": "act_005",
+      "modifiers": [],
+      "selector": {
+        "ariaLabel": "Location",
+        "css": "div.form > div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
+        "id": "location-input",
+        "name": "search-locs",
+        "position": {
+          "index": 2,
+          "parent": "div.relative"
+        },
+        "priority": [
+          "id",
+          "ariaLabel",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"location-input\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "tagName": "input",
+      "text": "",
+      "timestamp": 1763917648423,
+      "type": "click",
+      "url": "https://www.rightbiz.co.uk/"
+    },
+    {
+      "id": "act_006",
+      "inputType": "text",
+      "isSensitive": false,
+      "selector": {
+        "ariaLabel": "Location",
+        "css": "div.form > div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
+        "id": "location-input",
+        "name": "search-locs",
+        "position": {
+          "index": 2,
+          "parent": "div.relative"
+        },
+        "priority": [
+          "id",
+          "ariaLabel",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"location-input\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "simulationType": "type",
+      "tagName": "input",
+      "timestamp": 1763917650266,
+      "type": "input",
+      "typingDelay": 208,
+      "url": "https://www.rightbiz.co.uk/",
+      "value": "London"
+    },
+    {
+      "button": "left",
+      "clickCount": 1,
+      "coordinates": {
+        "x": 151,
+        "y": 15.203125
+      },
+      "coordinatesRelativeTo": "element",
+      "id": "act_007",
+      "modifiers": [],
+      "selector": {
+        "css": "div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > ul.form__autocomplete > li",
+        "position": {
+          "index": 0,
+          "parent": "ul.form__autocomplete"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "London",
+        "xpath": "//li[1]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/ul[1]/li[1]"
+      },
+      "tagName": "li",
+      "text": "London",
+      "timestamp": 1763917651025,
+      "type": "click",
+      "url": "https://www.rightbiz.co.uk/"
+    },
+    {
+      "button": "left",
+      "clickCount": 1,
+      "coordinates": {
+        "x": 18.109375,
+        "y": 1.203125
+      },
+      "coordinatesRelativeTo": "element",
+      "id": "act_008",
+      "modifiers": [],
+      "selector": {
+        "css": "div.header__wrapper > div.form > div.form-wrapper > form#form-business > button#ga4_homepage_search_businesses_button > span",
+        "id": "search-submit-text",
+        "position": {
+          "index": 0,
+          "parent": "button#ga4_homepage_search_businesses_button"
+        },
+        "priority": [
+          "id",
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Data-Driven Search (743)",
+        "xpath": "//span[@id=\"search-submit-text\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/button[1]/span[1]"
+      },
+      "tagName": "span",
+      "text": "Data-Driven Search (743)",
+      "timestamp": 1763917652044,
+      "type": "click",
+      "url": "https://www.rightbiz.co.uk/"
+    },
+    {
+      "id": "act_010",
+      "selector": {
+        "css": "header > div.container > div.header__wrapper > div.form > div.form-wrapper > form.active",
+        "id": "form-business",
+        "position": {
+          "index": 0,
+          "parent": "div.form-wrapper"
+        },
+        "priority": [
+          "id",
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "textContains": "Restaurants ×\n                ",
+        "xpath": "//form[@id=\"form-business\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]"
+      },
+      "tagName": "form",
+      "timestamp": 1763917652160,
+      "type": "submit",
+      "url": "https://www.rightbiz.co.uk/"
+    },
+    {
+      "element": "window",
+      "id": "act_011",
+      "scrollX": 0,
+      "scrollY": 1400,
+      "timestamp": 1763917654509,
+      "type": "scroll",
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1"
+    },
+    {
+      "button": "left",
+      "clickCount": 1,
+      "coordinates": {
+        "x": 135,
+        "y": 21.40625
+      },
+      "coordinatesRelativeTo": "element",
+      "id": "act_012",
+      "modifiers": [],
+      "selector": {
+        "ariaLabel": "Advert",
+        "css": "div.container > div.content__body > ul#listings_cn > li.content__body__item.shadow > div.content__body__item-info > a.link-title",
+        "position": {
+          "index": 0,
+          "parent": "div.content__body__item-info"
+        },
+        "priority": [
+          "ariaLabel",
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "textContains": "Italian restaurant with large ",
+        "xpath": "//a[contains(@class, \"link-title\")]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[5]/div[2]/a[1]"
+      },
+      "tagName": "a",
+      "text": "Italian restaurant with large garden for sale in Forest Hill South East London",
+      "timestamp": 1763917655329,
+      "type": "click",
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1"
+    },
+    {
+      "element": "window",
+      "id": "act_013",
+      "scrollX": 0,
+      "scrollY": 0,
+      "timestamp": 1763917656178,
+      "type": "scroll",
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/516151_london.html"
+    },
+    {
+      "element": "window",
+      "id": "act_014",
+      "scrollX": 0,
+      "scrollY": 1500,
+      "timestamp": 1763917657664,
+      "type": "scroll",
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/516151_london.html"
+    }
+  ]
+}

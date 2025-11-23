@@ -1,0 +1,26 @@
+{
+  "name": "@saveaction/cli",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "SaveAction CLI - command-line interface for running tests",
+  "bin": {
+    "saveaction": "./bin/saveaction.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "vitest run",
+    "clean": "rm -rf dist",
+    "lint": "eslint src --ext .ts"
+  },
+  "dependencies": {
+    "@saveaction/core": "workspace:*",
+    "commander": "^11.1.0",
+    "chalk": "^4.1.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.0.4"
+  }
+}
