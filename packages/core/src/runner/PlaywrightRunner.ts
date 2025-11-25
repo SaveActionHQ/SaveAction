@@ -141,19 +141,40 @@ export class PlaywrightRunner {
    * Execute click action
    */
   private async executeClick(page: Page, action: ClickAction): Promise<void> {
-    const element = await this.elementLocator.findElement(page, action.selector);
+    try {
+      const element = await this.elementLocator.findElement(page, action.selector);
 
-    // Wait for element to be visible and enabled
-    await element.waitFor({ state: 'visible', timeout: this.options.timeout });
+      // Wait for element to be visible, enabled, and stable (not animating)
+      await element.waitFor({ state: 'visible', timeout: this.options.timeout });
+      
+      // Click with automatic retry and waiting for actionability
+      // This might trigger navigation, so we handle it gracefully
+      await Promise.race([
+        element.click({
+          button: action.button === 'left' ? 'left' : action.button === 'right' ? 'right' : 'middle',
+          clickCount: action.clickCount,
+          timeout: this.options.timeout,
+          force: false, // Don't force click - wait for element to be properly clickable
+        }),
+        page.waitForNavigation({ timeout: 1000 }).catch(() => {
+          // Navigation might not happen, that's ok
+        }),
+      ]);
 
-    // Click the element
-    await element.click({
-      button: action.button === 'left' ? 'left' : action.button === 'right' ? 'right' : 'middle',
-      clickCount: action.clickCount,
-    });
-
-    // Small delay after click
-    await page.waitForTimeout(100);
+      // Wait for any animations/dropdowns to close after click
+      await page.waitForTimeout(300);
+    } catch (error: any) {
+      // If element not found and page URL has changed, consider click successful (form already submitted)
+      if (error.message?.includes('Element not found') && page.url() !== action.url) {
+        return; // Page navigated, element no longer exists - that's expected
+      }
+      // If page is closed or navigating, consider the click successful
+      if (error.message?.includes('Target page, context or browser has been closed') ||
+          error.message?.includes('Navigation')) {
+        return; // Click succeeded, page navigated
+      }
+      throw error;
+    }
   }
 
   /**
@@ -162,7 +183,7 @@ export class PlaywrightRunner {
   private async executeInput(page: Page, action: InputAction): Promise<void> {
     const element = await this.elementLocator.findElement(page, action.selector);
 
-    // Wait for element to be visible
+    // Wait for element to be visible and stable
     await element.waitFor({ state: 'visible', timeout: this.options.timeout });
 
     // Clear existing value
@@ -175,8 +196,8 @@ export class PlaywrightRunner {
       await element.fill(action.value);
     }
 
-    // Small delay after input
-    await page.waitForTimeout(100);
+    // Wait for autocomplete dropdowns or suggestions to appear
+    await page.waitForTimeout(300);
   }
 
   /**

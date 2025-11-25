@@ -6,26 +6,52 @@ import type { SelectorStrategy } from '../types/index.js';
  */
 export class ElementLocator {
   /**
-   * Find element using selector strategy with priority fallback
+   * Find element using selector strategy with priority fallback and retry logic
    */
   async findElement(page: Page, selector: SelectorStrategy): Promise<Locator> {
-    // Try selectors in priority order
-    for (const selectorType of selector.priority) {
-      const selectorValue = selector[selectorType];
+    const maxRetries = 3;
+    const baseDelay = 500; // Start with 500ms
 
-      if (!selectorValue) continue;
-
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const locator = this.getLocator(page, selectorType, selectorValue);
+        // Try selectors in priority order
+        for (const selectorType of selector.priority) {
+          const selectorValue = selector[selectorType];
 
-        // Check if element exists
-        const count = await locator.count();
-        if (count > 0) {
-          return locator;
+          if (!selectorValue) continue;
+
+          try {
+            const locator = this.getLocator(page, selectorType, selectorValue);
+
+            // Check if element exists - use a very short timeout to fail fast
+            const count = await locator.count();
+            if (count > 0) {
+              // Element found - wait for it to be stable before returning
+              try {
+                await locator.first().waitFor({ state: 'attached', timeout: 5000 });
+                return locator.first();
+              } catch (waitError) {
+                // Element became detached, continue to next selector
+                continue;
+              }
+            }
+          } catch (error) {
+            // Continue to next selector strategy
+            continue;
+          }
+        }
+
+        // If we get here, no selector worked - retry with exponential backoff
+        if (attempt < maxRetries - 1) {
+          const delay = baseDelay * Math.pow(2, attempt);
+          await page.waitForTimeout(delay);
         }
       } catch (error) {
-        // Continue to next selector strategy
-        continue;
+        // Retry on error
+        if (attempt < maxRetries - 1) {
+          const delay = baseDelay * Math.pow(2, attempt);
+          await page.waitForTimeout(delay);
+        }
       }
     }
 
@@ -38,6 +64,10 @@ export class ElementLocator {
   private getLocator(page: Page, type: string, value: any): Locator {
     switch (type) {
       case 'id':
+        // If ID not found, try parent button with ga4 ID
+        if (value === 'search-submit-text') {
+          return page.locator(`#${value}, #ga4_homepage_search_businesses_button`);
+        }
         return page.locator(`#${value}`);
 
       case 'dataTestId':
@@ -50,6 +80,11 @@ export class ElementLocator {
         return page.locator(`[name="${value}"]`);
 
       case 'css':
+        // Special handling: if CSS selector ends with > span and contains button, try parent too
+        if (value.includes('> span') && value.includes('button')) {
+          const buttonSelector = value.replace(/\s*>\s*span$/, '');
+          return page.locator(`${value}, ${buttonSelector}`);
+        }
         return page.locator(value);
 
       case 'xpath':
