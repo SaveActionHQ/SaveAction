@@ -17,6 +17,10 @@ export async function cli() {
     .option('--browser <name>', 'Browser to use (chromium, firefox, webkit)', 'chromium')
     .option('--video', 'Record video', false)
     .option('--timeout <ms>', 'Action timeout in milliseconds', '30000')
+    .option('--timing [value]', 'Use recorded timing delays (use --no-timing to disable)', true)
+    .option('--timing-mode <mode>', 'Timing mode: realistic, fast, instant', 'realistic')
+    .option('--speed <multiplier>', 'Speed multiplier (0.5 = half speed, 2.0 = double speed)')
+    .option('--max-delay <ms>', 'Maximum delay between actions in milliseconds', '30000')
     .action(runCommand);
 
   await program.parseAsync(process.argv);

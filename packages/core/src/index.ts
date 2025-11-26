@@ -9,6 +9,8 @@ export { RecordingParser } from './parser/RecordingParser.js';
 // Runner
 export { PlaywrightRunner } from './runner/PlaywrightRunner.js';
 export { ElementLocator } from './runner/ElementLocator.js';
+export { NavigationHistoryManager } from './runner/NavigationHistoryManager.js';
+export { NavigationAnalyzer } from './runner/NavigationAnalyzer.js';
 
 // Reporter
 export { ConsoleReporter } from './reporter/ConsoleReporter.js';

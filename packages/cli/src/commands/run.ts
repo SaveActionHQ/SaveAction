@@ -7,6 +7,10 @@ interface RunCommandOptions {
   browser: 'chromium' | 'firefox' | 'webkit';
   video: boolean;
   timeout: string;
+  timing: boolean | string;
+  timingMode: 'realistic' | 'fast' | 'instant';
+  speed: string;
+  maxDelay: string;
 }
 
 export async function runCommand(file: string, options: RunCommandOptions) {
@@ -25,12 +29,19 @@ export async function runCommand(file: string, options: RunCommandOptions) {
     // Parse headless option (handle both boolean and string "false")
     const headless = options.headless === 'false' ? false : Boolean(options.headless);
 
+    // Parse timing option (--no-timing sets it to false)
+    const enableTiming = options.timing === 'false' ? false : Boolean(options.timing);
+
     // Prepare run options
     const runOptions: RunOptions = {
       headless,
       browser: options.browser,
       video: options.video,
       timeout: parseInt(options.timeout, 10),
+      enableTiming,
+      timingMode: options.timingMode,
+      speedMultiplier: options.speed ? parseFloat(options.speed) : undefined,
+      maxActionDelay: options.maxDelay ? parseInt(options.maxDelay, 10) : undefined,
     };
 
     // Create reporter
@@ -47,7 +58,9 @@ export async function runCommand(file: string, options: RunCommandOptions) {
       process.exit(1);
     }
   } catch (error) {
-    console.error(chalk.red(`\n❌ Error: ${error instanceof Error ? error.message : String(error)}\n`));
+    console.error(
+      chalk.red(`\n❌ Error: ${error instanceof Error ? error.message : String(error)}\n`)
+    );
     process.exit(1);
   }
 }

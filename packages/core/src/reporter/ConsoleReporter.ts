@@ -2,7 +2,7 @@ import type { Action } from '../types/index.js';
 import type { Reporter, RunResult } from '../types/runner.js';
 
 /**
- * Simple console reporter for CLI output
+ * Enhanced console reporter with detailed error context
  */
 export class ConsoleReporter implements Reporter {
   onStart(recording: { testName: string; actionsTotal: number }): void {
@@ -11,7 +11,8 @@ export class ConsoleReporter implements Reporter {
   }
 
   onActionStart(action: Action, index: number): void {
-    console.log(`⏳ [${index}] Executing ${action.type}...`);
+    const timing = action.timestamp ? ` (at ${(action.timestamp / 1000).toFixed(1)}s)` : '';
+    console.log(`⏳ [${index}] Executing ${action.type}${timing}...`);
   }
 
   onActionSuccess(action: Action, index: number, duration: number): void {
@@ -34,8 +35,10 @@ export class ConsoleReporter implements Reporter {
       console.log(`❌ Test failed`);
     }
 
+    const timingMode = result.timingEnabled ? 'realistic timing' : 'instant mode';
+
     console.log(`\n📊 Summary:`);
-    console.log(`   Duration: ${duration}s`);
+    console.log(`   Duration: ${duration}s (${timingMode})`);
     console.log(`   Total actions: ${result.actionsTotal}`);
     console.log(`   Executed: ${result.actionsExecuted}`);
     console.log(`   Failed: ${result.actionsFailed}`);
@@ -45,6 +48,13 @@ export class ConsoleReporter implements Reporter {
       result.errors.forEach((error, index) => {
         console.log(`   ${index + 1}. [${error.actionId}] ${error.error}`);
       });
+
+      // Add helpful suggestions
+      console.log(`\n💡 Troubleshooting tips:`);
+      console.log(`   - Run with --headless false to observe browser behavior`);
+      console.log(`   - Check if earlier actions completed as expected`);
+      console.log(`   - Increase timeout with --timeout 60000 if elements load slowly`);
+      console.log(`   - Review failed action selectors for accuracy`);
     }
 
     if (result.video) {

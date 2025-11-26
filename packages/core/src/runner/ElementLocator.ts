@@ -2,38 +2,47 @@ import type { Page, Locator } from 'playwright';
 import type { SelectorStrategy } from '../types/index.js';
 
 /**
- * Locates elements using multi-strategy fallback approach
+ * Locates elements using multi-strategy fallback approach with intelligent handling of multiple matches
  */
 export class ElementLocator {
   /**
    * Find element using selector strategy with priority fallback and retry logic
+   * Enhanced with smart visibility recovery for hidden elements
    */
   async findElement(page: Page, selector: SelectorStrategy): Promise<Locator> {
     const maxRetries = 3;
-    const baseDelay = 500; // Start with 500ms
+    const baseDelay = 500;
 
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         // Try selectors in priority order
         for (const selectorType of selector.priority) {
           const selectorValue = selector[selectorType];
-
           if (!selectorValue) continue;
 
           try {
             const locator = this.getLocator(page, selectorType, selectorValue);
-
-            // Check if element exists - use a very short timeout to fail fast
             const count = await locator.count();
-            if (count > 0) {
-              // Element found - wait for it to be stable before returning
-              try {
-                await locator.first().waitFor({ state: 'attached', timeout: 5000 });
-                return locator.first();
-              } catch (waitError) {
-                // Element became detached, continue to next selector
-                continue;
+
+            if (count === 1) {
+              // Perfect match - single element found
+              await locator.waitFor({ state: 'attached', timeout: 5000 });
+
+              // Solution 2: Check if element is hidden and try to make it visible
+              const isVisible = await locator.isVisible().catch(() => false);
+              if (!isVisible) {
+                const madeVisible = await this.attemptVisibilityRecovery(page, locator, selector);
+                if (madeVisible) {
+                  console.log(`✓ Successfully made hidden element visible`);
+                  return locator;
+                }
+                console.warn(`⚠️ Element found but hidden, attempting interaction anyway`);
               }
+
+              return locator;
+            } else if (count > 1) {
+              // Multiple matches - use intelligent filtering
+              return await this.handleMultipleMatches(page, locator, selector, count);
             }
           } catch (error) {
             // Continue to next selector strategy
@@ -41,13 +50,13 @@ export class ElementLocator {
           }
         }
 
-        // If we get here, no selector worked - retry with exponential backoff
+        // No selector worked - apply recovery strategies based on attempt
         if (attempt < maxRetries - 1) {
+          await this.applyRecoveryStrategy(page, attempt);
           const delay = baseDelay * Math.pow(2, attempt);
           await page.waitForTimeout(delay);
         }
       } catch (error) {
-        // Retry on error
         if (attempt < maxRetries - 1) {
           const delay = baseDelay * Math.pow(2, attempt);
           await page.waitForTimeout(delay);
@@ -56,6 +65,215 @@ export class ElementLocator {
     }
 
     throw new Error(`Element not found with any selector strategy: ${JSON.stringify(selector)}`);
+  }
+
+  /**
+   * Handle cases where selector matches multiple elements
+   */
+  private async handleMultipleMatches(
+    page: Page,
+    locator: Locator,
+    selector: SelectorStrategy,
+    count: number
+  ): Promise<Locator> {
+    // Strategy 1: Try text filtering if available
+    if (selector.textContains && selector.textContains.length > 3) {
+      const filtered = locator.filter({ hasText: selector.textContains });
+      const filteredCount = await filtered.count();
+
+      if (filteredCount === 1) {
+        console.log(`✓ Filtered ${count} elements to 1 using text: "${selector.textContains}"`);
+        await filtered.waitFor({ state: 'attached', timeout: 5000 });
+        return filtered;
+      } else if (filteredCount > 0 && filteredCount < count) {
+        // Reduced matches, use first visible of filtered
+        const visibleFiltered = await this.getFirstVisibleElement(page, filtered, filteredCount);
+        if (visibleFiltered) {
+          console.warn(
+            `⚠️ Text filter reduced ${count} to ${filteredCount} elements, using first visible`
+          );
+          return visibleFiltered;
+        }
+        console.warn(`⚠️ Text filter reduced ${count} to ${filteredCount} elements, using first`);
+        await filtered.first().waitFor({ state: 'attached', timeout: 5000 });
+        return filtered.first();
+      }
+    } // Strategy 2: Check if this is an autocomplete/dropdown scenario
+    const isAutocomplete =
+      selector.css?.includes('autocomplete') ||
+      selector.css?.includes('dropdown') ||
+      selector.css?.includes('suggestion') ||
+      selector.css?.includes('menu-item') ||
+      (selector.css?.includes('ul') && selector.css?.includes('li'));
+
+    if (isAutocomplete) {
+      // Try to find first visible element
+      const visibleElement = await this.getFirstVisibleElement(page, locator, count);
+      if (visibleElement) {
+        console.warn(
+          `⚠️ Autocomplete/dropdown matched ${count} items, ${count} total, using first visible`
+        );
+        return visibleElement;
+      }
+      console.warn(`⚠️ Autocomplete/dropdown matched ${count} items, selecting first item`);
+      await locator.first().waitFor({ state: 'attached', timeout: 5000 });
+      return locator.first();
+    } // Strategy 3: Check if selector has position info
+    if (selector.position && selector.position.index !== undefined) {
+      const { parent, index } = selector.position;
+      const positioned = page.locator(`${parent} > *:nth-child(${index + 1})`);
+      const posCount = await positioned.count();
+
+      if (posCount > 0) {
+        console.log(`✓ Using position-based selector (index ${index})`);
+        await positioned.waitFor({ state: 'attached', timeout: 5000 });
+        return positioned;
+      }
+    }
+
+    // Strategy 4: Last resort - try visible elements first
+    const visibleElement = await this.getFirstVisibleElement(page, locator, count);
+    if (visibleElement) {
+      console.warn(`⚠️ Ambiguous selector matched ${count} elements, using first visible`);
+      return visibleElement;
+    }
+
+    // Absolute last resort - use first element even if hidden
+    console.warn(
+      `⚠️ Ambiguous selector matched ${count} elements, using first match (may be hidden)`
+    );
+    await locator.first().waitFor({ state: 'attached', timeout: 5000 });
+    return locator.first();
+  }
+
+  /**
+   * Get first visible element from a locator with multiple matches
+   */
+  private async getFirstVisibleElement(
+    _page: Page,
+    locator: Locator,
+    count: number
+  ): Promise<Locator | null> {
+    try {
+      // Check each element for visibility
+      for (let i = 0; i < count && i < 10; i++) {
+        // Check max 10 elements
+        const element = locator.nth(i);
+        const isVisible = await element.isVisible().catch(() => false);
+
+        if (isVisible) {
+          await element.waitFor({ state: 'attached', timeout: 5000 });
+          return element;
+        }
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Solution 2: Attempt to make hidden element visible by interacting with parent
+   * Enhanced with deep parent chain analysis and progressive interaction
+   */
+  private async attemptVisibilityRecovery(
+    page: Page,
+    locator: Locator,
+    _selector: SelectorStrategy
+  ): Promise<boolean> {
+    try {
+      console.log(`🔍 Attempting to make hidden element visible...`);
+
+      // Level 1: Deep parent chain analysis (up to 5 levels)
+      const trigger = await this.analyzeDeepParentChain(page, locator);
+
+      if (trigger && trigger.confidence !== 'low') {
+        console.log(
+          `✓ Found ${trigger.interactionType} trigger at level ${trigger.level} (confidence: ${trigger.confidence})`
+        );
+
+        // Try progressive interaction (hover then click with transition waiting)
+        const success = await this.tryProgressiveInteraction(
+          page,
+          trigger.triggerElement!,
+          locator
+        );
+        if (success) {
+          return true;
+        }
+      }
+
+      // Level 2: Try multiple ancestor levels with simple approach
+      console.log('   → Trying multiple parent levels...');
+      for (let level = 1; level <= 3; level++) {
+        const parent = await this.getParentAtLevel(page, locator, level);
+        if (parent) {
+          const parentVisible = await parent.isVisible().catch(() => false);
+          if (!parentVisible) continue;
+
+          // Try hover
+          await parent.hover({ timeout: 2000 }).catch(() => {});
+          await this.waitForTransitions(page, 500);
+
+          let nowVisible = await locator.isVisible().catch(() => false);
+          if (nowVisible) {
+            console.log(`✓ Element became visible after hovering parent (level ${level})`);
+            return true;
+          }
+
+          // Try click
+          await parent.click({ timeout: 2000 }).catch(() => {});
+          await this.waitForTransitions(page, 500);
+
+          nowVisible = await locator.isVisible().catch(() => false);
+          if (nowVisible) {
+            console.log(`✓ Element became visible after clicking parent (level ${level})`);
+            return true;
+          }
+        }
+      }
+
+      // Level 3: Alternative interactions (keyboard, scroll)
+      console.log('   → Trying alternative interactions...');
+      const altSuccess = await this.tryAlternativeInteractions(page, locator);
+      if (altSuccess) {
+        return true;
+      }
+
+      // Level 4: Report clear failure (NO FORCE CLICK - keeping realistic behavior)
+      console.log('⚠️ Cannot make element visible using realistic interactions');
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Apply recovery strategies between retry attempts
+   */
+  private async applyRecoveryStrategy(page: Page, attempt: number): Promise<void> {
+    try {
+      switch (attempt) {
+        case 0:
+          // First retry: Wait for network to be idle
+          await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {});
+          break;
+
+        case 1:
+          // Second retry: Dismiss any overlays (ESC key)
+          await page.keyboard.press('Escape');
+          await page.waitForTimeout(300);
+          break;
+
+        case 2:
+          // Third retry: Scroll down to potentially load lazy content
+          await page.evaluate(() => (globalThis as any).window.scrollBy(0, 300));
+          await page.waitForTimeout(300);
+          break;
+      }
+    } catch {
+      // Recovery strategy failed, continue anyway
+    }
   }
 
   /**
@@ -104,6 +322,252 @@ export class ElementLocator {
 
       default:
         throw new Error(`Unknown selector type: ${type}`);
+    }
+  }
+
+  /**
+   * Analyze deep parent chain (up to 5 levels) to find interactive trigger elements
+   */
+  private async analyzeDeepParentChain(
+    _page: Page,
+    locator: Locator
+  ): Promise<{
+    triggerElement: string | null;
+    interactionType: 'hover' | 'click';
+    confidence: 'high' | 'medium' | 'low';
+    level: number;
+  } | null> {
+    try {
+      // Evaluate parent chain up to 5 levels
+      const parentAnalysis = await locator.evaluate((element: any) => {
+        const results = [];
+        let current = element.parentElement;
+        let level = 1;
+
+        while (current && level <= 5) {
+          // @ts-ignore - window is available in browser context
+          const styles = window.getComputedStyle(current);
+          const classes = current.className || '';
+          const role = current.getAttribute('role') || '';
+          const tagName = current.tagName.toLowerCase();
+
+          // Check visibility
+          const isVisible =
+            styles.display !== 'none' && styles.visibility !== 'hidden' && styles.opacity !== '0';
+
+          // Check for menu/dropdown patterns
+          const hasMenuPattern = /menu|dropdown|accordion|tab|popover|nav/i.test(
+            classes + role + tagName
+          );
+
+          // Check for interactive indicators
+          const hasClickHandler =
+            current.onclick ||
+            current.getAttribute('onclick') ||
+            /button|link|trigger/i.test(classes + role);
+
+          // Build CSS selector for this parent
+          const id = current.id ? `#${current.id}` : '';
+          const classNames = classes
+            .split(' ')
+            .filter((c: string) => c.trim())
+            .slice(0, 3)
+            .join('.');
+          const selector = `${tagName}${id}${classNames ? '.' + classNames : ''}`;
+
+          // Calculate confidence score
+          let confidence = 0;
+          if (hasMenuPattern) confidence += 3;
+          if (hasClickHandler) confidence += 2;
+          if (isVisible) confidence += 1;
+          if (level === 1) confidence += 1; // Prefer closer parents
+
+          results.push({
+            level,
+            selector,
+            isVisible,
+            hasMenuPattern,
+            hasClickHandler,
+            confidence,
+          });
+
+          current = current.parentElement;
+          level++;
+        }
+
+        return results;
+      });
+
+      // Find best trigger candidate
+      const candidates = parentAnalysis
+        .filter((p: any) => p.isVisible && p.confidence > 0)
+        .sort((a: any, b: any) => b.confidence - a.confidence);
+
+      if (candidates.length === 0) {
+        return null;
+      }
+
+      const best = candidates[0];
+
+      return {
+        triggerElement: best.selector,
+        interactionType: best.hasMenuPattern ? 'hover' : 'click',
+        confidence: best.confidence >= 5 ? 'high' : best.confidence >= 3 ? 'medium' : 'low',
+        level: best.level,
+      };
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Wait for CSS transitions to complete
+   */
+  private async waitForTransitions(page: Page, maxWait: number): Promise<void> {
+    try {
+      await Promise.race([
+        // Wait for transitionend event
+        page.evaluate(() => {
+          return new Promise<void>((resolve) => {
+            const handler = () => {
+              // @ts-ignore - document is available in browser context
+              document.removeEventListener('transitionend', handler);
+              resolve();
+            };
+            // @ts-ignore - document is available in browser context
+            document.addEventListener('transitionend', handler);
+            // Fallback in case no transitions occur
+            setTimeout(() => {
+              // @ts-ignore - document is available in browser context
+              document.removeEventListener('transitionend', handler);
+              resolve();
+            }, 1000);
+          });
+        }),
+        // Or timeout
+        page.waitForTimeout(maxWait),
+      ]);
+    } catch (error) {
+      // Ignore errors, just wait the timeout
+      await page.waitForTimeout(500);
+    }
+  }
+
+  /**
+   * Try progressive interaction with parent element (hover then click)
+   */
+  private async tryProgressiveInteraction(
+    page: Page,
+    triggerSelector: string,
+    targetLocator: Locator
+  ): Promise<boolean> {
+    try {
+      const trigger = page.locator(triggerSelector).first();
+
+      // Check if trigger is visible
+      const triggerVisible = await trigger.isVisible().catch(() => false);
+      if (!triggerVisible) {
+        return false;
+      }
+
+      // Strategy 1: Hover and wait for transitions
+      console.log(`   → Hovering on trigger: ${triggerSelector}`);
+      await trigger.hover({ timeout: 3000 });
+      await this.waitForTransitions(page, 2000);
+
+      // Check if target is now visible
+      let nowVisible = await targetLocator.isVisible().catch(() => false);
+      if (nowVisible) {
+        console.log(`✓ Target became visible after hover`);
+        return true;
+      }
+
+      // Strategy 2: Click trigger and wait
+      console.log(`   → Clicking trigger: ${triggerSelector}`);
+      await trigger.click({ timeout: 3000 });
+      await this.waitForTransitions(page, 2000);
+
+      // Check again
+      nowVisible = await targetLocator.isVisible().catch(() => false);
+      if (nowVisible) {
+        console.log(`✓ Target became visible after click`);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Get parent element at specific level
+   */
+  private async getParentAtLevel(
+    page: Page,
+    locator: Locator,
+    level: number
+  ): Promise<Locator | null> {
+    try {
+      const parentSelector = await locator.evaluate((element: any, lvl: number) => {
+        let current = element;
+        for (let i = 0; i < lvl; i++) {
+          if (!current.parentElement) return null;
+          current = current.parentElement;
+        }
+
+        // Build CSS selector
+        const tagName = current.tagName.toLowerCase();
+        const id = current.id ? `#${current.id}` : '';
+        const classes = (current.className || '')
+          .split(' ')
+          .filter((c: string) => c.trim())
+          .slice(0, 3)
+          .join('.');
+
+        return `${tagName}${id}${classes ? '.' + classes : ''}`;
+      }, level);
+
+      if (!parentSelector) return null;
+
+      return page.locator(parentSelector).first();
+    } catch (error) {
+      return null;
+    }
+  }
+
+  /**
+   * Try alternative interaction methods (keyboard, scroll, etc.)
+   */
+  private async tryAlternativeInteractions(page: Page, locator: Locator): Promise<boolean> {
+    try {
+      // Try Tab navigation
+      console.log(`   → Trying keyboard navigation (Tab)`);
+      for (let i = 0; i < 5; i++) {
+        await page.keyboard.press('Tab');
+        await page.waitForTimeout(200);
+
+        const visible = await locator.isVisible().catch(() => false);
+        if (visible) {
+          console.log(`✓ Element became visible after Tab navigation`);
+          return true;
+        }
+      }
+
+      // Try scrolling into view
+      console.log(`   → Trying scroll into view`);
+      await locator.scrollIntoViewIfNeeded({ timeout: 2000 });
+      await page.waitForTimeout(500);
+
+      const visible = await locator.isVisible().catch(() => false);
+      if (visible) {
+        console.log(`✓ Element became visible after scrolling`);
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      return false;
     }
   }
 }

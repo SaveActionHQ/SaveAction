@@ -11,6 +11,7 @@ export interface RunResult {
   actionsFailed: number;
   errors: ActionError[];
   video?: string; // path to video file
+  timingEnabled?: boolean; // Whether timing delays were used
 }
 
 /**
@@ -32,6 +33,12 @@ export interface RunOptions {
   video?: boolean; // Default: false
   screenshot?: boolean; // Default: false
   timeout?: number; // Default: 30000ms
+
+  // Timing options for realistic playback
+  enableTiming?: boolean; // Default: true - use recorded timing delays
+  timingMode?: 'realistic' | 'fast' | 'instant'; // Preset timing modes
+  speedMultiplier?: number; // Default: 1.0 - manual speed control
+  maxActionDelay?: number; // Default: 30000ms - safety cap for delays
 }
 
 /**

@@ -52,4 +52,32 @@ export class RecordingParser {
 
     return result.data as Recording;
   }
+
+  /**
+   * Normalize timestamps to relative format (milliseconds since recording start)
+   * Auto-detects if timestamps are absolute (Unix epoch) or relative and converts if needed
+   */
+  normalizeTimestamps(recording: Recording): Recording {
+    if (recording.actions.length === 0) {
+      return recording;
+    }
+
+    const firstTimestamp = recording.actions[0].timestamp;
+
+    // If first timestamp > 1 billion, it's absolute Unix epoch time
+    // Convert to relative by subtracting first timestamp from all actions
+    if (firstTimestamp > 1_000_000_000_000) {
+      const startTime = firstTimestamp;
+      return {
+        ...recording,
+        actions: recording.actions.map((action) => ({
+          ...action,
+          timestamp: action.timestamp - startTime,
+        })),
+      };
+    }
+
+    // Already relative, return as-is
+    return recording;
+  }
 }
