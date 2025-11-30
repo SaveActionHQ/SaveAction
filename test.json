@@ -1,10 +1,10 @@
 {
-  "id": "rec_1764134278579",
+  "id": "rec_1764509320552",
   "version": "1.0.0",
-  "testName": "Testing the flow after many fixes",
-  "url": "https://www.rightdev.co.uk/",
-  "startTime": "2025-11-26T05:17:58.579Z",
-  "endTime": "2025-11-26T05:19:11.364Z",
+  "testName": "nav_test5",
+  "url": "https://www.rightbiz.co.uk/",
+  "startTime": "2025-11-30T13:28:40.552Z",
+  "endTime": "2025-11-30T13:29:07.746Z",
   "viewport": {
     "width": 1920,
     "height": 1080
@@ -12,1453 +12,357 @@
   "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
   "actions": [
     {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 100.79998779296875,
-        "y": 18.79998779296875
-      },
-      "coordinatesRelativeTo": "element",
       "id": "act_001",
-      "modifiers": [],
+      "type": "hover",
+      "timestamp": 2463,
+      "completedAt": 4169,
+      "url": "https://www.rightbiz.co.uk/",
       "selector": {
-        "ariaLabel": "Sector",
-        "css": "div.form-wrapper > form#form-business > div.form-group > div.relative > div.form-search-sector > input.text-sm.with-placeholder[type=\"text\"]",
-        "id": "sector-input",
-        "name": "category",
+        "css": "div#iubenda-cs-banner > div.iubenda-cs-container > div.iubenda-cs-content > div.iubenda-cs-rationale",
+        "textContains": "×\n      GDPR-Compliant Cookies",
+        "xpath": "//div[contains(@class, \"iubenda-cs-rationale\")]",
+        "xpathAbsolute": "/html/body[1]/div[3]/div[1]/div[1]/div[1]",
         "position": {
-          "index": 0,
-          "parent": "div.form-search-sector"
+          "parent": "div.iubenda-cs-content",
+          "index": 0
         },
         "priority": [
-          "id",
-          "ariaLabel",
-          "name",
           "css",
           "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"sector-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/input[1]"
+          "xpathAbsolute"
+        ]
       },
-      "tagName": "input",
-      "text": "",
-      "timestamp": 1764134279957,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
+      "tagName": "div",
+      "text": "×\n      GDPR-Compliant Cookies Notice: Your Privac",
+      "duration": 1706,
+      "isDropdownParent": true
     },
     {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 100.79998779296875,
-        "y": 18.79998779296875
-      },
-      "coordinatesRelativeTo": "element",
       "id": "act_002",
-      "modifiers": [],
+      "type": "click",
+      "timestamp": 4169,
+      "completedAt": 4219,
+      "url": "https://www.rightbiz.co.uk/",
       "selector": {
-        "ariaLabel": "Sector",
-        "css": "div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > div.form-search-sector > input.text-sm.with-placeholder[type=\"text\"]",
-        "id": "sector-input",
-        "name": "category",
+        "css": "div.iubenda-cs-container > div.iubenda-cs-content > div.iubenda-cs-rationale > div.iubenda-cs-opt-group > div.iubenda-cs-opt-group-consent > button.iubenda-cs-accept-btn.iubenda-cs-btn-primary.hover",
+        "text": "Accept",
+        "xpath": "//div[contains(@class, \"iubenda-cs-opt-group-consent\")]/button[text()='Accept']",
+        "xpathAbsolute": "/html/body[1]/div[3]/div[1]/div[1]/div[1]/div[4]/div[2]/button[2]",
         "position": {
-          "index": 0,
-          "parent": "div.form-search-sector"
+          "parent": "div.iubenda-cs-opt-group-consent",
+          "index": 1
         },
         "priority": [
-          "id",
-          "ariaLabel",
-          "name",
           "css",
+          "text",
           "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"sector-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/input[1]"
+          "xpathAbsolute"
+        ]
       },
-      "tagName": "input",
-      "text": "",
-      "timestamp": 1764134280065,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
+      "tagName": "button",
+      "text": "Accept",
+      "coordinates": {
+        "x": 56.03125,
+        "y": 18.796875
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": []
     },
     {
       "id": "act_003",
-      "inputType": "text",
-      "isSensitive": false,
-      "selector": {
-        "ariaLabel": "Sector",
-        "css": "div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > div.form-search-sector > input.text-sm.with-placeholder[type=\"text\"]",
-        "id": "sector-input",
-        "name": "category",
-        "position": {
-          "index": 0,
-          "parent": "div.form-search-sector"
-        },
-        "priority": [
-          "id",
-          "ariaLabel",
-          "name",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"sector-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/input[1]"
-      },
-      "simulationType": "type",
-      "tagName": "input",
-      "timestamp": 1764134283202,
-      "type": "input",
-      "typingDelay": 254,
-      "url": "https://www.rightdev.co.uk/",
-      "value": "restur"
+      "type": "scroll",
+      "timestamp": 4219,
+      "completedAt": 4419,
+      "url": "https://www.rightbiz.co.uk/",
+      "scrollX": 0,
+      "scrollY": 500,
+      "element": "window"
     },
     {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 65.60000610351562,
-        "y": 4
-      },
-      "coordinatesRelativeTo": "element",
       "id": "act_004",
-      "modifiers": [],
-      "selector": {
-        "css": "div.form-group.mobile-active > div.relative > div.form-search-sector > ul.form__autocomplete > li > span",
-        "position": {
-          "index": 1,
-          "parent": "li"
-        },
-        "priority": [
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "New Businesses for Sale",
-        "xpath": "//span[text()='New Businesses for Sale']",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/ul[1]/li[3]/span[1]"
-      },
-      "tagName": "span",
-      "text": "New Businesses for Sale",
-      "timestamp": 1764134284652,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
+      "type": "scroll",
+      "timestamp": 4819,
+      "completedAt": 5352.333333333333,
+      "url": "https://www.rightbiz.co.uk/",
+      "scrollX": 0,
+      "scrollY": 1600,
+      "element": "window"
     },
     {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 145.59999084472656,
-        "y": 34
-      },
-      "coordinatesRelativeTo": "element",
       "id": "act_005",
-      "modifiers": [],
+      "type": "click",
+      "timestamp": 7703,
+      "completedAt": 7753,
+      "url": "https://www.rightbiz.co.uk/",
       "selector": {
-        "ariaLabel": "Location",
-        "css": "div.form > div.form-wrapper > form#form-business > div.form-group > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
-        "id": "location-input",
-        "name": "search-locs",
+        "css": "div.container.container-scrollbar > div.popular-sector__image-wrapper > div.popular-image-container > div#popular-sector__all > a.popular-sector__image-split > img.popular-sector__image-item",
+        "xpath": "//img[contains(@class, \"popular-sector__image-item\")]",
+        "xpathAbsolute": "/html/body[1]/section[5]/div[2]/div[1]/div[1]/div[1]/a[1]/img[1]",
         "position": {
-          "index": 2,
-          "parent": "div.relative"
+          "parent": "a.popular-sector__image-split",
+          "index": 0
         },
         "priority": [
-          "id",
-          "name",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"location-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]"
+          "xpathAbsolute"
+        ]
       },
-      "tagName": "input",
+      "tagName": "img",
       "text": "",
-      "timestamp": 1764134285363,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
       "coordinates": {
-        "x": 145.59999084472656,
-        "y": 34
+        "x": 203.00001525878906,
+        "y": 219.6750030517578
       },
       "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": []
+    },
+    {
       "id": "act_006",
-      "modifiers": [],
+      "type": "hover",
+      "timestamp": 7870,
+      "completedAt": 11165,
+      "url": "https://www.rightbiz.co.uk/",
       "selector": {
-        "ariaLabel": "Location",
-        "css": "div.form > div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
-        "id": "location-input",
-        "name": "search-locs",
+        "css": "section#popular-sector > div.container.container-scrollbar > div.popular-sector__image-wrapper > div.popular-image-container",
+        "textContains": "2,367 Businesses for sale\n    ",
+        "xpath": "//div[contains(@class, \"popular-image-container\")]",
+        "xpathAbsolute": "/html/body[1]/section[5]/div[2]/div[1]/div[1]",
         "position": {
-          "index": 2,
-          "parent": "div.relative"
+          "parent": "div.popular-sector__image-wrapper",
+          "index": 0
         },
         "priority": [
-          "id",
-          "name",
           "css",
           "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"location-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]"
+          "xpathAbsolute"
+        ]
       },
-      "tagName": "input",
-      "text": "",
-      "timestamp": 1764134285457,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
+      "tagName": "div",
+      "text": "2,367 Businesses for sale\n              London\n   ",
+      "duration": 3295,
+      "isDropdownParent": true
+    },
+    {
+      "id": "act_008",
+      "type": "navigation",
+      "timestamp": 8155,
+      "completedAt": 8155,
+      "url": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
+      "from": "https://www.rightbiz.co.uk/",
+      "to": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
+      "navigationTrigger": "click",
+      "waitUntil": "load",
+      "duration": 0
+    },
+    {
+      "id": "act_009",
+      "type": "scroll",
+      "timestamp": 10177,
+      "completedAt": 10410.333333333334,
+      "url": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
+      "scrollX": 0,
+      "scrollY": 700,
+      "element": "window"
+    },
+    {
+      "id": "act_010",
+      "type": "scroll",
+      "timestamp": 10686,
+      "completedAt": 11119.333333333334,
+      "url": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
+      "scrollX": 0,
+      "scrollY": 1300,
+      "element": "window"
     },
     {
       "id": "act_007",
-      "inputType": "text",
-      "isSensitive": false,
+      "type": "click",
+      "timestamp": 11165,
+      "completedAt": 11215,
+      "url": "https://www.rightbiz.co.uk/",
       "selector": {
-        "ariaLabel": "Location",
-        "css": "div.form > div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
-        "id": "location-input",
-        "name": "search-locs",
+        "css": "div.container.container-scrollbar > div.popular-sector__image-wrapper > div.popular-image-container > div#popular-sector__all > a.popular-sector__image-split > img.popular-sector__image-item",
+        "xpath": "//img[contains(@class, \"popular-sector__image-item\")]",
+        "xpathAbsolute": "/html/body[1]/section[5]/div[2]/div[1]/div[1]/div[1]/a[1]/img[1]",
         "position": {
-          "index": 2,
-          "parent": "div.relative"
+          "parent": "a.popular-sector__image-split",
+          "index": 0
         },
         "priority": [
-          "id",
-          "name",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"location-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]"
+          "xpathAbsolute"
+        ]
       },
-      "simulationType": "type",
-      "tagName": "input",
-      "timestamp": 1764134287595,
-      "type": "input",
-      "typingDelay": 219,
-      "url": "https://www.rightdev.co.uk/",
-      "value": "london"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
+      "tagName": "img",
+      "text": "",
       "coordinates": {
-        "x": 101.59999084472656,
-        "y": 23.399993896484375
+        "x": 203.00001525878906,
+        "y": 219.6750030517578
       },
       "coordinatesRelativeTo": "element",
-      "id": "act_008",
-      "modifiers": [],
-      "selector": {
-        "css": "div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > ul.form__autocomplete > li:nth-child(1)",
-        "position": {
-          "index": 0,
-          "parent": "ul.form__autocomplete"
-        },
-        "priority": [
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "London",
-        "xpath": "//ul[contains(@class, \"form__autocomplete\")]/li[text()='London']",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/ul[1]/li[1]"
-      },
-      "tagName": "li",
-      "text": "London",
-      "timestamp": 1764134288555,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
-    },
-    {
       "button": "left",
       "clickCount": 1,
-      "coordinates": {
-        "x": 69.44998168945312,
-        "y": 7.39996337890625
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_009",
-      "modifiers": [],
-      "selector": {
-        "css": "div.header__wrapper > div.form > div.form-wrapper > form#form-business > button#ga4_homepage_search_businesses_button > span",
-        "id": "search-submit-text",
-        "position": {
-          "index": 0,
-          "parent": "button#ga4_homepage_search_businesses_button"
-        },
-        "priority": [
-          "id",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "Data-Driven Search (3135)",
-        "xpath": "//span[@id=\"search-submit-text\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/button[1]/span[1]"
-      },
-      "tagName": "span",
-      "text": "Data-Driven Search (3135)",
-      "timestamp": 1764134290027,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 69.44998168945312,
-        "y": 7.39996337890625
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_010",
-      "modifiers": [],
-      "selector": {
-        "css": "div.header__wrapper > div.form > div.form-wrapper > form#form-business > button#ga4_homepage_search_businesses_button > span",
-        "id": "search-submit-text",
-        "position": {
-          "index": 0,
-          "parent": "button#ga4_homepage_search_businesses_button"
-        },
-        "priority": [
-          "id",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "Data-Driven Search (3135)",
-        "xpath": "//span[@id=\"search-submit-text\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/button[1]/span[1]"
-      },
-      "tagName": "span",
-      "text": "Data-Driven Search (3135)",
-      "timestamp": 1764134290156,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
+      "modifiers": []
     },
     {
       "id": "act_011",
-      "selector": {
-        "css": "header > div.container > div.header__wrapper > div.form > div.form-wrapper > form.active",
-        "id": "form-business",
-        "position": {
-          "index": 0,
-          "parent": "div.form-wrapper"
-        },
-        "priority": [
-          "id",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "textContains": "New Businesses for Sale ×\n    ",
-        "xpath": "//form[@id=\"form-business\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]"
-      },
-      "tagName": "form",
-      "timestamp": 1764134290158,
-      "type": "submit",
-      "url": "https://www.rightdev.co.uk/"
+      "type": "scroll",
+      "timestamp": 11194,
+      "completedAt": 11827.333333333334,
+      "url": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
+      "scrollX": 0,
+      "scrollY": 1900,
+      "element": "window"
     },
     {
       "id": "act_012",
-      "type": "navigation",
-      "timestamp": 1764134291356,
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=businesses&location=london&more_category=&sortby=new&noindex=1",
-      "from": "https://www.rightdev.co.uk/",
-      "to": "https://www.rightdev.co.uk/search/?more_category=none&sector=businesses&location=london&more_category=&sortby=new&noindex=1",
-      "navigationTrigger": "back",
-      "waitUntil": "load",
-      "duration": 0
+      "type": "scroll",
+      "timestamp": 13231,
+      "completedAt": 13664.333333333334,
+      "url": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
+      "scrollX": 0,
+      "scrollY": 1300,
+      "element": "window"
     },
     {
-      "element": "window",
       "id": "act_013",
+      "type": "scroll",
+      "timestamp": 13789,
+      "completedAt": 14022.333333333334,
+      "url": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
+      "scrollX": 0,
+      "scrollY": 700,
+      "element": "window"
+    },
+    {
+      "id": "act_014",
+      "type": "scroll",
+      "timestamp": 14160,
+      "completedAt": 14360,
+      "url": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
       "scrollX": 0,
       "scrollY": 100,
-      "timestamp": 1764134293468,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=businesses&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "element": "window",
-      "id": "act_014",
-      "scrollX": 0,
-      "scrollY": 0,
-      "timestamp": 1764134294632,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=businesses&location=london&more_category=&sortby=new&noindex=1"
+      "element": "window"
     },
     {
       "id": "act_015",
+      "type": "scroll",
+      "timestamp": 14619,
+      "completedAt": 14819,
+      "url": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
+      "scrollX": 0,
+      "scrollY": 0,
+      "element": "window"
+    },
+    {
+      "id": "act_016",
+      "type": "click",
+      "timestamp": 16145,
+      "completedAt": 16195,
+      "url": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
+      "selector": {
+        "css": "ul#listings_cn > li.content__body__item.listing-no-slider > div.content__body__item-img > div.content__body__item-img__wrapper > a.content__body__item-img-list.item-3 > img",
+        "xpath": "//img[2]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[2]/div[1]/div[1]/a[1]/img[2]",
+        "position": {
+          "parent": "a.content__body__item-img-list.item-3",
+          "index": 1
+        },
+        "priority": [
+          "xpathAbsolute"
+        ]
+      },
+      "tagName": "img",
+      "text": "",
+      "coordinates": {
+        "x": 14,
+        "y": -0.796875
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "right",
+      "clickCount": 1,
+      "modifiers": []
+    },
+    {
+      "id": "act_017",
       "type": "navigation",
-      "timestamp": 1764134295438,
-      "url": "https://www.rightdev.co.uk/",
-      "from": "https://www.rightdev.co.uk/search/?more_category=none&sector=businesses&location=london&more_category=&sortby=new&noindex=1",
-      "to": "https://www.rightdev.co.uk/",
-      "navigationTrigger": "back",
+      "timestamp": 16293,
+      "completedAt": 16293,
+      "url": "https://www.rightbiz.co.uk/",
+      "from": "https://www.rightbiz.co.uk/businesses-for-sale-in-london.html",
+      "to": "https://www.rightbiz.co.uk/",
+      "navigationTrigger": "click",
       "waitUntil": "load",
       "duration": 0
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 106.79998779296875,
-        "y": 17.79998779296875
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_016",
-      "modifiers": [],
-      "selector": {
-        "ariaLabel": "Sector",
-        "css": "div.form-wrapper > form#form-business > div.form-group > div.relative > div.form-search-sector > input.text-sm.with-placeholder[type=\"text\"]",
-        "id": "sector-input",
-        "name": "category",
-        "position": {
-          "index": 0,
-          "parent": "div.form-search-sector"
-        },
-        "priority": [
-          "id",
-          "ariaLabel",
-          "name",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"sector-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/input[1]"
-      },
-      "tagName": "input",
-      "text": "",
-      "timestamp": 1764134298019,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 106.79998779296875,
-        "y": 17.79998779296875
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_017",
-      "modifiers": [],
-      "selector": {
-        "ariaLabel": "Sector",
-        "css": "div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > div.form-search-sector > input.text-sm.with-placeholder[type=\"text\"]",
-        "id": "sector-input",
-        "name": "category",
-        "position": {
-          "index": 0,
-          "parent": "div.form-search-sector"
-        },
-        "priority": [
-          "id",
-          "ariaLabel",
-          "name",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"sector-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/input[1]"
-      },
-      "tagName": "input",
-      "text": "",
-      "timestamp": 1764134298024,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
     },
     {
       "id": "act_018",
-      "inputType": "text",
-      "isSensitive": false,
-      "selector": {
-        "ariaLabel": "Sector",
-        "css": "div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > div.form-search-sector > input.text-sm.with-placeholder[type=\"text\"]",
-        "id": "sector-input",
-        "name": "category",
-        "position": {
-          "index": 0,
-          "parent": "div.form-search-sector"
-        },
-        "priority": [
-          "id",
-          "ariaLabel",
-          "name",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"sector-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/input[1]"
-      },
-      "simulationType": "type",
-      "tagName": "input",
-      "timestamp": 1764134300164,
-      "type": "input",
-      "typingDelay": 356,
-      "url": "https://www.rightdev.co.uk/",
-      "value": "gym"
+      "type": "scroll",
+      "timestamp": 18213,
+      "completedAt": 19013,
+      "url": "https://www.rightbiz.co.uk/",
+      "scrollX": 0,
+      "scrollY": 2500,
+      "element": "window"
     },
     {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 38.600006103515625,
-        "y": 15
-      },
-      "coordinatesRelativeTo": "element",
       "id": "act_019",
-      "modifiers": [],
-      "selector": {
-        "css": "div.form-group.mobile-active > div.relative > div.form-search-sector > ul.form__autocomplete > li > span",
-        "position": {
-          "index": 1,
-          "parent": "li"
-        },
-        "priority": [
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "Gyms for Sale",
-        "xpath": "//span[text()='Gyms for Sale']",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/ul[1]/li[3]/span[1]"
-      },
-      "tagName": "span",
-      "text": "Gyms for Sale",
-      "timestamp": 1764134300645,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
+      "type": "scroll",
+      "timestamp": 19013,
+      "completedAt": 19813,
+      "url": "https://www.rightbiz.co.uk/",
+      "scrollX": 0,
+      "scrollY": 3100,
+      "element": "window"
     },
     {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 118.59999084472656,
-        "y": 30
-      },
-      "coordinatesRelativeTo": "element",
       "id": "act_020",
-      "modifiers": [],
+      "type": "click",
+      "timestamp": 21403,
+      "completedAt": 21453,
+      "url": "https://www.rightbiz.co.uk/",
       "selector": {
-        "ariaLabel": "Location",
-        "css": "div.form > div.form-wrapper > form#form-business > div.form-group > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
-        "id": "location-input",
-        "name": "search-locs",
+        "id": "ga4_home_page_view_more_franchises_button",
+        "css": "section#franchise > div.container > a.btn.btn-green.btn-inline",
+        "text": "View\n        More Franchises",
+        "xpath": "//a[@id=\"ga4_home_page_view_more_franchises_button\"]",
+        "xpathAbsolute": "/html/body[1]/section[6]/div[1]/a[1]",
         "position": {
-          "index": 2,
-          "parent": "div.relative"
+          "parent": "div.container",
+          "index": 2
         },
         "priority": [
           "id",
-          "name",
           "css",
+          "text",
           "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"location-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]"
+          "xpathAbsolute"
+        ]
       },
-      "tagName": "input",
-      "text": "",
-      "timestamp": 1764134301122,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
+      "tagName": "a",
+      "text": "View\n        More Franchises",
       "coordinates": {
-        "x": 118.59999084472656,
-        "y": 30
+        "x": 41.90625,
+        "y": 11.375
       },
       "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": []
+    },
+    {
       "id": "act_021",
-      "modifiers": [],
-      "selector": {
-        "ariaLabel": "Location",
-        "css": "div.form > div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
-        "id": "location-input",
-        "name": "search-locs",
-        "position": {
-          "index": 2,
-          "parent": "div.relative"
-        },
-        "priority": [
-          "id",
-          "name",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"location-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]"
-      },
-      "tagName": "input",
-      "text": "",
-      "timestamp": 1764134301250,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
-    },
-    {
-      "id": "act_022",
-      "inputType": "text",
-      "isSensitive": false,
-      "selector": {
-        "ariaLabel": "Location",
-        "css": "div.form > div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
-        "id": "location-input",
-        "name": "search-locs",
-        "position": {
-          "index": 2,
-          "parent": "div.relative"
-        },
-        "priority": [
-          "id",
-          "name",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"location-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]"
-      },
-      "simulationType": "type",
-      "tagName": "input",
-      "timestamp": 1764134303000,
-      "type": "input",
-      "typingDelay": 394,
-      "url": "https://www.rightdev.co.uk/",
-      "value": "lo"
-    },
-    {
-      "id": "act_023",
-      "inputType": "text",
-      "isSensitive": false,
-      "selector": {
-        "ariaLabel": "Location",
-        "css": "div.form > div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
-        "id": "location-input",
-        "name": "search-locs",
-        "position": {
-          "index": 2,
-          "parent": "div.relative"
-        },
-        "priority": [
-          "id",
-          "name",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//input[@id=\"location-input\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]"
-      },
-      "simulationType": "type",
-      "tagName": "input",
-      "timestamp": 1764134305280,
-      "type": "input",
-      "typingDelay": 439,
-      "url": "https://www.rightdev.co.uk/",
-      "value": "londo"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 41.600006103515625,
-        "y": -1.20001220703125
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_024",
-      "modifiers": [],
-      "selector": {
-        "css": "div.form-group.mobile-active > div.relative > ul.form__autocomplete > li > span > span",
-        "position": {
-          "index": 0,
-          "parent": "span"
-        },
-        "priority": [
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "Londo",
-        "xpath": "//span[text()='Londo']",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/ul[1]/li[1]/span[1]/span[1]"
-      },
-      "tagName": "span",
-      "text": "Londo",
-      "timestamp": 1764134306692,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 74.39999389648438,
-        "y": 14.399993896484375
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_025",
-      "modifiers": [],
-      "selector": {
-        "css": "div.header__wrapper > div.form > div.form-wrapper > form#form-business > button#ga4_homepage_search_businesses_button > span",
-        "id": "search-submit-text",
-        "position": {
-          "index": 0,
-          "parent": "button#ga4_homepage_search_businesses_button"
-        },
-        "priority": [
-          "id",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "Data-Driven Search (22)",
-        "xpath": "//span[@id=\"search-submit-text\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/button[1]/span[1]"
-      },
-      "tagName": "span",
-      "text": "Data-Driven Search (22)",
-      "timestamp": 1764134307852,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 74.39999389648438,
-        "y": 14.399993896484375
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_026",
-      "modifiers": [],
-      "selector": {
-        "css": "div.header__wrapper > div.form > div.form-wrapper > form#form-business > button#ga4_homepage_search_businesses_button > span",
-        "id": "search-submit-text",
-        "position": {
-          "index": 0,
-          "parent": "button#ga4_homepage_search_businesses_button"
-        },
-        "priority": [
-          "id",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "Data-Driven Search (22)",
-        "xpath": "//span[@id=\"search-submit-text\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/button[1]/span[1]"
-      },
-      "tagName": "span",
-      "text": "Data-Driven Search (22)",
-      "timestamp": 1764134307948,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/"
-    },
-    {
-      "id": "act_027",
-      "selector": {
-        "css": "header > div.container > div.header__wrapper > div.form > div.form-wrapper > form.active",
-        "id": "form-business",
-        "position": {
-          "index": 0,
-          "parent": "div.form-wrapper"
-        },
-        "priority": [
-          "id",
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "textContains": "Gyms ×\n                  \n    ",
-        "xpath": "//form[@id=\"form-business\"]",
-        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]"
-      },
-      "tagName": "form",
-      "timestamp": 1764134307955,
-      "type": "submit",
-      "url": "https://www.rightdev.co.uk/"
-    },
-    {
-      "id": "act_028",
       "type": "navigation",
-      "timestamp": 1764134309066,
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1",
-      "from": "https://www.rightdev.co.uk/",
-      "to": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1",
-      "navigationTrigger": "back",
+      "timestamp": 22029,
+      "completedAt": 22029,
+      "url": "https://www.rightbiz.co.uk/franchise-for-sale/",
+      "from": "https://www.rightbiz.co.uk/",
+      "to": "https://www.rightbiz.co.uk/franchise-for-sale/",
+      "navigationTrigger": "click",
       "waitUntil": "load",
       "duration": 0
-    },
-    {
-      "element": "window",
-      "id": "act_029",
-      "scrollX": 0,
-      "scrollY": 400,
-      "timestamp": 1764134310771,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 176.59999084472656,
-        "y": 124.39999771118164
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_030",
-      "modifiers": [],
-      "selector": {
-        "css": "ul#listings_cn > li.content__body__item.shadow > div.content__body__item-img > div.content__body__item-img__wrapper > a.content__body__item-img-list > img",
-        "position": {
-          "index": 0,
-          "parent": "a.content__body__item-img-list"
-        },
-        "priority": [
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//img[1]",
-        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[2]/div[1]/div[1]/a[1]/img[1]"
-      },
-      "tagName": "img",
-      "text": "",
-      "timestamp": 1764134311229,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 176.59999084472656,
-        "y": 124.39999771118164
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_031",
-      "modifiers": [],
-      "selector": {
-        "css": "ul#listings_cn > li.content__body__item.shadow > div.content__body__item-img > div.content__body__item-img__wrapper > a.content__body__item-img-list > img",
-        "position": {
-          "index": 0,
-          "parent": "a.content__body__item-img-list"
-        },
-        "priority": [
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//img[1]",
-        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[2]/div[1]/div[1]/a[1]/img[1]"
-      },
-      "tagName": "img",
-      "text": "",
-      "timestamp": 1764134311368,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "id": "act_032",
-      "type": "navigation",
-      "timestamp": 1764134311760,
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html",
-      "from": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1",
-      "to": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html",
-      "navigationTrigger": "back",
-      "waitUntil": "load",
-      "duration": 0
-    },
-    {
-      "element": "window",
-      "id": "act_033",
-      "scrollX": 0,
-      "scrollY": 300,
-      "timestamp": 1764134313372,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 63,
-        "y": 14.199996948242188
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_034",
-      "modifiers": [],
-      "selector": {
-        "css": "div.content__contact > div.content__contact__card > div.content__contact__card-body > ul.btn__list > li > a.save_listing",
-        "id": "view-listing-save-btn",
-        "position": {
-          "index": 0,
-          "parent": "li"
-        },
-        "priority": [
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "Save",
-        "xpath": "//a[@id=\"view-listing-save-btn\"]",
-        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/ul[1]/li[3]/a[1]"
-      },
-      "tagName": "a",
-      "text": "Save",
-      "timestamp": 1764134314205,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 63,
-        "y": 14.199996948242188
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_035",
-      "modifiers": [],
-      "selector": {
-        "css": "div.content__contact > div.content__contact__card > div.content__contact__card-body > ul.btn__list > li > a.save_listing",
-        "id": "view-listing-save-btn",
-        "position": {
-          "index": 0,
-          "parent": "li"
-        },
-        "priority": [
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "Save",
-        "xpath": "//a[@id=\"view-listing-save-btn\"]",
-        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/ul[1]/li[3]/a[1]"
-      },
-      "tagName": "a",
-      "text": "Save",
-      "timestamp": 1764134314320,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_036",
-      "scrollX": 0,
-      "scrollY": 500,
-      "timestamp": 1764134315646,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_037",
-      "scrollX": 0,
-      "scrollY": 300,
-      "timestamp": 1764134317076,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_038",
-      "scrollX": 0,
-      "scrollY": 300,
-      "timestamp": 1764134317665,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_039",
-      "scrollX": 0,
-      "scrollY": 300,
-      "timestamp": 1764134318398,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_040",
-      "scrollX": 0,
-      "scrollY": 300,
-      "timestamp": 1764134319728,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_041",
-      "scrollX": 0,
-      "scrollY": 300,
-      "timestamp": 1764134321326,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_042",
-      "scrollX": 0,
-      "scrollY": 300,
-      "timestamp": 1764134322840,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_043",
-      "scrollX": 0,
-      "scrollY": 300,
-      "timestamp": 1764134324578,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_044",
-      "scrollX": 0,
-      "scrollY": 0,
-      "timestamp": 1764134325295,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html"
-    },
-    {
-      "id": "act_045",
-      "type": "navigation",
-      "timestamp": 1764134326196,
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1",
-      "from": "https://www.rightdev.co.uk/buy_business/for_sale/274395_london.html",
-      "to": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1",
-      "navigationTrigger": "back",
-      "waitUntil": "load",
-      "duration": 0
-    },
-    {
-      "element": "window",
-      "id": "act_046",
-      "scrollX": 0,
-      "scrollY": 900,
-      "timestamp": 1764134327467,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "element": "window",
-      "id": "act_047",
-      "scrollX": 0,
-      "scrollY": 1200,
-      "timestamp": 1764134328025,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "element": "window",
-      "id": "act_048",
-      "scrollX": 0,
-      "scrollY": 1400,
-      "timestamp": 1764134329196,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "element": "window",
-      "id": "act_049",
-      "scrollX": 0,
-      "scrollY": 1200,
-      "timestamp": 1764134330212,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 184.59999084472656,
-        "y": 49
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_050",
-      "modifiers": [],
-      "selector": {
-        "css": "ul#listings_cn > li.content__body__item.shadow > div.content__body__item-img > div.content__body__item-img__wrapper > a.content__body__item-img-list > img",
-        "position": {
-          "index": 0,
-          "parent": "a.content__body__item-img-list"
-        },
-        "priority": [
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//img[1]",
-        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[5]/div[1]/div[1]/a[1]/img[1]"
-      },
-      "tagName": "img",
-      "text": "",
-      "timestamp": 1764134330260,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 184.59999084472656,
-        "y": 49
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_051",
-      "modifiers": [],
-      "selector": {
-        "css": "ul#listings_cn > li.content__body__item.shadow > div.content__body__item-img > div.content__body__item-img__wrapper > a.content__body__item-img-list > img",
-        "position": {
-          "index": 0,
-          "parent": "a.content__body__item-img-list"
-        },
-        "priority": [
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//img[1]",
-        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[5]/div[1]/div[1]/a[1]/img[1]"
-      },
-      "tagName": "img",
-      "text": "",
-      "timestamp": 1764134330386,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "id": "act_052",
-      "type": "navigation",
-      "timestamp": 1764134330803,
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/280830_london.html",
-      "from": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1",
-      "to": "https://www.rightdev.co.uk/buy_business/for_sale/280830_london.html",
-      "navigationTrigger": "back",
-      "waitUntil": "load",
-      "duration": 0
-    },
-    {
-      "element": "window",
-      "id": "act_053",
-      "scrollX": 0,
-      "scrollY": 400,
-      "timestamp": 1764134332274,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/280830_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_054",
-      "scrollX": 0,
-      "scrollY": 700,
-      "timestamp": 1764134333447,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/280830_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_055",
-      "scrollX": 0,
-      "scrollY": 200,
-      "timestamp": 1764134334337,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/280830_london.html"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 81,
-        "y": 18.199996948242188
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_056",
-      "modifiers": [],
-      "selector": {
-        "css": "div.content__contact > div.content__contact__card > div.content__contact__card-body > ul.btn__list > li > a.save_listing",
-        "id": "view-listing-save-btn",
-        "position": {
-          "index": 0,
-          "parent": "li"
-        },
-        "priority": [
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "Save",
-        "xpath": "//a[@id=\"view-listing-save-btn\"]",
-        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/ul[1]/li[3]/a[1]"
-      },
-      "tagName": "a",
-      "text": "Save",
-      "timestamp": 1764134334947,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/280830_london.html"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 81,
-        "y": 18.199996948242188
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_057",
-      "modifiers": [],
-      "selector": {
-        "css": "div.content__contact > div.content__contact__card > div.content__contact__card-body > ul.btn__list > li > a.save_listing",
-        "id": "view-listing-save-btn",
-        "position": {
-          "index": 0,
-          "parent": "li"
-        },
-        "priority": [
-          "css",
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "text": "Save",
-        "xpath": "//a[@id=\"view-listing-save-btn\"]",
-        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/ul[1]/li[3]/a[1]"
-      },
-      "tagName": "a",
-      "text": "Save",
-      "timestamp": 1764134335023,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/280830_london.html"
-    },
-    {
-      "element": "window",
-      "id": "act_058",
-      "scrollX": 0,
-      "scrollY": 1400,
-      "timestamp": 1764134336897,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/buy_business/for_sale/280830_london.html"
-    },
-    {
-      "id": "act_059",
-      "type": "navigation",
-      "timestamp": 1764134337892,
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1",
-      "from": "https://www.rightdev.co.uk/buy_business/for_sale/280830_london.html",
-      "to": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1",
-      "navigationTrigger": "back",
-      "waitUntil": "load",
-      "duration": 0
-    },
-    {
-      "element": "window",
-      "id": "act_060",
-      "scrollX": 0,
-      "scrollY": 2200,
-      "timestamp": 1764134339238,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "element": "window",
-      "id": "act_061",
-      "scrollX": 0,
-      "scrollY": 1500,
-      "timestamp": 1764134340318,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "element": "window",
-      "id": "act_062",
-      "scrollX": 0,
-      "scrollY": 800,
-      "timestamp": 1764134340835,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "element": "window",
-      "id": "act_063",
-      "scrollX": 0,
-      "scrollY": 0,
-      "timestamp": 1764134341658,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 89.73748779296875,
-        "y": 13.299995422363281
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_064",
-      "modifiers": [],
-      "selector": {
-        "css": "div.container.navbar-container > div.navbar-wrapper.h-full > ul.navbar-menu > li > div.navbar-menu-dropdown > a.navbar-menu-dropdown-item",
-        "position": {
-          "index": 0,
-          "parent": "div.navbar-menu-dropdown"
-        },
-        "priority": [
-          "xpath",
-          "xpathAbsolute",
-          "position",
-          "text"
-        ],
-        "text": "Sell Your Business",
-        "xpath": "//div[contains(@class, \"navbar-menu-dropdown\")]/a[text()='Sell Your Business']",
-        "xpathAbsolute": "/html/body[1]/nav[1]/div[1]/div[1]/ul[1]/li[3]/div[1]/a[1]"
-      },
-      "tagName": "a",
-      "text": "Sell Your Business",
-      "timestamp": 1764134343485,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1"
-    },
-    {
-      "id": "act_065",
-      "type": "navigation",
-      "timestamp": 1764134343963,
-      "url": "https://www.rightdev.co.uk/sell_business/",
-      "from": "https://www.rightdev.co.uk/search/?more_category=none&sector=gyms&location=london&more_category=&sortby=new&noindex=1",
-      "to": "https://www.rightdev.co.uk/sell_business/",
-      "navigationTrigger": "back",
-      "waitUntil": "load",
-      "duration": 0
-    },
-    {
-      "element": "window",
-      "id": "act_066",
-      "scrollX": 0,
-      "scrollY": 500,
-      "timestamp": 1764134346557,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/sell_business/"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 61.199951171875,
-        "y": 89.54999542236328
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_067",
-      "modifiers": [],
-      "selector": {
-        "css": "div.container > div.carousel-container > div.carousel-body > div.carousel-img > a.sold_ad.item > img",
-        "position": {
-          "index": 0,
-          "parent": "a.sold_ad.item"
-        },
-        "priority": [
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//img[1]",
-        "xpathAbsolute": "/html/body[1]/section[2]/div[1]/div[1]/div[6]/div[1]/a[1]/img[1]"
-      },
-      "tagName": "img",
-      "text": "",
-      "timestamp": 1764134347498,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/sell_business/"
-    },
-    {
-      "button": "left",
-      "clickCount": 1,
-      "coordinates": {
-        "x": 70,
-        "y": 89.54999542236328
-      },
-      "coordinatesRelativeTo": "element",
-      "id": "act_068",
-      "modifiers": [],
-      "selector": {
-        "css": "div.container > div.carousel-container > div.carousel-body > div.carousel-img > a.sold_ad.item > img",
-        "position": {
-          "index": 0,
-          "parent": "a.sold_ad.item"
-        },
-        "priority": [
-          "xpath",
-          "xpathAbsolute",
-          "position"
-        ],
-        "xpath": "//img[1]",
-        "xpathAbsolute": "/html/body[1]/section[2]/div[1]/div[1]/div[6]/div[1]/a[1]/img[1]"
-      },
-      "tagName": "img",
-      "text": "",
-      "timestamp": 1764134347583,
-      "type": "click",
-      "url": "https://www.rightdev.co.uk/sell_business/"
-    },
-    {
-      "element": "window",
-      "id": "act_069",
-      "scrollX": 0,
-      "scrollY": 500,
-      "timestamp": 1764134348235,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/sell_business/"
-    },
-    {
-      "element": "window",
-      "id": "act_070",
-      "scrollX": 0,
-      "scrollY": 500,
-      "timestamp": 1764134350706,
-      "type": "scroll",
-      "url": "https://www.rightdev.co.uk/sell_business/"
     }
   ]
 }

@@ -6,7 +6,8 @@ import type { SelectorStrategy } from './selectors.js';
 export interface BaseAction {
   id: string; // Unique action ID (act_xxx)
   type: ActionType;
-  timestamp: number; // Unix timestamp in milliseconds
+  timestamp: number; // Unix timestamp in milliseconds (action START time)
+  completedAt?: number; // Unix timestamp when action completed (action END time)
   url: string; // Current page URL
   frameId?: string; // iFrame identifier if in frame
   frameUrl?: string; // iFrame URL if in frame
@@ -67,6 +68,18 @@ export interface NavigationAction extends BaseAction {
 }
 
 /**
+ * Hover action (mouse hover over element)
+ */
+export interface HoverAction extends BaseAction {
+  type: 'hover';
+  selector: SelectorStrategy;
+  tagName: string;
+  text?: string;
+  duration: number; // How long user hovered (ms)
+  isDropdownParent?: boolean; // True if hovering to open dropdown
+}
+
+/**
  * Scroll action (window or element)
  */
 export interface ScrollAction extends BaseAction {
@@ -121,6 +134,7 @@ export type ModifierKey = 'ctrl' | 'shift' | 'alt' | 'meta';
 export type ActionType =
   | 'click'
   | 'input'
+  | 'hover'
   | 'select'
   | 'navigation'
   | 'scroll'
@@ -134,6 +148,7 @@ export type ActionType =
 export type Action =
   | ClickAction
   | InputAction
+  | HoverAction
   | SelectAction
   | NavigationAction
   | ScrollAction
@@ -160,6 +175,13 @@ export function isInputAction(action: Action): action is InputAction {
  */
 export function isNavigationAction(action: Action): action is NavigationAction {
   return action.type === 'navigation';
+}
+
+/**
+ * Type guard for HoverAction
+ */
+export function isHoverAction(action: Action): action is HoverAction {
+  return action.type === 'hover';
 }
 
 /**

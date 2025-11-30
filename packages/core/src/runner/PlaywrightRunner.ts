@@ -6,13 +6,13 @@ import {
   type BrowserContext,
   type Page,
 } from 'playwright';
-import type { Recording, Action, ClickAction, InputAction, ScrollAction } from '../types/index.js';
+import type { Recording, Action, ClickAction, InputAction, ScrollAction, HoverAction } from '../types/index.js';
 import type { RunOptions, RunResult, Reporter } from '../types/runner.js';
 import { ElementLocator } from './ElementLocator.js';
 import { NavigationHistoryManager } from './NavigationHistoryManager.js';
 import { NavigationAnalyzer } from './NavigationAnalyzer.js';
 import { RecordingParser } from '../parser/RecordingParser.js';
-import { isClickAction, isInputAction, isScrollAction } from '../types/index.js';
+import { isClickAction, isInputAction, isScrollAction, isHoverAction } from '../types/index.js';
 
 /**
  * Error severity classification
@@ -105,12 +105,33 @@ export class PlaywrightRunner {
       console.log('\n🚀 Phase 2: Launching browser...');
       browser = await this.launchBrowser();
 
-      // Create context with viewport
-      context = await browser.newContext({
-        viewport: recording.viewport,
+      // Determine viewport size based on mode and available data
+      // In non-headless mode with windowSize, use windowSize for visual accuracy
+      // In headless mode or without windowSize, use viewport
+      const effectiveViewport = !this.options.headless && recording.windowSize 
+        ? recording.windowSize 
+        : recording.viewport;
+
+      // Create context with viewport (and devicePixelRatio if available)
+      const contextOptions: any = {
+        viewport: effectiveViewport,
         userAgent: recording.userAgent,
         recordVideo: this.options.video ? { dir: './videos' } : undefined,
-      });
+      };
+
+      // Add devicePixelRatio for high-DPI display emulation
+      if (recording.devicePixelRatio) {
+        contextOptions.deviceScaleFactor = recording.devicePixelRatio;
+      }
+
+      context = await browser.newContext(contextOptions);
+
+      // Log viewport info
+      if (!this.options.headless && recording.windowSize) {
+        console.log(`📐 Using window size: ${recording.windowSize.width}x${recording.windowSize.height} (matches recording)`);
+      } else {
+        console.log(`📐 Using viewport: ${effectiveViewport.width}x${effectiveViewport.height}`);
+      }
 
       // Create page
       page = await context.newPage();
@@ -144,10 +165,15 @@ export class PlaywrightRunner {
         const action = this.processedRecording!.actions[i];
 
         try {
-          // Apply timing delay before action (except first action)
+          // Apply timing delay before action
           if (enableTiming && i > 0) {
             const elapsedTime = Date.now() - testStartTime;
-            const targetTime = action.timestamp * speedMultiplier;
+            const prevAction = this.processedRecording!.actions[i - 1];
+            
+            // Wait until previous action completes, not just starts
+            // Use completedAt if available (new recordings), fallback to timestamp (old recordings)
+            const prevCompletedAt = prevAction.completedAt || prevAction.timestamp;
+            const targetTime = prevCompletedAt * speedMultiplier;
             const delay = Math.min(targetTime - elapsedTime, maxDelay);
 
             if (delay > 0) {
@@ -483,6 +509,8 @@ export class PlaywrightRunner {
       await this.executeClick(page, action);
     } else if (isInputAction(action)) {
       await this.executeInput(page, action);
+    } else if (isHoverAction(action)) {
+      await this.executeHover(page, action);
     } else if (isScrollAction(action)) {
       await this.executeScroll(page, action);
     } else if (action.type === 'navigation') {
@@ -507,7 +535,7 @@ export class PlaywrightRunner {
         // Check if that action already navigated us to target
         if (this.urlsMatch(currentUrl, targetUrl)) {
           console.log(`✓ Recent ${lastActType} action already navigated to target, skipping`);
-          this.navigationHistory.recordNavigation(targetUrl);
+          // Don't record again - click already recorded the navigation
           return;
         }
       }
@@ -605,7 +633,7 @@ export class PlaywrightRunner {
   }
 
   /**
-   * Execute click action with enhanced error handling and navigation tracking
+   * Execute click action with exact mouse coordinates and navigation tracking
    */
   private async executeClick(page: Page, action: ClickAction): Promise<void> {
     const urlBeforeClick = page.url();
@@ -618,16 +646,50 @@ export class PlaywrightRunner {
       await page.keyboard.press('Escape').catch(() => {});
       await page.waitForTimeout(100);
 
-      await Promise.race([
-        element.click({
-          button:
-            action.button === 'left' ? 'left' : action.button === 'right' ? 'right' : 'middle',
-          clickCount: action.clickCount,
-          timeout: this.options.timeout,
-          force: false,
-        }),
-        page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
-      ]);
+      // Use exact mouse coordinates if available
+      if (action.coordinates && action.coordinatesRelativeTo === 'element') {
+        // Get element bounding box
+        const box = await element.boundingBox();
+        if (box) {
+          // Calculate absolute position: element position + relative coordinates
+          const absoluteX = box.x + action.coordinates.x;
+          const absoluteY = box.y + action.coordinates.y;
+
+          // Click at exact recorded position
+          await Promise.race([
+            page.mouse.click(absoluteX, absoluteY, {
+              button:
+                action.button === 'left' ? 'left' : action.button === 'right' ? 'right' : 'middle',
+              clickCount: action.clickCount,
+            }),
+            page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
+          ]);
+        } else {
+          // Fallback to center click if bounding box unavailable
+          await Promise.race([
+            element.click({
+              button:
+                action.button === 'left' ? 'left' : action.button === 'right' ? 'right' : 'middle',
+              clickCount: action.clickCount,
+              timeout: this.options.timeout,
+              force: false,
+            }),
+            page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
+          ]);
+        }
+      } else {
+        // Fallback to center click for viewport/document coordinates or missing coordinates
+        await Promise.race([
+          element.click({
+            button:
+              action.button === 'left' ? 'left' : action.button === 'right' ? 'right' : 'middle',
+            clickCount: action.clickCount,
+            timeout: this.options.timeout,
+            force: false,
+          }),
+          page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
+        ]);
+      }
 
       await page.waitForTimeout(300);
 
@@ -660,6 +722,31 @@ export class PlaywrightRunner {
   }
 
   /**
+   * Execute hover action with exact duration timing
+   */
+  private async executeHover(page: Page, action: HoverAction): Promise<void> {
+    try {
+      const element = await this.elementLocator.findElement(page, action.selector);
+      await element.waitFor({ state: 'visible', timeout: this.options.timeout });
+
+      // Hover over the element
+      await element.hover();
+
+      // NOTE: We don't wait for action.duration here because the timestamp-based
+      // timing between actions already accounts for hover duration. The next action's
+      // timestamp tells us exactly when to proceed, so adding duration would double
+      // the wait time and make execution longer than the original recording.
+    } catch (error: any) {
+      // If element not found or disappeared, continue (hover is non-critical)
+      if (error.message?.includes('Element not found')) {
+        console.warn(`⚠️ Hover target not found, continuing`);
+        return;
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Execute input action
    */
   private async executeInput(page: Page, action: InputAction): Promise<void> {
@@ -671,10 +758,15 @@ export class PlaywrightRunner {
     // Clear existing value
     await element.clear();
 
-    // Type value
-    if (action.simulationType === 'type' && action.typingDelay) {
+    // Type value with realistic delay if captured
+    if (action.typingDelay && action.typingDelay > 0) {
+      // Use recorded typing delay for realistic simulation
       await element.type(action.value, { delay: action.typingDelay });
+    } else if (action.simulationType === 'type') {
+      // Default typing delay if simulationType is 'type' but no delay recorded
+      await element.type(action.value, { delay: 100 });
     } else {
+      // Instant fill for setValue simulation type
       await element.fill(action.value);
     }
 
@@ -683,19 +775,59 @@ export class PlaywrightRunner {
   }
 
   /**
-   * Execute scroll action
+   * Execute scroll action with smooth animation
    */
   private async executeScroll(page: Page, action: ScrollAction): Promise<void> {
     if (action.element === 'window') {
-      // Scroll window
+      // Get current scroll position
+      const currentScroll = await page.evaluate(() => ({
+        x: (globalThis as any).window.scrollX,
+        y: (globalThis as any).window.scrollY,
+      }));
+
+      const targetX = action.scrollX;
+      const targetY = action.scrollY;
+      const deltaX = targetX - currentScroll.x;
+      const deltaY = targetY - currentScroll.y;
+
+      // Calculate distance and steps for smooth scrolling
+      const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+      const duration = Math.min(800, Math.max(200, distance / 2)); // 200-800ms based on distance
+      const steps = Math.ceil(duration / 16); // 60fps = 16ms per frame
+
+      // Smooth scroll animation
+      for (let i = 1; i <= steps; i++) {
+        const progress = i / steps;
+        // Ease-out cubic for natural deceleration
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const currentX = currentScroll.x + deltaX * eased;
+        const currentY = currentScroll.y + deltaY * eased;
+
+        await page.evaluate(
+          ({ x, y }: { x: number; y: number }) => {
+            (globalThis as any).window.scrollTo(x, y);
+          },
+          { x: Math.round(currentX), y: Math.round(currentY) }
+        );
+
+        // Wait one frame (16ms for 60fps)
+        if (i < steps) {
+          await page.waitForTimeout(16);
+        }
+      }
+
+      // Ensure we reached exact target
       await page.evaluate(
         ({ x, y }: { x: number; y: number }) => {
           (globalThis as any).window.scrollTo(x, y);
         },
-        { x: action.scrollX, y: action.scrollY }
+        { x: targetX, y: targetY }
       );
+
+      // Wait for scroll to settle
+      await page.waitForTimeout(100);
     } else {
-      // Scroll element
+      // Element scroll - use instant for now (can enhance later)
       const element = await this.elementLocator.findElement(page, action.element);
       await element.evaluate(
         (el: any, { x, y }: { x: number; y: number }) => {
@@ -704,10 +836,9 @@ export class PlaywrightRunner {
         },
         { x: action.scrollX, y: action.scrollY }
       );
-    }
 
-    // Wait for scroll to complete
-    await page.waitForTimeout(200);
+      await page.waitForTimeout(100);
+    }
   }
 
   /**

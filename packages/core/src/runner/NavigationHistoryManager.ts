@@ -68,7 +68,22 @@ export class NavigationHistoryManager {
 
         // Go back multiple times if needed
         for (let i = 0; i < strategy.distance; i++) {
-          await page.goBack({ waitUntil: 'domcontentloaded', timeout: 10000 });
+          try {
+            // Use commit instead of load/domcontentloaded for cached pages
+            await page.goBack({ waitUntil: 'commit', timeout: 5000 });
+          } catch (backError: any) {
+            // If goBack times out, check if URL actually changed
+            console.warn(`⚠️ goBack() timeout, checking if navigation succeeded...`);
+            const currentUrl = page.url();
+            
+            // If we're on a different URL, consider it successful
+            if (currentUrl !== this.historyStack[this.currentIndex]) {
+              console.log(`✓ URL changed to ${currentUrl}, continuing`);
+            } else {
+              // goBack truly failed, use fallback
+              throw backError;
+            }
+          }
           this.currentIndex--;
         }
 
@@ -81,7 +96,8 @@ export class NavigationHistoryManager {
           return { success: true, method: 'goto-fallback' };
         }
 
-        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+        // Wait for page to be interactive (short timeout, best effort)
+        await page.waitForLoadState('domcontentloaded', { timeout: 3000 }).catch(() => {});
         return { success: true, method: 'goBack' };
       } else if (strategy.method === 'goForward') {
         console.log(`🔜 Going forward ${strategy.distance} step(s) to ${targetUrl}`);

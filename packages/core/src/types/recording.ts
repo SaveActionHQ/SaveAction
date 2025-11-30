@@ -13,6 +13,15 @@ export interface Recording {
     width: number;
     height: number;
   };
+  windowSize?: { // Browser window size including chrome (optional for backward compat)
+    width: number;
+    height: number;
+  };
+  screenSize?: { // Monitor resolution (optional for backward compat)
+    width: number;
+    height: number;
+  };
+  devicePixelRatio?: number; // Device pixel ratio for high-DPI displays (optional)
   userAgent: string;
   actions: Action[];
   version: string; // Schema version (semantic versioning)

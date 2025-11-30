@@ -16,6 +16,15 @@ const recordingSchema = z.object({
     width: z.number(),
     height: z.number(),
   }),
+  windowSize: z.object({
+    width: z.number(),
+    height: z.number(),
+  }).optional(),
+  screenSize: z.object({
+    width: z.number(),
+    height: z.number(),
+  }).optional(),
+  devicePixelRatio: z.number().optional(),
   userAgent: z.string(),
   actions: z.array(z.any()), // We'll validate individual actions later
 });
