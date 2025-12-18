@@ -12,6 +12,7 @@ export interface RunResult {
   errors: ActionError[];
   video?: string; // path to video file
   timingEnabled?: boolean; // Whether timing delays were used
+  skippedActions?: SkippedAction[]; // Phase 2: Track skipped optional actions
 }
 
 /**
@@ -22,6 +23,24 @@ export interface ActionError {
   actionType: string;
   error: string;
   timestamp: number;
+}
+
+/**
+ * Skipped action (Phase 2)
+ */
+export interface SkippedAction {
+  action: Action;
+  reason: string; // Why skipped
+}
+
+/**
+ * Action execution result (Phase 2)
+ */
+export interface ActionResult {
+  action: Action;
+  status: 'success' | 'failed' | 'skipped';
+  duration: number;
+  error?: string;
 }
 
 /**
@@ -39,6 +58,9 @@ export interface RunOptions {
   timingMode?: 'realistic' | 'fast' | 'instant'; // Preset timing modes
   speedMultiplier?: number; // Default: 1.0 - manual speed control
   maxActionDelay?: number; // Default: 30000ms - safety cap for delays
+
+  // Phase 2: Error handling
+  continueOnError?: boolean; // Default: false - continue after non-fatal errors
 }
 
 /**
