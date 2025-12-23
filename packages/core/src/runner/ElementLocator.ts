@@ -1,15 +1,312 @@
 import type { Page, Locator } from 'playwright';
-import type { SelectorStrategy } from '../types/index.js';
+import type { SelectorStrategy, SelectorWithMetadata, ContentSignature } from '../types/index.js';
 
 /**
  * Locates elements using multi-strategy fallback approach with intelligent handling of multiple matches
  */
 export class ElementLocator {
   /**
-   * Find element using selector strategy with priority fallback and retry logic
+   * Find element using selector strategy with priority fallback and retry logic (LEGACY)
    * Enhanced with smart visibility recovery for hidden elements
    */
-  async findElement(page: Page, selector: SelectorStrategy): Promise<Locator> {
+  async findElement(page: Page, selector: SelectorStrategy): Promise<Locator>;
+
+  /**
+   * Find element using Phase 2 multi-strategy selectors with priority and confidence
+   */
+  async findElement(
+    page: Page,
+    selectors: SelectorWithMetadata[],
+    contentSignature?: ContentSignature
+  ): Promise<Locator | null>;
+
+  /**
+   * Implementation supporting both legacy and Phase 2 signatures
+   */
+  async findElement(
+    page: Page,
+    selectorOrSelectors: SelectorStrategy | SelectorWithMetadata[],
+    contentSignature?: ContentSignature
+  ): Promise<Locator | null> {
+    // Check if this is Phase 2 multi-strategy selector
+    if (Array.isArray(selectorOrSelectors)) {
+      return this.findElementWithMetadata(page, selectorOrSelectors, contentSignature);
+    }
+
+    // Legacy path - use existing logic
+    return this.findElementLegacy(page, selectorOrSelectors);
+  }
+
+  /**
+   * Phase 2: Find element with priority-sorted selectors and content signature fallback
+   * Enhanced with retry logic for dynamically-loaded content
+   */
+  private async findElementWithMetadata(
+    page: Page,
+    selectors: SelectorWithMetadata[],
+    contentSignature?: ContentSignature
+  ): Promise<Locator | null> {
+    // Sort by priority (ascending - lower priority number = higher priority)
+    // **FIX: Always prefer CSS/xpath/semantic selectors over text-content for buttons**
+    const sortedSelectors = [...selectors].sort((a, b) => {
+      // Check if we're dealing with button-related selectors
+      const aIsButtonCss = a.strategy === 'css' && typeof a.value === 'string' && a.value.includes('button');
+      const bIsButtonCss = b.strategy === 'css' && typeof b.value === 'string' && b.value.includes('button');
+      const aIsTextContent = a.strategy === 'text-content';
+      const bIsTextContent = b.strategy === 'text-content';
+      
+      // Always prioritize button CSS over text-content
+      if (aIsButtonCss && bIsTextContent) {
+        console.log(`  🎯 Boosting button CSS selector over text-content`);
+        return -1; // A comes first
+      }
+      if (bIsButtonCss && aIsTextContent) {
+        console.log(`  🎯 Boosting button CSS selector over text-content`);
+        return 1; // B comes first
+      }
+      
+      // For button clicks, also prefer css-semantic over text-content
+      const aIsCssSemantic = a.strategy === 'css-semantic';
+      const bIsCssSemantic = b.strategy === 'css-semantic';
+      
+      if (aIsCssSemantic && bIsTextContent) {
+        console.log(`  🎯 Boosting css-semantic over text-content`);
+        return -1;
+      }
+      if (bIsCssSemantic && aIsTextContent) {
+        console.log(`  🎯 Boosting css-semantic over text-content`);
+        return 1;
+      }
+      
+      // Otherwise use normal priority sorting
+      return a.priority - b.priority;
+    });
+
+    console.log(`🔍 Trying ${sortedSelectors.length} selector strategies in priority order...`);
+
+    // **FIX #1: Retry with exponential backoff for dynamic content**
+    const maxRetries = 3;
+    const retryDelays = [1000, 2000, 3000]; // 1s, 2s, 3s
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      // Try each selector in priority order
+      for (const selector of sortedSelectors) {
+        try {
+          const locator = await this.getLocatorByStrategy(page, selector);
+
+          // Check if element exists
+          const count = await locator.count();
+
+          if (count === 0) {
+            if (attempt === 0) {
+              console.log(`✗ ${selector.strategy} (priority ${selector.priority}): not found`);
+            }
+            continue;
+          }
+
+          // For high-confidence selectors, ensure single match
+          if (selector.confidence >= 80) {
+            if (count === 1) {
+              console.log(
+                `✓ Found using ${selector.strategy} (priority ${selector.priority}, confidence ${selector.confidence}%)`
+              );
+              await locator.waitFor({ state: 'attached', timeout: 5000 });
+              return locator;
+            } else {
+              console.log(
+                `⚠️ ${selector.strategy} matched ${count} elements (too many for high confidence ${selector.confidence}%)`
+              );
+              continue;
+            }
+          } else {
+            // Lower confidence - accept first match
+            console.log(
+              `⚠️ Found using ${selector.strategy} (priority ${selector.priority}, low confidence ${selector.confidence}%)`
+            );
+            await locator.first().waitFor({ state: 'attached', timeout: 5000 });
+            return locator.first();
+          }
+        } catch (error: any) {
+          if (attempt === 0) {
+            console.log(`✗ ${selector.strategy} failed: ${error.message?.split('\n')[0]}`);
+          }
+          continue;
+        }
+      }
+
+      // If not found on this attempt and we have retries left
+      if (attempt < maxRetries) {
+        const delay = retryDelays[attempt];
+        console.log(
+          `⏳ Element not found, waiting ${delay}ms for dynamic content to load (attempt ${attempt + 1}/${maxRetries})...`
+        );
+        await page.waitForTimeout(delay);
+
+        // Also wait for any pending network requests
+        try {
+          await page.waitForLoadState('networkidle', { timeout: 3000 });
+        } catch {
+          // Network might not settle, continue anyway
+        }
+      }
+    }
+
+    // Fallback: Try content signature if available
+    if (contentSignature) {
+      console.log('⚡ Trying content signature fallback...');
+      const result = await this.findByContentSignature(page, contentSignature);
+      if (result) {
+        return result;
+      }
+    }
+
+    // Element not found - return null instead of throwing
+    console.warn(`⚠️ Element not found after trying ${sortedSelectors.length} strategies`);
+    return null;
+  }
+
+  /**
+   * Phase 2: Get Playwright locator based on selector strategy and value
+   * **FIX #2: Respect context scoping for more precise element matching**
+   */
+  private async getLocatorByStrategy(page: Page, selector: SelectorWithMetadata): Promise<Locator> {
+    switch (selector.strategy) {
+      case 'id':
+        return page.locator(`#${selector.value}`);
+
+      case 'aria-label':
+        return page.getByLabel(selector.value);
+
+      case 'name':
+        return page.locator(`[name="${selector.value}"]`);
+
+      case 'text-content':
+        // **FIX: Use context to scope text search**
+        if ((selector as any).context) {
+          const context = (selector as any).context;
+          // Search within context container (e.g., .swal2-actions, .modal-body, etc.)
+          return page.locator(`.${context}`).getByText(selector.value, { exact: false });
+        }
+        return page.getByText(selector.value, { exact: false });
+
+      case 'css-semantic':
+        // **FIX: Handle Playwright's :has-text() pseudo-selector**
+        // Convert recorder's css-semantic to Playwright's locator syntax
+        return page.locator(selector.value);
+
+      case 'href-pattern':
+        // **FIX: Handle href pattern matching for links**
+        return page.locator(`a[href*="${selector.value}"]`);
+
+      case 'src-pattern':
+        // Match images with src containing pattern
+        return page.locator(`img[src*="${selector.value}"]`);
+
+      case 'css':
+        return page.locator(selector.value);
+
+      case 'xpath':
+        return page.locator(`xpath=${selector.value}`);
+
+      case 'position':
+        // Position-based selector
+        if (typeof selector.value === 'string') {
+          // Handle string format: "parent > :nth-child(n)"
+          return page.locator(selector.value);
+        } else {
+          // Handle object format: { parent, index }
+          const { parent, index } = selector.value as { parent: string; index: number };
+          return page.locator(`${parent} > :nth-child(${index + 1})`);
+        }
+
+      default:
+        throw new Error(`Unknown selector strategy: ${selector.strategy}`);
+    }
+  }
+
+  /**
+   * Phase 2: Find element by content signature
+   */
+  private async findByContentSignature(
+    page: Page,
+    signature: ContentSignature
+  ): Promise<Locator | null> {
+    const { elementType, contentFingerprint } = signature;
+
+    // Build content-based locators
+    const attempts: { selector: string; description: string }[] = [];
+
+    if (contentFingerprint.heading) {
+      attempts.push({
+        selector: `${elementType}:has-text("${contentFingerprint.heading}")`,
+        description: `heading "${contentFingerprint.heading}"`,
+      });
+    }
+
+    if (contentFingerprint.linkHref) {
+      attempts.push({
+        selector: `a[href*="${contentFingerprint.linkHref}"]`,
+        description: `link with href containing "${contentFingerprint.linkHref}"`,
+      });
+    }
+
+    if (contentFingerprint.imageSrc) {
+      attempts.push({
+        selector: `img[src*="${contentFingerprint.imageSrc}"]`,
+        description: `image with src containing "${contentFingerprint.imageSrc}"`,
+      });
+    }
+
+    if (contentFingerprint.price) {
+      attempts.push({
+        selector: `${elementType}:has-text("${contentFingerprint.price}")`,
+        description: `price "${contentFingerprint.price}"`,
+      });
+    }
+
+    // Try each content selector
+    for (const attempt of attempts) {
+      try {
+        const locator = page.locator(attempt.selector);
+        const count = await locator.count();
+
+        if (count > 0) {
+          console.log(`✓ Found by content: ${attempt.description}`);
+          await locator.first().waitFor({ state: 'attached', timeout: 5000 });
+          return locator.first();
+        }
+      } catch (error) {
+        continue;
+      }
+    }
+
+    // Try fallback position if available
+    if (signature.fallbackPosition !== undefined && signature.listContainer) {
+      try {
+        const locator = page.locator(
+          `${signature.listContainer} > ${elementType}:nth-child(${signature.fallbackPosition + 1})`
+        );
+        const count = await locator.count();
+
+        if (count > 0) {
+          console.log(
+            `⚠️ Using fallback position ${signature.fallbackPosition} in ${signature.listContainer}`
+          );
+          await locator.waitFor({ state: 'attached', timeout: 5000 });
+          return locator;
+        }
+      } catch (error) {
+        // Fallback position didn't work
+      }
+    }
+
+    return null;
+  }
+
+  /**
+   * Legacy implementation - maintains backward compatibility
+   */
+  private async findElementLegacy(page: Page, selector: SelectorStrategy): Promise<Locator> {
     const maxRetries = 3;
     const baseDelay = 500;
 
@@ -17,7 +314,7 @@ export class ElementLocator {
       try {
         // Try selectors in priority order
         for (const selectorType of selector.priority) {
-          const selectorValue = selector[selectorType];
+          const selectorValue = (selector as any)[selectorType];
           if (!selectorValue) continue;
 
           try {
@@ -303,10 +600,46 @@ export class ElementLocator {
           const buttonSelector = value.replace(/\s*>\s*span$/, '');
           return page.locator(`${value}, ${buttonSelector}`);
         }
+
+        // Special handling: Modal library selectors (SweetAlert, Bootstrap, etc.)
+        // If selector has complex parent chain with modal classes, add simpler fallback
+        const modalPatterns = ['.swal2-', '.modal-', '.sweetalert-', '.dialog-', '.popup-'];
+        const hasModalPattern = modalPatterns.some((pattern) => value.includes(pattern));
+        const hasParentChain = value.includes('>');
+
+        if (hasModalPattern && hasParentChain) {
+          // Extract the final target selector (after last >)
+          const parts = value.split('>').map((p: string) => p.trim());
+          const targetSelector = parts[parts.length - 1];
+
+          // Also create more lenient parent selectors (SweetAlert adds dynamic classes)
+          // Example: div.swal2-container.swal2-center becomes div.swal2-container
+          const lenientParts = parts.map((part: string) => {
+            // If part has swal2-container, keep only the base class
+            if (part.includes('.swal2-container')) {
+              return 'div.swal2-container';
+            }
+            // If part has swal2-popup, keep only base class
+            if (part.includes('.swal2-popup')) {
+              return 'div.swal2-popup';
+            }
+            return part;
+          });
+          const lenientSelector = lenientParts.join(' > ');
+
+          // Create multiple fallbacks: original OR lenient parent chain OR simple target
+          console.log(`🔍 Modal selector with fallbacks: ${targetSelector}`);
+          return page.locator(`${value}, ${lenientSelector}, ${targetSelector}`);
+        }
+
         return page.locator(value);
 
       case 'xpath':
+        return page.locator(`xpath=${value}`);
+
       case 'xpathAbsolute':
+        // For absolute XPath, check if it's a modal element and prefer simpler strategies
+        // Absolute XPath is fragile for dynamic modals
         return page.locator(`xpath=${value}`);
 
       case 'text':

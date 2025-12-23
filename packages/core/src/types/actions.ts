@@ -1,6 +1,74 @@
 import type { SelectorStrategy } from './selectors.js';
 
 /**
+ * Selector with metadata for priority-based fallback (Phase 2)
+ */
+export interface SelectorWithMetadata {
+  strategy:
+    | 'id'
+    | 'aria-label'
+    | 'name'
+    | 'text-content'
+    | 'src-pattern'
+    | 'css'
+    | 'xpath'
+    | 'position'
+    | 'css-semantic' // CSS with :has-text() pseudo-selector
+    | 'href-pattern'; // Link href pattern matching
+  value: any;
+  context?: string; // Optional context for scoped searches (e.g., "swal2-actions")
+  priority: number; // 1-11 (lower = higher priority)
+  confidence: number; // 0-100 (higher = more reliable)
+}
+
+/**
+ * Content signature for fallback element identification (Phase 2)
+ */
+export interface ContentSignature {
+  elementType: string; // 'div', 'li', 'article', etc.
+  listContainer?: string; // CSS selector for parent list
+  contentFingerprint: {
+    heading?: string;
+    subheading?: string;
+    imageAlt?: string;
+    imageSrc?: string;
+    linkHref?: string;
+    price?: string;
+    rating?: string;
+  };
+  visualHints?: {
+    position?: number;
+    nearText?: string;
+  };
+  fallbackPosition?: number; // Last resort: position in list
+}
+
+/**
+ * Navigation intent metadata from recorder
+ */
+export interface NavigationIntentMetadata {
+  navigationIntent?:
+    | 'checkout-complete'
+    | 'submit-form'
+    | 'close-modal-and-redirect'
+    | 'navigate-to-page'
+    | 'logout'
+    | 'none';
+  expectedUrlChange?: {
+    type: 'success' | 'redirect' | 'same-page' | 'error';
+    patterns: string[];
+    isSuccessFlow: boolean;
+    beforeUrl?: string;
+    afterUrl?: string;
+  };
+  isTerminalAction?: boolean;
+  actionGroup?: string;
+  dependentActions?: string[];
+  isInsideModal?: boolean;
+  modalId?: string;
+}
+
+/**
  * Base interface for all action types
  */
 export interface BaseAction {
@@ -12,6 +80,18 @@ export interface BaseAction {
   frameId?: string; // iFrame identifier if in frame
   frameUrl?: string; // iFrame URL if in frame
   frameSelector?: string; // Selector to target frame
+  context?: NavigationIntentMetadata; // Navigation intent metadata from recorder
+
+  // Phase 2: Optional action flags
+  isOptional?: boolean;
+  skipIfNotFound?: boolean;
+  reason?: string; // Why optional (e.g., "modal-close-button", "hover-preview")
+
+  // Phase 2: Multi-strategy selectors (for new recordings)
+  selectors?: SelectorWithMetadata[];
+
+  // Phase 2: Content signature for fallback
+  contentSignature?: ContentSignature;
 }
 
 /**
@@ -19,7 +99,7 @@ export interface BaseAction {
  */
 export interface ClickAction extends BaseAction {
   type: 'click';
-  selector: SelectorStrategy; // Multi-strategy selector object
+  selector: SelectorStrategy; // Multi-strategy selector object (legacy)
   tagName: string;
   text?: string; // Button/link text content
   coordinates: { x: number; y: number };
@@ -27,6 +107,19 @@ export interface ClickAction extends BaseAction {
   button: 'left' | 'right' | 'middle';
   clickCount: number; // 1 = single, 2 = double
   modifiers: ModifierKey[]; // ['ctrl', 'shift', 'alt', 'meta']
+
+  // Phase 2: Modal context support
+  modalContext?: {
+    withinModal: boolean;
+    modalDetected: boolean;
+    modalId?: string;
+    requiresModalState?: boolean;
+  };
+
+  // Phase 2.5: AJAX form detection support (from recorder)
+  expectsNavigation?: boolean; // False for AJAX forms that don't cause page navigation
+  isAjaxForm?: boolean; // True for forms that submit via AJAX without redirecting
+  clickType?: 'standard' | 'submit' | 'toggle-input' | 'dropdown-trigger'; // Type classification
 }
 
 /**
@@ -124,6 +217,20 @@ export interface CheckpointAction extends BaseAction {
 }
 
 /**
+ * Modal lifecycle event (Phase 2)
+ */
+export interface ModalLifecycleAction extends BaseAction {
+  type: 'modal-lifecycle';
+  event: 'modal-opened' | 'modal-state-changed' | 'modal-closed';
+  modalElement: {
+    id: string | null;
+    classes: string | null;
+    role: string | null;
+    zIndex: string | null;
+  };
+}
+
+/**
  * Modifier keys (Ctrl, Shift, Alt, Meta/Cmd)
  */
 export type ModifierKey = 'ctrl' | 'shift' | 'alt' | 'meta';
@@ -140,7 +247,8 @@ export type ActionType =
   | 'scroll'
   | 'keypress'
   | 'submit'
-  | 'checkpoint';
+  | 'checkpoint'
+  | 'modal-lifecycle'; // Phase 2
 
 /**
  * Union type of all actions
@@ -154,7 +262,8 @@ export type Action =
   | ScrollAction
   | KeypressAction
   | SubmitAction
-  | CheckpointAction;
+  | CheckpointAction
+  | ModalLifecycleAction; // Phase 2
 
 /**
  * Type guard for ClickAction
@@ -189,4 +298,18 @@ export function isHoverAction(action: Action): action is HoverAction {
  */
 export function isScrollAction(action: Action): action is ScrollAction {
   return action.type === 'scroll';
+}
+
+/**
+ * Type guard for SelectAction
+ */
+export function isSelectAction(action: Action): action is SelectAction {
+  return action.type === 'select';
+}
+
+/**
+ * Type guard for ModalLifecycleAction (Phase 2)
+ */
+export function isModalLifecycleAction(action: Action): action is ModalLifecycleAction {
+  return action.type === 'modal-lifecycle';
 }

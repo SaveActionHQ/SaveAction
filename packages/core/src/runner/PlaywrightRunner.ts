@@ -6,13 +6,30 @@ import {
   type BrowserContext,
   type Page,
 } from 'playwright';
-import type { Recording, Action, ClickAction, InputAction, ScrollAction, HoverAction } from '../types/index.js';
+import type {
+  Recording,
+  Action,
+  ClickAction,
+  InputAction,
+  ScrollAction,
+  HoverAction,
+  SelectAction,
+  SelectorStrategy,
+  ModalLifecycleAction,
+} from '../types/index.js';
 import type { RunOptions, RunResult, Reporter } from '../types/runner.js';
 import { ElementLocator } from './ElementLocator.js';
 import { NavigationHistoryManager } from './NavigationHistoryManager.js';
 import { NavigationAnalyzer } from './NavigationAnalyzer.js';
 import { RecordingParser } from '../parser/RecordingParser.js';
-import { isClickAction, isInputAction, isScrollAction, isHoverAction } from '../types/index.js';
+import {
+  isClickAction,
+  isInputAction,
+  isScrollAction,
+  isHoverAction,
+  isSelectAction,
+  isModalLifecycleAction,
+} from '../types/index.js';
 
 /**
  * Error severity classification
@@ -34,6 +51,15 @@ export class PlaywrightRunner {
   private reporter?: Reporter;
   private lastAction?: { action: Action; timestamp: number };
   private processedRecording?: Recording;
+  private skippedActionGroups: Set<string> = new Set();
+  private lastClickedElement?: { selector: SelectorStrategy; timestamp: number };
+
+  // Phase 2: Modal state tracking
+  private modalState = new Map<string, boolean>();
+
+  // Navigation stabilization tracking
+  private lastNavigationTimestamp: number = 0;
+  private skipNextPageValidation: boolean = false;
 
   constructor(options: RunOptions = {}, reporter?: Reporter) {
     this.options = {
@@ -46,11 +72,122 @@ export class PlaywrightRunner {
       timingMode: options.timingMode ?? 'realistic',
       speedMultiplier: options.speedMultiplier ?? 1.0,
       maxActionDelay: options.maxActionDelay ?? 30000,
+      continueOnError: options.continueOnError ?? false, // Phase 2
     };
     this.elementLocator = new ElementLocator();
     this.navigationHistory = new NavigationHistoryManager();
     this.navigationAnalyzer = new NavigationAnalyzer();
     this.reporter = reporter;
+  }
+
+  /**
+   * Sort actions by timestamp to ensure correct chronological execution order
+   * Fixes issue where JSON array order doesn't match actual recording timeline
+   */
+  private sortActionsByTimestamp(actions: Action[]): Action[] {
+    const sorted = [...actions].sort((a, b) => a.timestamp - b.timestamp);
+
+    // Validate and warn if order changed significantly
+    let reorderedCount = 0;
+    for (let i = 0; i < actions.length; i++) {
+      if (actions[i].id !== sorted[i].id) {
+        reorderedCount++;
+      }
+    }
+
+    if (reorderedCount > 0) {
+      console.log(`   ⚠️  Reordered ${reorderedCount} actions to match actual timeline`);
+    }
+
+    return sorted;
+  }
+
+  /**
+   * Deduplicate input actions - keep only the final value for each field
+   * Eliminates backspace/correction noise during typing
+   */
+  private deduplicateInputActions(actions: Action[]): Action[] {
+    const inputsByField = new Map<string, { action: InputAction; timestamp: number }>();
+
+    // First pass: identify all input actions and keep track of latest per field BY TIMESTAMP
+    actions.forEach((action) => {
+      if (isInputAction(action)) {
+        const fieldKey = this.getFieldKey(action);
+        const existingEntry = inputsByField.get(fieldKey);
+
+        console.log(
+          `   [DEBUG] Found input action ${action.id}: fieldKey="${fieldKey}", timestamp=${action.timestamp}, value="${action.value?.substring(0, 15)}..."`
+        );
+
+        // Keep the input action with the LATEST timestamp (most recent typing)
+        if (!existingEntry || action.timestamp > existingEntry.timestamp) {
+          console.log(`      → Keeping ${action.id} for ${fieldKey} (newer)`);
+          inputsByField.set(fieldKey, { action, timestamp: action.timestamp });
+        } else {
+          console.log(
+            `      → Skipping ${action.id} for ${fieldKey} (older than ${existingEntry.action.id})`
+          );
+        }
+      }
+    });
+
+    // Second pass: filter out intermediate inputs, keep only final values
+    const deduplicatedActions = actions.filter((action) => {
+      if (!isInputAction(action)) return true;
+
+      const fieldKey = this.getFieldKey(action);
+      const latestEntry = inputsByField.get(fieldKey);
+
+      // Keep only the input action with the latest timestamp for this field
+      return latestEntry && action.timestamp === latestEntry.timestamp;
+    });
+
+    const removedCount = actions.length - deduplicatedActions.length;
+    if (removedCount > 0) {
+      console.log(
+        `   ✅ Removed ${removedCount} intermediate input actions (keeping final values)`
+      );
+
+      // Debug: Show which input actions were kept
+      const keptInputs = deduplicatedActions.filter((a) => isInputAction(a));
+      console.log(`   🔍 Kept ${keptInputs.length} final input actions:`);
+      keptInputs.forEach((action) => {
+        const inputAction = action as InputAction;
+        const fieldId = inputAction.selector.id || inputAction.selector.name || 'unknown';
+        const valuePreview = inputAction.value?.substring(0, 20) || '(empty)';
+        console.log(
+          `      - ${action.id}: ${fieldId} = "${valuePreview}..." (timestamp: ${action.timestamp})`
+        );
+      });
+    }
+
+    return deduplicatedActions;
+  }
+
+  /**
+   * Generate unique key for form field (for deduplication)
+   */
+  private getFieldKey(action: InputAction): string {
+    const selector = action.selector;
+    const url = action.url;
+
+    // Use ID + URL if available (most stable - distinguishes same field on different pages)
+    if (selector.id) {
+      return `${url}:id:${selector.id}`;
+    }
+
+    // Use name attribute + URL (common for forms)
+    if (selector.name) {
+      return `${url}:name:${selector.name}`;
+    }
+
+    // Fallback to CSS selector + URL
+    if (selector.css) {
+      return `${url}:css:${selector.css}`;
+    }
+
+    // Last resort: use action URL + type + timestamp
+    return `${url}:${action.type}:${action.timestamp}`;
   }
 
   /**
@@ -88,8 +225,16 @@ export class PlaywrightRunner {
     const parser = new RecordingParser();
     const normalizedRecording = parser.normalizeTimestamps(recordingWithCorrections);
 
-    // Use normalized and corrected recording
-    this.processedRecording = normalizedRecording;
+    // Fix #1: Sort actions by timestamp to ensure correct chronological order
+    console.log('\n🔄 Sorting actions by timestamp...');
+    const sortedActions = this.sortActionsByTimestamp(normalizedRecording.actions);
+
+    // Fix #2: Deduplicate input actions - keep only final value per field
+    console.log('🧹 Deduplicating input actions...');
+    const deduplicatedActions = this.deduplicateInputActions(sortedActions);
+
+    // Use normalized, sorted, and deduplicated recording
+    this.processedRecording = { ...normalizedRecording, actions: deduplicatedActions };
 
     const result: RunResult = {
       status: 'success',
@@ -98,6 +243,7 @@ export class PlaywrightRunner {
       actionsExecuted: 0,
       actionsFailed: 0,
       errors: [],
+      skippedActions: [], // Phase 2
     };
 
     try {
@@ -108,9 +254,8 @@ export class PlaywrightRunner {
       // Determine viewport size based on mode and available data
       // In non-headless mode with windowSize, use windowSize for visual accuracy
       // In headless mode or without windowSize, use viewport
-      const effectiveViewport = !this.options.headless && recording.windowSize 
-        ? recording.windowSize 
-        : recording.viewport;
+      const effectiveViewport =
+        !this.options.headless && recording.windowSize ? recording.windowSize : recording.viewport;
 
       // Create context with viewport (and devicePixelRatio if available)
       const contextOptions: any = {
@@ -126,9 +271,48 @@ export class PlaywrightRunner {
 
       context = await browser.newContext(contextOptions);
 
+      // Stealth mode: Hide automation indicators
+      // This script runs in browser context, so we use string to avoid TypeScript errors
+      await context.addInitScript(`
+        // Override navigator.webdriver
+        Object.defineProperty(navigator, 'webdriver', {
+          get: () => false,
+        });
+        
+        // Add chrome property to make it look like real Chrome
+        window.chrome = {
+          runtime: {},
+          loadTimes: function() {},
+          csi: function() {},
+          app: {},
+        };
+        
+        // Override permissions
+        const originalQuery = window.navigator.permissions.query;
+        window.navigator.permissions.query = (parameters) => (
+          parameters.name === 'notifications' ?
+            Promise.resolve({ state: 'denied' }) :
+            originalQuery(parameters)
+        );
+        
+        // Hide plugin array length
+        Object.defineProperty(navigator, 'plugins', {
+          get: () => [1, 2, 3, 4, 5],
+        });
+        
+        // Override language property
+        Object.defineProperty(navigator, 'languages', {
+          get: () => ['en-US', 'en'],
+        });
+      `);
+
+      console.log('   🥷 Stealth mode enabled (automation flags hidden)');
+
       // Log viewport info
       if (!this.options.headless && recording.windowSize) {
-        console.log(`📐 Using window size: ${recording.windowSize.width}x${recording.windowSize.height} (matches recording)`);
+        console.log(
+          `📐 Using window size: ${recording.windowSize.width}x${recording.windowSize.height} (matches recording)`
+        );
       } else {
         console.log(`📐 Using viewport: ${effectiveViewport.width}x${effectiveViewport.height}`);
       }
@@ -169,7 +353,7 @@ export class PlaywrightRunner {
           if (enableTiming && i > 0) {
             const elapsedTime = Date.now() - testStartTime;
             const prevAction = this.processedRecording!.actions[i - 1];
-            
+
             // Wait until previous action completes, not just starts
             // Use completedAt if available (new recordings), fallback to timestamp (old recordings)
             const prevCompletedAt = prevAction.completedAt || prevAction.timestamp;
@@ -181,40 +365,222 @@ export class PlaywrightRunner {
             }
           }
 
-          // Check for duplicate action
-          if (this.isDuplicateAction(action)) {
-            console.warn(`⚠️ Skipping duplicate action [${i + 1}]: ${action.type}`);
+          // Enhanced duplicate detection with carousel support
+          if (this.lastAction) {
+            const lastAct = this.lastAction.action;
+            const timeDiff = action.timestamp - lastAct.timestamp;
+            const actionSelector = (action as any).selector;
+            const lastActSelector = (lastAct as any).selector;
+            const sameElement =
+              actionSelector &&
+              lastActSelector &&
+              JSON.stringify(actionSelector) === JSON.stringify(lastActSelector);
+
+            if (sameElement && action.type === lastAct.type && action.type === 'click') {
+              const isCarousel = this.isCarouselNavigationElement(action);
+
+              if (isCarousel) {
+                // Carousel-specific duplicate detection
+                if (timeDiff < 200) {
+                  console.log(
+                    `⏭️  Skipping duplicate carousel click (${timeDiff}ms - too fast, likely recording error)`
+                  );
+                  continue;
+                } else if (timeDiff > 500) {
+                  console.log(`🎠 Intentional carousel navigation click (${timeDiff}ms apart)`);
+                  // Execute - intentional carousel navigation
+                } else {
+                  // 200-500ms: Check consecutive click count
+                  const consecutiveClicks = this.countConsecutiveClicks(
+                    i,
+                    this.processedRecording!.actions
+                  );
+                  if (consecutiveClicks > 5) {
+                    console.log(
+                      `⏭️  Skipping excessive carousel clicks (${consecutiveClicks} consecutive, likely stuck)`
+                    );
+                    continue;
+                  } else {
+                    console.log(
+                      `🎠 Carousel navigation click ${consecutiveClicks} (${timeDiff}ms apart)`
+                    );
+                    // Execute - reasonable carousel browsing
+                  }
+                }
+              } else {
+                // Non-carousel: use existing duplicate logic
+                if (timeDiff < 200) {
+                  console.log(`⏭️  Skipping duplicate click (${timeDiff}ms apart)`);
+                  continue;
+                }
+              }
+            } else if (this.isDuplicateAction(action)) {
+              console.warn(`⚠️ Skipping duplicate action [${i + 1}]: ${action.type}`);
+              continue;
+            }
+          }
+
+          // Check if action should be skipped based on dependencies or completed groups
+          if (this.shouldSkipAction(action, page)) {
             continue;
           }
 
+          // Log navigation intent metadata if present
+          this.logActionMetadata(action);
+
           // Solution 3: Enhanced page state validation with auto-correction
-          const pageStateCorrected = await this.validateAndCorrectPageState(page, action, i);
-          if (!pageStateCorrected) {
-            console.warn(
-              `⚠️ Skipping action [${i + 1}]: Could not reach expected page (expected ${action.url}, got ${page.url()})`
+          // Skip validation if the previous action just triggered navigation
+          const prevAction = i > 0 ? this.processedRecording!.actions[i - 1] : null;
+          const nextAction =
+            i < this.processedRecording!.actions.length - 1
+              ? this.processedRecording!.actions[i + 1]
+              : null;
+
+          // Skip validation if:
+          // 1. Next action is a navigation (we're about to navigate anyway)
+          // 2. Actions are very close in time (<1000ms) suggesting they're part of the same interaction
+          // 3. We just completed a navigation (< 3 seconds ago) - give website time to stabilize
+          // 4. Skip flag is set (just after navigation)
+          const timeSinceNavigation = Date.now() - this.lastNavigationTimestamp;
+          const skipValidation =
+            (nextAction && nextAction.type === 'navigation') ||
+            (prevAction &&
+              Math.abs(action.timestamp - prevAction.timestamp) < 1000 &&
+              prevAction.url !== action.url) ||
+            timeSinceNavigation < 3000 ||
+            this.skipNextPageValidation;
+
+          // Reset skip flag after using it
+          if (this.skipNextPageValidation) {
+            this.skipNextPageValidation = false;
+          }
+
+          if (!skipValidation) {
+            console.log(`\n🔍 [DEBUG] Page state validation for action [${i + 1}]:`);
+            console.log(`   Current URL: ${page.url()}`);
+            console.log(`   Expected URL: ${action.url}`);
+            console.log(`   Previous action type: ${prevAction?.type || 'N/A'}`);
+
+            const pageStateCorrected = await this.validateAndCorrectPageState(page, action, i);
+            if (!pageStateCorrected) {
+              console.warn(
+                `⚠️ Skipping action [${i + 1}]: Could not reach expected page (expected ${action.url}, got ${page.url()})`
+              );
+              result.actionsFailed++;
+              result.errors.push({
+                actionId: action.id,
+                actionType: action.type,
+                error: `Page state correction failed - expected ${action.url}`,
+                timestamp: Date.now(),
+              });
+              continue;
+            }
+          }
+
+          // Enhanced console logging with page context
+          const currentUrl = page.url();
+          const recordingTime = action.timestamp / 1000;
+          const actualElapsed = (Date.now() - testStartTime) / 1000;
+          const waitTime = Math.max(0, recordingTime - actualElapsed);
+
+          console.log(
+            `⏳ [${i + 1}] Executing ${action.type} (at ${recordingTime.toFixed(1)}s)...`
+          );
+          console.log(`   📍 Page: ${currentUrl}`);
+
+          if (waitTime > 2) {
+            console.log(
+              `   ⏱️  Waiting ${waitTime.toFixed(1)}s (recorded browsing/reading time)...`
             );
-            result.actionsFailed++;
-            result.errors.push({
-              actionId: action.id,
-              actionType: action.type,
-              error: `Page state correction failed - expected ${action.url}`,
-              timestamp: Date.now(),
-            });
-            continue;
+          }
+
+          // **FIX #3: Smart wait for significant action gaps (async content loading)**
+          // Detect if this action follows an input action with significant delay
+          // This handles autocomplete dropdowns, API-driven content, lazy loading, etc.
+          if (i > 0) {
+            const prevAction = this.processedRecording!.actions[i - 1];
+            const timeDelta = action.timestamp - prevAction.timestamp;
+
+            // If there's a gap > 2 seconds after an input action, wait for dynamic content
+            if (timeDelta > 2000 && prevAction.type === 'input') {
+              const waitMs = Math.min(timeDelta * 0.5, 3000); // Wait up to half the gap, max 3s
+              console.log(
+                `   ⏳ Waiting ${waitMs}ms for dynamic content after input (gap: ${timeDelta}ms)...`
+              );
+              await page.waitForTimeout(waitMs);
+
+              // Also wait for network to be idle (API responses, autocomplete, etc.)
+              try {
+                await page.waitForLoadState('networkidle', { timeout: 3000 });
+                console.log('   ✓ Network idle - dynamic content loaded');
+              } catch {
+                // Network might not settle, continue anyway
+                console.log('   ⚠️ Network still active, proceeding...');
+              }
+            }
+
+            // If there's a gap > 1 second after ANY action, respect part of that timing
+            // This preserves natural user pauses (reading, thinking, waiting for animations)
+            else if (timeDelta > 1000) {
+              const naturalPause = Math.min(timeDelta * 0.3, 2000); // Wait 30% of gap, max 2s
+              console.log(`   ⏸️  Natural pause: ${naturalPause}ms (user was reading/waiting)`);
+              await page.waitForTimeout(naturalPause);
+            }
           }
 
           this.reporter?.onActionStart(action, i + 1);
 
+          const urlBeforeAction = page.url();
           const actionStartTime = Date.now();
           await this.executeAction(page, action);
           const actionDuration = Date.now() - actionStartTime;
 
+          const urlAfterAction = page.url();
+          if (urlBeforeAction !== urlAfterAction) {
+            console.log(`\n🔄 [DEBUG] URL changed during action execution:`);
+            console.log(`   Before: ${urlBeforeAction}`);
+            console.log(`   After: ${urlAfterAction}`);
+          }
+
           result.actionsExecuted++;
           this.reporter?.onActionSuccess(action, i + 1, actionDuration);
+
+          // Add delay buffer after input actions for JavaScript validation
+          if (action.type === 'input') {
+            await page.waitForTimeout(150);
+          }
+
+          // Check for success navigation (checkout complete, form submit success, etc.)
+          const isSuccess = await this.checkForSuccessNavigation(page, action, urlBeforeAction);
+          if (isSuccess) {
+            console.log(`🎉 TEST PASSED: Successfully completed flow`);
+            result.status = 'success';
+            // Continue to execute remaining non-dependent actions
+            // but skip actions in the completed group
+          }
 
           // Track last action for duplicate detection
           this.lastAction = { action, timestamp: Date.now() };
         } catch (error) {
+          // Phase 2: Check if action is optional or modal-lifecycle (modals are always optional)
+          const isModalAction = action.type === 'modal-lifecycle';
+          if (action.isOptional || action.skipIfNotFound || isModalAction) {
+            const reason = error instanceof Error ? error.message : String(error);
+            const actionDesc = isModalAction ? 'modal event' : 'optional action';
+            console.log(`⏭️  Skipped ${actionDesc} ${action.id}: ${reason.split('\n')[0]}`);
+
+            result.skippedActions!.push({
+              action,
+              reason: reason.split('\n')[0],
+            });
+
+            if (this.reporter && 'onActionSkipped' in this.reporter) {
+              (this.reporter as any).onActionSkipped(action, i + 1, reason.split('\n')[0]);
+            }
+
+            continue; // Continue to next action
+          }
+
           const severity = this.classifyError(error as Error);
 
           result.actionsFailed++;
@@ -232,6 +598,13 @@ export class PlaywrightRunner {
             result.status = 'failed';
             break;
           } else if (severity === ErrorSeverity.RECOVERABLE) {
+            // Phase 2: Check continueOnError option
+            if (this.options.continueOnError) {
+              console.warn('⚠️ Error occurred, but continuing (continueOnError=true)...');
+              result.status = 'partial';
+              continue;
+            }
+
             // Attempt recovery
             const recovered = await this.attemptRecovery(page, action);
             if (!recovered) {
@@ -289,20 +662,98 @@ export class PlaywrightRunner {
   }
 
   /**
+   * Check if action is carousel/swiper navigation element
+   * Detects common carousel libraries: Swiper.js, Slick, Bootstrap
+   */
+  private isCarouselNavigationElement(action: Action): boolean {
+    try {
+      if (action.type !== 'click') return false;
+
+      const selector = (action as any).selector;
+      if (!selector) return false;
+
+      const ariaLabel = (selector.ariaLabel || '').toLowerCase();
+      const cssClass = (selector.css || '').toLowerCase();
+
+      // Check aria-label patterns
+      if (
+        ariaLabel.includes('next slide') ||
+        ariaLabel.includes('previous slide') ||
+        (ariaLabel.includes('next') && ariaLabel.includes('slide')) ||
+        (ariaLabel.includes('prev') && ariaLabel.includes('slide'))
+      ) {
+        return true;
+      }
+
+      // Check CSS class patterns for common carousel libraries
+      const carouselPatterns = [
+        'swiper-button-next',
+        'swiper-button-prev',
+        'carousel-control-next',
+        'carousel-control-prev',
+        'slick-next',
+        'slick-prev',
+      ];
+
+      return carouselPatterns.some((pattern) => cssClass.includes(pattern));
+    } catch (error) {
+      console.warn(`⚠️ Carousel detection failed: ${error}`);
+      return false; // Fallback to non-carousel behavior
+    }
+  }
+
+  /**
+   * Count consecutive clicks on the same element
+   * Used to detect excessive carousel clicking (possible stuck state)
+   */
+  private countConsecutiveClicks(currentIndex: number, actions: Action[]): number {
+    let count = 1;
+    const currentSelector = JSON.stringify((actions[currentIndex] as any).selector);
+
+    // Look backwards
+    for (let i = currentIndex - 1; i >= 0; i--) {
+      if (actions[i].type !== 'click') break;
+      if (JSON.stringify((actions[i] as any).selector) !== currentSelector) break;
+      count++;
+    }
+
+    // Look forwards
+    for (let i = currentIndex + 1; i < actions.length; i++) {
+      if (actions[i].type !== 'click') break;
+      if (JSON.stringify((actions[i] as any).selector) !== currentSelector) break;
+      count++;
+    }
+
+    return count;
+  }
+
+  /**
    * Check if current action is a duplicate of the last action
+   * Enhanced with carousel-specific logic
    */
   private isDuplicateAction(action: Action): boolean {
     if (!this.lastAction) return false;
 
-    const timeDiff = Date.now() - this.lastAction.timestamp;
     const lastAct = this.lastAction.action;
 
-    // Check if same type, same element, within 500ms
+    // Use recording timestamps for duplicate detection, not execution time
+    const timeDiff = action.timestamp - lastAct.timestamp;
+
+    // Debug logging
+    if (action.id === 'act_012' || action.id === 'act_013' || action.id === 'act_014') {
+      console.log(`🔍 Duplicate check for ${action.id}:`);
+      console.log(`   Current timestamp: ${action.timestamp}`);
+      console.log(`   Last action: ${lastAct.id}, timestamp: ${lastAct.timestamp}`);
+      console.log(`   Time diff: ${timeDiff}ms`);
+      console.log(`   Same type? ${action.type === lastAct.type}`);
+    }
+
+    // Check if same type, same element, within 2000ms in the recording
     const actionSelector = (action as any).selector;
     const lastActSelector = (lastAct as any).selector;
 
     if (
-      timeDiff < 500 &&
+      timeDiff < 2000 &&
       action.type === lastAct.type &&
       actionSelector &&
       lastActSelector &&
@@ -333,13 +784,25 @@ export class PlaywrightRunner {
 
       // Compare URLs
       if (this.urlsMatch(currentUrl, expectedUrl)) {
+        console.log(`   ✅ URLs match (normalized)`);
         return true; // Already on correct page
+      }
+
+      console.log(`   ⚠️ URLs don't match after normalization`);
+      console.log(`   Normalized current: ${this.normalizeUrl(currentUrl)}`);
+      console.log(`   Normalized expected: ${this.normalizeUrl(expectedUrl)}`);
+
+      // Check if this is an expected success navigation (not an error)
+      if (this.isSuccessNavigation(action, currentUrl, expectedUrl)) {
+        console.log(`   ✅ Detected as success navigation, allowing mismatch`);
+        return true; // This is expected, not an error
       }
 
       // Page mismatch detected - attempt auto-correction
       console.warn(`⚠️ Page state mismatch detected before action [${actionIndex + 1}]:`);
       console.warn(`   Expected: ${expectedUrl}`);
       console.warn(`   Current:  ${currentUrl}`);
+      console.warn(`   Action type: ${action.type}`);
       console.warn(`   🔧 Attempting auto-correction...`);
 
       // Strategy 1: Check if we just need to navigate to the expected page
@@ -348,7 +811,8 @@ export class PlaywrightRunner {
         const navResult = await this.navigationHistory.navigate(
           page,
           expectedUrl,
-          this.options.timeout
+          this.options.timeout,
+          this.options.timingMode
         );
 
         if (navResult.success) {
@@ -505,10 +969,15 @@ export class PlaywrightRunner {
    * Execute individual action
    */
   private async executeAction(page: Page, action: Action): Promise<void> {
-    if (isClickAction(action)) {
+    // Phase 2: Handle modal lifecycle events
+    if (isModalLifecycleAction(action)) {
+      await this.handleModalLifecycle(page, action);
+    } else if (isClickAction(action)) {
       await this.executeClick(page, action);
     } else if (isInputAction(action)) {
       await this.executeInput(page, action);
+    } else if (isSelectAction(action)) {
+      await this.executeSelect(page, action);
     } else if (isHoverAction(action)) {
       await this.executeHover(page, action);
     } else if (isScrollAction(action)) {
@@ -516,8 +985,154 @@ export class PlaywrightRunner {
     } else if (action.type === 'navigation') {
       await this.executeNavigation(page, action);
     } else if (action.type === 'submit') {
+      // Check if this submit action is redundant (previous action clicked submit button)
+      if (this.isRedundantSubmitAction(action)) {
+        console.log(`✓ Form already submitted by previous button click, skipping submit action`);
+        return;
+      }
       await this.executeSubmit(page, action);
     }
+  }
+
+  /**
+   * Phase 2: Handle modal lifecycle events with graceful error handling
+   */
+  private async handleModalLifecycle(page: Page, action: ModalLifecycleAction): Promise<void> {
+    // Null safety checks
+    if (!action.event) {
+      console.warn('⚠️ Modal lifecycle action missing event, skipping');
+      return;
+    }
+
+    const { event, modalElement } = action;
+
+    // Check if modalElement exists
+    if (!modalElement) {
+      console.warn(`⚠️ Modal lifecycle event "${event}" missing modalElement, skipping`);
+      return;
+    }
+
+    const modalId = modalElement.id || 'anonymous';
+    const modalDesc = modalElement.id || modalElement.classes || 'unknown modal';
+
+    switch (event) {
+      case 'modal-opened':
+        console.log(`🔓 Modal opened: ${modalDesc}`);
+
+        // Wait for modal to be visible
+        if (modalElement.id) {
+          await page
+            .waitForSelector(`#${modalElement.id}`, {
+              state: 'visible',
+              timeout: 5000,
+            })
+            .catch(() => {
+              console.warn(`⚠️ Modal #${modalElement.id} not found, continuing...`);
+            });
+        } else if (modalElement.role) {
+          await page
+            .waitForSelector(`[role="${modalElement.role}"]`, {
+              state: 'visible',
+              timeout: 5000,
+            })
+            .catch(() => {
+              console.warn(`⚠️ Modal with role="${modalElement.role}" not found, continuing...`);
+            });
+        }
+
+        // Wait for animation to complete (standard 300ms + buffer)
+        await page.waitForTimeout(500);
+
+        // Track modal state
+        this.modalState.set(modalId, true);
+        break;
+
+      case 'modal-closed':
+        console.log(`🔒 Modal closed: ${modalDesc}`);
+
+        // Wait for modal to be hidden
+        if (modalElement.id) {
+          await page
+            .waitForSelector(`#${modalElement.id}`, {
+              state: 'hidden',
+              timeout: 5000,
+            })
+            .catch(() => {
+              // Modal might be removed from DOM instead of hidden
+              console.log('   Modal removed from DOM');
+            });
+        }
+
+        // Wait for close animation
+        await page.waitForTimeout(300);
+
+        // Update state
+        this.modalState.delete(modalId);
+        break;
+
+      case 'modal-state-changed':
+        console.log(`🔄 Modal state changed`);
+        // Wait for state transition animation
+        await page.waitForTimeout(500);
+        break;
+    }
+  }
+
+  /**
+   * Check if action expects form-submit navigation (for cookie preservation)
+   */
+  private expectsFormSubmitNavigation(action: Action): boolean {
+    const context = (action as any).context;
+    if (!context) return false;
+
+    // Check if action has navigationIntent: "submit-form"
+    if (context.navigationIntent === 'submit-form') {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if next action is a navigation triggered by form-submit
+   */
+  private nextActionIsFormSubmitNavigation(currentAction: Action): boolean {
+    const nextAction = this.getNextAction(currentAction);
+    if (!nextAction || nextAction.type !== 'navigation') return false;
+
+    const navAction = nextAction as any;
+    return navAction.navigationTrigger === 'form-submit';
+  }
+
+  /**
+   * Check if submit action is redundant because previous action clicked a submit button
+   */
+  private isRedundantSubmitAction(action: Action): boolean {
+    if (!this.lastAction) return false;
+
+    const lastAct = this.lastAction.action;
+
+    // Check if last action was a click
+    if (!isClickAction(lastAct)) return false;
+
+    // Check timing - should be very close (< 500ms)
+    const timeDiff = action.timestamp - lastAct.timestamp;
+    if (timeDiff > 500) return false;
+
+    // Check if it was a submit button click
+    const isSubmitButton =
+      lastAct.tagName?.toLowerCase() === 'button' &&
+      (lastAct.text?.toLowerCase().includes('submit') ||
+        lastAct.text?.toLowerCase().includes('calculate') ||
+        lastAct.text?.toLowerCase().includes('send') ||
+        lastAct.text?.toLowerCase().includes('donate') ||
+        lastAct.text?.toLowerCase().includes('pay') ||
+        lastAct.text?.toLowerCase().includes('checkout'));
+
+    // Check if it was clicking inside a form (even if not explicitly a button)
+    const clickedInForm = (lastAct as any).selector?.css?.includes('form') || false;
+
+    return isSubmitButton || clickedInForm;
   }
 
   /**
@@ -527,6 +1142,27 @@ export class PlaywrightRunner {
   private async executeNavigation(page: Page, action: any): Promise<void> {
     const currentUrl = page.url();
     const targetUrl = action.to || action.url;
+    const navigationTrigger = action.navigationTrigger;
+
+    // CRITICAL: If navigation was triggered by form-submit, it already happened naturally
+    // The previous click/submit action waited for the navigation and preserved cookies
+    if (navigationTrigger === 'form-submit') {
+      console.log('  � Form-submit navigation already happened naturally (with cookies)');
+
+      // Verify we're at the right URL
+      if (this.urlsMatch(currentUrl, targetUrl)) {
+        console.log(`✓ Already on target URL: ${currentUrl}`);
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+        this.lastNavigationTimestamp = Date.now();
+        this.skipNextPageValidation = true;
+        return;
+      } else {
+        // Unexpected: we're not where we should be
+        console.warn(`⚠️ Expected to be at ${targetUrl}, but at ${currentUrl}`);
+        console.log('  � Using fallback navigation...');
+        // Fall through to normal navigation logic
+      }
+    }
 
     // Check if navigation already happened by recent action (within last 2 seconds)
     if (this.lastAction && Date.now() - this.lastAction.timestamp < 2000) {
@@ -553,11 +1189,22 @@ export class PlaywrightRunner {
       const navResult = await this.navigationHistory.navigate(
         page,
         targetUrl,
-        this.options.timeout
+        this.options.timeout,
+        this.options.timingMode
       );
 
       if (navResult.success) {
         console.log(`✓ Navigation successful using ${navResult.method}`);
+
+        // Wait for page to stabilize after navigation
+        await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {
+          console.log('   ⏱️  Network still active after navigation');
+        });
+
+        // Track navigation timestamp and skip next validation
+        this.lastNavigationTimestamp = Date.now();
+        this.skipNextPageValidation = true;
+
         return;
       } else {
         throw new Error(`All navigation methods failed`);
@@ -568,10 +1215,29 @@ export class PlaywrightRunner {
       if (newUrl !== currentUrl && this.urlsMatch(newUrl, targetUrl)) {
         console.warn(`⚠️ Navigation timeout but reached target URL: ${newUrl}`);
         this.navigationHistory.recordNavigation(targetUrl);
-        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+        await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+
+        // Track navigation and skip next validation
+        this.lastNavigationTimestamp = Date.now();
+        this.skipNextPageValidation = true;
+
         return;
       }
       throw error;
+    }
+  }
+
+  /**
+   * Normalize URL by removing query parameters and hash fragments
+   * This prevents false mismatches when websites add tracking/state params
+   */
+  private normalizeUrl(url: string): string {
+    try {
+      const urlObj = new URL(url);
+      return `${urlObj.protocol}//${urlObj.hostname}${urlObj.pathname}`;
+    } catch {
+      // If URL parsing fails, return as-is
+      return url.split('?')[0].split('#')[0];
     }
   }
 
@@ -580,35 +1246,142 @@ export class PlaywrightRunner {
    */
   private urlsMatch(url1: string, url2: string): boolean {
     try {
-      const u1 = new URL(url1);
-      const u2 = new URL(url2);
-      return u1.hostname === u2.hostname && u1.pathname === u2.pathname;
+      const normalized1 = this.normalizeUrl(url1);
+      const normalized2 = this.normalizeUrl(url2);
+      return normalized1 === normalized2;
     } catch {
       return url1 === url2 || url1.includes(url2) || url2.includes(url1);
     }
   }
 
   /**
+   * Get the next action after the current one
+   */
+  private getNextAction(currentAction: Action): Action | null {
+    if (!this.processedRecording) return null;
+
+    const currentIndex = this.processedRecording.actions.findIndex(
+      (a) => a.id === currentAction.id
+    );
+
+    if (currentIndex === -1 || currentIndex >= this.processedRecording.actions.length - 1) {
+      return null;
+    }
+
+    return this.processedRecording.actions[currentIndex + 1];
+  }
+
+  /**
+   * Check if two selectors target the same element
+   */
+  private selectorsMatch(selector1: SelectorStrategy, selector2: SelectorStrategy): boolean {
+    // Compare primary selectors
+    if (selector1.id && selector2.id && selector1.id === selector2.id) {
+      return true;
+    }
+
+    if (selector1.css && selector2.css && selector1.css === selector2.css) {
+      return true;
+    }
+
+    if (selector1.xpath && selector2.xpath && selector1.xpath === selector2.xpath) {
+      return true;
+    }
+
+    // Compare text content
+    if (selector1.text && selector2.text && selector1.text === selector2.text) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
    * Execute form submit with smart handling and navigation tracking
+   * Prefers clicking submit button to preserve JavaScript event handlers
+   *
+   * Note: If the preceding click action has isAjaxForm=true or expectsNavigation=false,
+   * the form submission was already handled via AJAX and this action becomes a no-op.
    */
   private async executeSubmit(page: Page, action: any): Promise<void> {
     const urlBeforeSubmit = page.url();
 
-    try {
-      const element = await this.elementLocator.findElement(page, action.selector);
-      await element.waitFor({ state: 'visible', timeout: this.options.timeout });
+    console.log(
+      `ℹ️ Form submit action detected - checking if already handled by previous click...`
+    );
 
-      // Submit might trigger navigation, handle gracefully
-      await Promise.race([
-        element.evaluate((el: any) => el.submit()),
-        page.waitForNavigation({ timeout: 5000 }).catch(() => {}),
-      ]);
+    try {
+      // Try to find and click the submit button instead of calling .submit()
+      // This preserves JavaScript event handlers and preventDefault()
+      const formElement = await this.elementLocator.findElement(page, action.selector);
+      await formElement.waitFor({ state: 'visible', timeout: this.options.timeout });
+
+      // Look for submit button inside the form
+      const submitButton = formElement
+        .locator('button[type="submit"], input[type="submit"], button:not([type])')
+        .first();
+      const submitButtonCount = await submitButton.count();
+
+      if (submitButtonCount > 0) {
+        console.log(
+          `✓ Clicking submit button instead of calling .submit() (preserves JS handlers)`
+        );
+
+        // Check if this might be an AJAX form by looking for data attributes or form action
+        const formAction = await formElement.getAttribute('action').catch(() => null);
+        const isAjaxLikely = !formAction || formAction === '#' || formAction === '';
+
+        if (isAjaxLikely) {
+          console.log('   📡 Form looks like AJAX (no action URL) - using shorter timeout');
+
+          // Click without long navigation wait
+          await submitButton.click();
+
+          // Short wait for AJAX response
+          await page.waitForTimeout(500);
+          await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {
+            console.log('   ⏱️ Network not idle after submit (normal for AJAX forms)');
+          });
+        } else {
+          // Traditional form - race against navigation
+          await Promise.race([
+            submitButton.click(),
+            page.waitForNavigation({ timeout: 5000 }).catch(() => {}),
+          ]);
+
+          // Wait for any requests to complete
+          await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+        }
+      } else {
+        // Fallback: Use legacy .submit() method if no button found
+        console.warn(`⚠️ No submit button found in form, using legacy .submit() method`);
+        await Promise.race([
+          formElement.evaluate((el: any) => el.submit()),
+          page.waitForNavigation({ timeout: 5000 }).catch(() => {}),
+        ]);
+      }
 
       // Track navigation if URL changed
       const urlAfterSubmit = page.url();
       if (urlAfterSubmit !== urlBeforeSubmit) {
         console.log(`✓ Form submit triggered navigation: ${urlBeforeSubmit} → ${urlAfterSubmit}`);
         this.navigationHistory.recordNavigation(urlAfterSubmit);
+
+        // Extra wait for login/signup forms to establish session
+        if (
+          urlBeforeSubmit.includes('signin') ||
+          urlBeforeSubmit.includes('signup') ||
+          urlBeforeSubmit.includes('login') ||
+          urlBeforeSubmit.includes('auth')
+        ) {
+          console.log(
+            '   🔐 Authentication form detected, waiting 5s for session establishment...'
+          );
+          await page.waitForTimeout(5000);
+          await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+        }
+      } else {
+        console.log('   ✓ Form submitted via AJAX (no URL change)');
       }
     } catch (error: any) {
       // Check if form already submitted (URL changed or form not found)
@@ -638,60 +1411,319 @@ export class PlaywrightRunner {
   private async executeClick(page: Page, action: ClickAction): Promise<void> {
     const urlBeforeClick = page.url();
 
+    // DEFENSIVE FIX: Convert right-clicks on <select> elements to left-clicks
+    // Browser generates synthetic right-click events when opening native dropdowns
+    // These should never be recorded as right-clicks since dropdowns use left-clicks
+    let effectiveButton = action.button;
+    if (action.tagName === 'select' && action.button === 'right') {
+      console.warn(
+        `⚠️ Correcting invalid right-click on <select> element to left-click (recorder bug)`
+      );
+      effectiveButton = 'left';
+    }
+
     try {
-      const element = await this.elementLocator.findElement(page, action.selector);
+      // Phase 2: Check if action requires modal to be open
+      if (action.modalContext?.requiresModalState) {
+        const modalId = action.modalContext.modalId;
+
+        if (modalId && !this.modalState.get(modalId)) {
+          console.warn(`⚠️ Action requires modal "${modalId}" but it's not open, waiting...`);
+
+          // Wait for modal to appear
+          await page
+            .waitForSelector(`#${modalId}, [role="dialog"], [role="alertdialog"]`, {
+              state: 'visible',
+              timeout: 5000,
+            })
+            .catch(() => {
+              console.warn(`Modal "${modalId}" never appeared, proceeding anyway`);
+            });
+
+          // Update state
+          if (modalId) {
+            this.modalState.set(modalId, true);
+          }
+
+          // Wait for modal animation
+          await page.waitForTimeout(500);
+        }
+      }
+
+      // Phase 2: Use multi-strategy selectors if available
+      let element;
+      if (action.selectors && action.selectors.length > 0) {
+        element = await this.elementLocator.findElement(
+          page,
+          action.selectors,
+          action.contentSignature
+        );
+
+        if (!element) {
+          throw new Error(
+            `Element not found using multi-strategy selectors for action ${action.id}`
+          );
+        }
+      } else {
+        // Legacy: use single selector
+        element = await this.elementLocator.findElement(page, action.selector);
+      }
+
       await element.waitFor({ state: 'visible', timeout: this.options.timeout });
 
       // Dismiss any overlays that might be blocking the element
       await page.keyboard.press('Escape').catch(() => {});
       await page.waitForTimeout(100);
 
-      // Use exact mouse coordinates if available
-      if (action.coordinates && action.coordinatesRelativeTo === 'element') {
-        // Get element bounding box
-        const box = await element.boundingBox();
-        if (box) {
-          // Calculate absolute position: element position + relative coordinates
-          const absoluteX = box.x + action.coordinates.x;
-          const absoluteY = box.y + action.coordinates.y;
+      // Check recorder's expectsNavigation flag (ground truth from recording)
+      const actionData = action as any;
+      const recorderExpectsNavigation = actionData.expectsNavigation;
 
-          // Click at exact recorded position
-          await Promise.race([
-            page.mouse.click(absoluteX, absoluteY, {
+      // If recorder explicitly says no navigation, trust it (AJAX form)
+      if (recorderExpectsNavigation === false) {
+        console.log('  🔄 AJAX form detected (recorder confirmed no navigation)');
+
+        // Just click and wait for network to settle
+        if (action.coordinates && action.coordinatesRelativeTo === 'element') {
+          const box = await element.boundingBox();
+          if (box) {
+            const absoluteX = box.x + action.coordinates.x;
+            const absoluteY = box.y + action.coordinates.y;
+            await page.mouse.click(absoluteX, absoluteY, {
               button:
-                action.button === 'left' ? 'left' : action.button === 'right' ? 'right' : 'middle',
+                effectiveButton === 'left'
+                  ? 'left'
+                  : effectiveButton === 'right'
+                    ? 'right'
+                    : 'middle',
               clickCount: action.clickCount,
-            }),
-            page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
-          ]);
-        } else {
-          // Fallback to center click if bounding box unavailable
-          await Promise.race([
-            element.click({
+            });
+          } else {
+            await element.click({
               button:
-                action.button === 'left' ? 'left' : action.button === 'right' ? 'right' : 'middle',
+                effectiveButton === 'left'
+                  ? 'left'
+                  : effectiveButton === 'right'
+                    ? 'right'
+                    : 'middle',
               clickCount: action.clickCount,
               timeout: this.options.timeout,
               force: false,
-            }),
-            page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
-          ]);
-        }
-      } else {
-        // Fallback to center click for viewport/document coordinates or missing coordinates
-        await Promise.race([
-          element.click({
+            });
+          }
+        } else {
+          await element.click({
             button:
-              action.button === 'left' ? 'left' : action.button === 'right' ? 'right' : 'middle',
+              effectiveButton === 'left'
+                ? 'left'
+                : effectiveButton === 'right'
+                  ? 'right'
+                  : 'middle',
             clickCount: action.clickCount,
             timeout: this.options.timeout,
             force: false,
-          }),
-          page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
-        ]);
-      }
+          });
+        }
 
-      await page.waitForTimeout(300);
+        // Wait for network to settle
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {
+          console.log('  ⚠️ Network still active, proceeding...');
+        });
+
+        await page.waitForTimeout(300);
+      } else {
+        // Check if this is an AJAX form (from recorder flags)
+        const isAjaxForm = action.isAjaxForm || action.expectsNavigation === false;
+
+        // Use heuristics for backward compatibility or when recorder flag not present
+        const expectsNavigation =
+          !isAjaxForm &&
+          (this.expectsFormSubmitNavigation(action) ||
+            this.nextActionIsFormSubmitNavigation(action));
+
+        if (isAjaxForm) {
+          console.log('   📡 AJAX form detected - skipping navigation wait');
+
+          // Click without racing against navigation
+          if (action.coordinates && action.coordinatesRelativeTo === 'element') {
+            const box = await element.boundingBox();
+            if (box) {
+              const absoluteX = box.x + action.coordinates.x;
+              const absoluteY = box.y + action.coordinates.y;
+              await page.mouse.click(absoluteX, absoluteY, {
+                button:
+                  effectiveButton === 'left'
+                    ? 'left'
+                    : effectiveButton === 'right'
+                      ? 'right'
+                      : 'middle',
+                clickCount: action.clickCount,
+              });
+            } else {
+              await element.click({
+                button:
+                  effectiveButton === 'left'
+                    ? 'left'
+                    : effectiveButton === 'right'
+                      ? 'right'
+                      : 'middle',
+                clickCount: action.clickCount,
+                timeout: this.options.timeout,
+                force: false,
+              });
+            }
+          } else {
+            await element.click({
+              button:
+                effectiveButton === 'left'
+                  ? 'left'
+                  : effectiveButton === 'right'
+                    ? 'right'
+                    : 'middle',
+              clickCount: action.clickCount,
+              timeout: this.options.timeout,
+              force: false,
+            });
+          }
+
+          // Shorter wait for AJAX response (no navigation expected)
+          await page.waitForTimeout(500);
+          await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {
+            console.log(
+              '   ⏱️ Network not idle after AJAX submit (normal for background requests)'
+            );
+          });
+        } else if (expectsNavigation) {
+          console.log(
+            '  📍 Expecting form-submit navigation, waiting for natural redirect with cookies...'
+          );
+
+          // Use Promise.all to start listening BEFORE clicking
+          await Promise.all([
+            // Start listening for navigation
+            page
+              .waitForNavigation({
+                waitUntil: 'load',
+                timeout: 30000,
+              })
+              .catch(() => {
+                // Navigation might not happen (validation error, AJAX form, etc.)
+                console.log('  ⚠️ Navigation timeout (form might stay on page)');
+                return null;
+              }),
+
+            // Perform the click (this will trigger navigation)
+            (async () => {
+              if (action.coordinates && action.coordinatesRelativeTo === 'element') {
+                const box = await element.boundingBox();
+                if (box) {
+                  const absoluteX = box.x + action.coordinates.x;
+                  const absoluteY = box.y + action.coordinates.y;
+                  await page.mouse.click(absoluteX, absoluteY, {
+                    button:
+                      effectiveButton === 'left'
+                        ? 'left'
+                        : effectiveButton === 'right'
+                          ? 'right'
+                          : 'middle',
+                    clickCount: action.clickCount,
+                  });
+                } else {
+                  await element.click({
+                    button:
+                      effectiveButton === 'left'
+                        ? 'left'
+                        : effectiveButton === 'right'
+                          ? 'right'
+                          : 'middle',
+                    clickCount: action.clickCount,
+                    timeout: this.options.timeout,
+                    force: false,
+                  });
+                }
+              } else {
+                await element.click({
+                  button:
+                    effectiveButton === 'left'
+                      ? 'left'
+                      : effectiveButton === 'right'
+                        ? 'right'
+                        : 'middle',
+                  clickCount: action.clickCount,
+                  timeout: this.options.timeout,
+                  force: false,
+                });
+              }
+            })(),
+          ]);
+
+          console.log('  ✅ Form-submit navigation completed with cookies preserved');
+
+          // Extra wait for session establishment after auth forms
+          if (
+            urlBeforeClick.includes('signin') ||
+            urlBeforeClick.includes('login') ||
+            urlBeforeClick.includes('auth')
+          ) {
+            console.log('   🔐 Authentication form detected, waiting for session cookies...');
+            await page.waitForTimeout(2000);
+            await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
+          }
+        } else {
+          // Normal click without expected navigation
+          if (action.coordinates && action.coordinatesRelativeTo === 'element') {
+            const box = await element.boundingBox();
+            if (box) {
+              const absoluteX = box.x + action.coordinates.x;
+              const absoluteY = box.y + action.coordinates.y;
+              await Promise.race([
+                page.mouse.click(absoluteX, absoluteY, {
+                  button:
+                    effectiveButton === 'left'
+                      ? 'left'
+                      : effectiveButton === 'right'
+                        ? 'right'
+                        : 'middle',
+                  clickCount: action.clickCount,
+                }),
+                page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
+              ]);
+            } else {
+              await Promise.race([
+                element.click({
+                  button:
+                    effectiveButton === 'left'
+                      ? 'left'
+                      : effectiveButton === 'right'
+                        ? 'right'
+                        : 'middle',
+                  clickCount: action.clickCount,
+                  timeout: this.options.timeout,
+                  force: false,
+                }),
+                page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
+              ]);
+            }
+          } else {
+            await Promise.race([
+              element.click({
+                button:
+                  effectiveButton === 'left'
+                    ? 'left'
+                    : effectiveButton === 'right'
+                      ? 'right'
+                      : 'middle',
+                clickCount: action.clickCount,
+                timeout: this.options.timeout,
+                force: false,
+              }),
+              page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
+            ]);
+          }
+
+          await page.waitForTimeout(300);
+        }
+      }
 
       // Track navigation if URL changed
       const urlAfterClick = page.url();
@@ -699,6 +1731,12 @@ export class PlaywrightRunner {
         console.log(`✓ Click triggered navigation: ${urlBeforeClick} → ${urlAfterClick}`);
         this.navigationHistory.recordNavigation(urlAfterClick);
       }
+
+      // Track this click to detect duplicates
+      this.lastClickedElement = {
+        selector: action.selector,
+        timestamp: action.timestamp,
+      };
     } catch (error: any) {
       // If page URL changed or page closed, consider click successful
       const urlAfter = page.url();
@@ -726,6 +1764,43 @@ export class PlaywrightRunner {
    */
   private async executeHover(page: Page, action: HoverAction): Promise<void> {
     try {
+      // Strategy 1: Skip hovers on modal infrastructure (non-functional elements)
+      const modalInfrastructurePatterns = [
+        '.swal2-container',
+        '.swal2-backdrop',
+        '.modal-backdrop',
+        '.modal-overlay',
+        '.overlay',
+        '.sweetalert-overlay',
+        'div[role="presentation"]',
+      ];
+
+      const cssSelector = action.selector.css || '';
+      const isModalInfrastructure = modalInfrastructurePatterns.some((pattern) =>
+        cssSelector.includes(pattern)
+      );
+
+      if (isModalInfrastructure) {
+        console.log(`⏭️  Skipping hover on modal infrastructure: ${cssSelector}`);
+        return;
+      }
+
+      // Strategy 2: Skip brief hovers (< 300ms) - likely incidental mouse movement
+      if (action.duration && action.duration < 300) {
+        console.log(`⏭️  Skipping brief hover (${action.duration}ms) - incidental movement`);
+        return;
+      }
+
+      // Strategy 3: Check if next action is a click on the same element
+      const nextAction = this.getNextAction(action);
+      if (
+        nextAction?.type === 'click' &&
+        this.selectorsMatch(action.selector, nextAction.selector)
+      ) {
+        console.log(`⏭️  Skipping hover - next action clicks same element`);
+        return;
+      }
+
       const element = await this.elementLocator.findElement(page, action.selector);
       await element.waitFor({ state: 'visible', timeout: this.options.timeout });
 
@@ -737,9 +1812,13 @@ export class PlaywrightRunner {
       // timestamp tells us exactly when to proceed, so adding duration would double
       // the wait time and make execution longer than the original recording.
     } catch (error: any) {
-      // If element not found or disappeared, continue (hover is non-critical)
-      if (error.message?.includes('Element not found')) {
-        console.warn(`⚠️ Hover target not found, continuing`);
+      // Hover is non-critical - if element not found, hidden, or timeout, just continue
+      if (
+        error.message?.includes('Element not found') ||
+        error.message?.includes('Timeout') ||
+        error.message?.includes('visible')
+      ) {
+        console.warn(`⚠️ Hover failed (non-critical): ${error.message.split('\n')[0]}`);
         return;
       }
       throw error;
@@ -750,11 +1829,183 @@ export class PlaywrightRunner {
    * Execute input action
    */
   private async executeInput(page: Page, action: InputAction): Promise<void> {
-    const element = await this.elementLocator.findElement(page, action.selector);
+    // Phase 2: Use multi-strategy selectors if available
+    let element;
+    if (action.selectors && action.selectors.length > 0) {
+      element = await this.elementLocator.findElement(
+        page,
+        action.selectors,
+        action.contentSignature
+      );
+
+      if (!element) {
+        throw new Error(`Element not found using multi-strategy selectors for action ${action.id}`);
+      }
+    } else {
+      // Legacy: use single selector
+      element = await this.elementLocator.findElement(page, action.selector);
+    }
 
     // Wait for element to be visible and stable
     await element.waitFor({ state: 'visible', timeout: this.options.timeout });
 
+    // Handle checkboxes by clicking instead of filling
+    if (action.inputType === 'checkbox') {
+      await element.click();
+      // Wait for any UI updates after checkbox toggle
+      await page.waitForTimeout(300);
+      return;
+    }
+
+    // Handle file inputs with special file upload API
+    if (action.inputType === 'file') {
+      console.log(`   📎 File upload detected: ${action.value}`);
+
+      // Extract filename from fakepath (browser security feature)
+      // "C:\\fakepath\\filename.png" → "filename.png"
+      let filename = action.value;
+      if (filename.includes('\\fakepath\\')) {
+        filename = filename.split('\\fakepath\\').pop() || filename;
+        console.log(`   📝 Extracted filename: ${filename}`);
+      } else if (filename.includes('\\\\fakepath\\\\')) {
+        filename = filename.split('\\\\fakepath\\\\').pop() || filename;
+      }
+
+      // Try to find the file in common locations
+      const fs = await import('fs');
+      const path = await import('path');
+      const os = await import('os');
+
+      // Possible file locations to check
+      const searchPaths = [
+        filename, // Exact path provided
+        path.join(process.cwd(), filename), // Current directory
+        path.join(process.cwd(), 'test-files', filename), // test-files directory
+        path.join(process.cwd(), 'fixtures', filename), // fixtures directory
+        path.join(os.homedir(), 'Downloads', filename), // User's Downloads
+        path.join(os.homedir(), 'Desktop', filename), // User's Desktop
+      ];
+
+      let foundFile = null;
+      for (const searchPath of searchPaths) {
+        try {
+          if (fs.existsSync(searchPath)) {
+            foundFile = searchPath;
+            console.log(`   ✅ Found file: ${foundFile}`);
+            break;
+          }
+        } catch (err) {
+          // Skip invalid paths
+        }
+      }
+
+      if (foundFile) {
+        // Upload the file
+        await element.setInputFiles(foundFile);
+        console.log(`   📤 File uploaded successfully`);
+      } else {
+        // File not found - create a placeholder image if possible
+        console.warn(`   ⚠️ File not found: ${filename}`);
+        console.warn(`   💡 Searched in: ${searchPaths.slice(0, 6).join(', ')}`);
+
+        // Try to create a minimal 1x1 pixel PNG as placeholder
+        try {
+          const placeholderDir = path.join(process.cwd(), '.saveaction-temp');
+          if (!fs.existsSync(placeholderDir)) {
+            fs.mkdirSync(placeholderDir, { recursive: true });
+          }
+
+          const placeholderPath = path.join(placeholderDir, 'placeholder.png');
+
+          // Create a minimal 1x1 transparent PNG (69 bytes)
+          const pngData = Buffer.from([
+            0x89,
+            0x50,
+            0x4e,
+            0x47,
+            0x0d,
+            0x0a,
+            0x1a,
+            0x0a, // PNG signature
+            0x00,
+            0x00,
+            0x00,
+            0x0d,
+            0x49,
+            0x48,
+            0x44,
+            0x52, // IHDR chunk
+            0x00,
+            0x00,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x00,
+            0x01, // 1x1 dimensions
+            0x08,
+            0x06,
+            0x00,
+            0x00,
+            0x00,
+            0x1f,
+            0x15,
+            0xc4,
+            0x89,
+            0x00,
+            0x00,
+            0x00,
+            0x0a,
+            0x49,
+            0x44,
+            0x41,
+            0x54,
+            0x78,
+            0x9c,
+            0x63,
+            0x00,
+            0x01,
+            0x00,
+            0x00,
+            0x05,
+            0x00,
+            0x01,
+            0x0d,
+            0x0a,
+            0x2d,
+            0xb4,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x49,
+            0x45,
+            0x4e,
+            0x44,
+            0xae,
+            0x42,
+            0x60,
+            0x82,
+          ]);
+
+          fs.writeFileSync(placeholderPath, pngData);
+
+          await element.setInputFiles(placeholderPath);
+          console.log(`   🖼️ Uploaded placeholder image (file not found)`);
+        } catch (placeholderError: any) {
+          console.error(`   ❌ Could not create placeholder: ${placeholderError.message}`);
+          throw new Error(
+            `File upload failed: "${filename}" not found. Please place the file in: ${searchPaths[1]}`
+          );
+        }
+      }
+
+      // Wait for file processing (preview generation, validation, etc.)
+      await page.waitForTimeout(500);
+      return;
+    }
+
+    // Handle regular text inputs
     // Clear existing value
     await element.clear();
 
@@ -771,6 +2022,33 @@ export class PlaywrightRunner {
     }
 
     // Wait for autocomplete dropdowns or suggestions to appear
+    await page.waitForTimeout(300);
+  }
+
+  /**
+   * Execute select dropdown action
+   */
+  private async executeSelect(page: Page, action: SelectAction): Promise<void> {
+    // Find the select element
+    const element = await this.elementLocator.findElement(page, action.selector);
+
+    // Wait for element to be visible and stable
+    await element.waitFor({ state: 'visible', timeout: this.options.timeout });
+
+    // Select by value (preferred), fallback to label/text, then index
+    if (action.selectedValue) {
+      await element.selectOption({ value: action.selectedValue });
+    } else if (action.selectedText) {
+      await element.selectOption({ label: action.selectedText });
+    } else if (action.selectedIndex !== undefined) {
+      await element.selectOption({ index: action.selectedIndex });
+    } else {
+      throw new Error(
+        `Select action ${action.id} missing selection criteria (value, text, or index)`
+      );
+    }
+
+    // Wait for any UI updates after selection
     await page.waitForTimeout(300);
   }
 
@@ -845,8 +2123,23 @@ export class PlaywrightRunner {
    * Launch browser based on options
    */
   private async launchBrowser(): Promise<Browser> {
-    const launchOptions = {
+    // Stealth mode: Add arguments to hide automation
+    const stealthArgs = [
+      '--disable-blink-features=AutomationControlled',
+      '--disable-dev-shm-usage',
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-web-security',
+      '--disable-features=IsolateOrigins,site-per-process',
+      '--disable-infobars',
+      '--window-position=0,0',
+      '--ignore-certificate-errors',
+      '--ignore-certificate-errors-spki-list',
+    ];
+
+    const launchOptions: any = {
       headless: this.options.headless,
+      args: stealthArgs,
     };
 
     switch (this.options.browser) {
@@ -859,5 +2152,199 @@ export class PlaywrightRunner {
       default:
         throw new Error(`Unknown browser: ${this.options.browser}`);
     }
+  }
+
+  /**
+   * Check if action should be skipped based on dependencies
+   */
+  private shouldSkipAction(action: Action, page: Page): boolean {
+    const context = action.context;
+
+    // Check 0: Is this a duplicate click (same element clicked recently)?
+    if (action.type === 'click' && this.lastClickedElement) {
+      const timeSinceLastClick = action.timestamp - this.lastClickedElement.timestamp;
+      const sameElement = this.selectorsMatch(action.selector, this.lastClickedElement.selector);
+
+      // If same element clicked within 500ms, it's likely a duplicate recording
+      if (sameElement && timeSinceLastClick < 500) {
+        console.log(`⏭️  Skipping duplicate click on same element (${timeSinceLastClick}ms apart)`);
+        return true;
+      }
+    }
+
+    if (!context) return false;
+
+    // Check 1: Is this action's group already completed?
+    if (context.actionGroup && this.skippedActionGroups.has(context.actionGroup)) {
+      console.log(`⏭️  SKIPPING action ${action.id}: Group already completed`);
+      return true;
+    }
+
+    // Check 2: Does this action have dependencies?
+    if (!context.dependentActions || context.dependentActions.length === 0) {
+      return false;
+    }
+
+    // Check 3: Find the terminal action it depends on
+    let terminalAction: Action | null = null;
+    for (const depId of context.dependentActions) {
+      const depAction = this.processedRecording?.actions.find((a) => a.id === depId);
+      if (depAction?.context?.isTerminalAction) {
+        terminalAction = depAction;
+        break;
+      }
+    }
+
+    if (!terminalAction) return false;
+
+    // Check 4: Did the terminal action cause navigation?
+    const currentUrl = page.url();
+    const terminalUrl = terminalAction.url;
+
+    if (currentUrl !== terminalUrl) {
+      const actionText = (action as any).text || action.type;
+      console.log(`⏭️  SKIPPING action ${action.id}: ${actionText}`);
+      console.log(`   Reason: Terminal action navigated away`);
+      console.log(`   From: ${terminalUrl}`);
+      console.log(`   To: ${currentUrl}`);
+      return true;
+    }
+
+    // Check 5: If action is inside modal, does modal still exist?
+    if (context.isInsideModal && context.modalId) {
+      try {
+        const modalVisible = page.locator(`#${context.modalId}`).isVisible();
+        if (!modalVisible) {
+          console.log(`⏭️  SKIPPING action ${action.id}: Modal closed`);
+          console.log(`   Modal ID: ${context.modalId}`);
+          return true;
+        }
+      } catch {
+        // Modal check failed, assume it doesn't exist
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if action navigated to a success URL
+   */
+  private async checkForSuccessNavigation(
+    page: Page,
+    action: Action,
+    urlBeforeAction: string
+  ): Promise<boolean> {
+    const context = action.context;
+    if (!context?.expectedUrlChange?.isSuccessFlow) {
+      return false;
+    }
+
+    const expectedChange = context.expectedUrlChange;
+    const patterns = expectedChange.patterns || [];
+
+    // Wait for potential navigation (max 5 seconds)
+    try {
+      await page.waitForLoadState('load', { timeout: 5000 });
+    } catch {
+      // No navigation or timeout
+    }
+
+    // Check current URL
+    const currentUrl = page.url().toLowerCase();
+    const urlChanged = currentUrl !== urlBeforeAction.toLowerCase();
+
+    if (!urlChanged) {
+      // No navigation occurred
+      return false;
+    }
+
+    // Check if current URL matches any success pattern
+    const isSuccessUrl = patterns.some((pattern) => currentUrl.includes(pattern.toLowerCase()));
+
+    if (isSuccessUrl) {
+      console.log(`✅ SUCCESS DETECTED: Navigated to ${currentUrl}`);
+      console.log(`   Matched pattern from: ${patterns.join(', ')}`);
+
+      // Mark action group as completed if applicable
+      if (context.actionGroup) {
+        this.skippedActionGroups.add(context.actionGroup);
+        console.log(`⏭️  Skipping remaining actions in group: ${context.actionGroup}`);
+      }
+
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Log action navigation intent metadata for debugging
+   */
+  private logActionMetadata(action: Action): void {
+    const context = action.context;
+    if (!context) return;
+
+    const { navigationIntent, isTerminalAction, expectedUrlChange, actionGroup, dependentActions } =
+      context;
+
+    if (navigationIntent && navigationIntent !== 'none') {
+      console.log(`  🧭 Navigation Intent: ${navigationIntent}`);
+    }
+
+    if (isTerminalAction) {
+      console.log(`  🏁 TERMINAL ACTION (completes flow)`);
+    }
+
+    if (expectedUrlChange) {
+      console.log(`  🔄 Expected URL Change:`);
+      console.log(`     Type: ${expectedUrlChange.type}`);
+      console.log(`     Success Flow: ${expectedUrlChange.isSuccessFlow}`);
+      if (expectedUrlChange.patterns.length > 0) {
+        console.log(`     Patterns: ${expectedUrlChange.patterns.join(', ')}`);
+      }
+    }
+
+    if (actionGroup) {
+      console.log(`  📦 Action Group: ${actionGroup}`);
+    }
+
+    if (dependentActions && dependentActions.length > 0) {
+      console.log(`  🔗 Depends on: ${dependentActions.join(', ')}`);
+    }
+  }
+
+  /**
+   * Enhanced page state validation that considers success navigation
+   */
+  private isSuccessNavigation(action: Action, currentUrl: string, expectedUrl: string): boolean {
+    // URLs match - not a mismatch
+    if (this.urlsMatch(currentUrl, expectedUrl)) {
+      return false;
+    }
+
+    // Check if this is an expected success navigation
+    const context = action.context;
+    if (!context?.expectedUrlChange?.isSuccessFlow) {
+      return false;
+    }
+
+    const patterns = context.expectedUrlChange.patterns || [];
+    const currentUrlLower = currentUrl.toLowerCase();
+
+    // Check if current URL matches success patterns
+    const matchesPattern = patterns.some((pattern) =>
+      currentUrlLower.includes(pattern.toLowerCase())
+    );
+
+    if (matchesPattern) {
+      console.log(`ℹ️  URL changed but this is EXPECTED (success flow)`);
+      console.log(`   From: ${expectedUrl}`);
+      console.log(`   To: ${currentUrl}`);
+      return true;
+    }
+
+    return false;
   }
 }

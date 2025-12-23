@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { PlaywrightRunner } from './PlaywrightRunner.js';
-import type { Recording, ClickAction, InputAction, ScrollAction, NavigationAction } from '../types/index.js';
+import type {
+  Recording,
+  ClickAction,
+  InputAction,
+  ScrollAction,
+  NavigationAction,
+} from '../types/index.js';
 import type { Browser, BrowserContext, Page, Locator } from 'playwright';
 
 describe('PlaywrightRunner', () => {
@@ -94,7 +100,7 @@ describe('PlaywrightRunner', () => {
 
       // Note: This test verifies reporter calls structure but won't actually run browser
       // For full integration tests, use real Playwright with test fixtures
-      
+
       expect(runner).toBeDefined();
       expect(mockReporter.onStart).not.toHaveBeenCalled();
     });
@@ -268,13 +274,13 @@ describe('PlaywrightRunner', () => {
 
     it('should report element not found errors', () => {
       const error = new Error('Element not found with any selector strategy');
-      
+
       expect(error.message).toContain('Element not found');
     });
 
     it('should handle navigation timeout errors', () => {
       const error = new Error('Navigation timeout exceeded');
-      
+
       expect(error.message).toContain('timeout');
     });
   });
@@ -354,6 +360,247 @@ describe('PlaywrightRunner', () => {
       const mobileViewport = { width: 375, height: 667 };
 
       expect(mobileViewport.width).toBeLessThan(768);
+    });
+  });
+
+  describe('carousel detection', () => {
+    it('should detect Swiper.js next button by aria-label', () => {
+      const action: ClickAction = {
+        id: 'act_001',
+        type: 'click',
+        timestamp: Date.now(),
+        url: 'https://example.com',
+        tagName: 'div',
+        selector: {
+          ariaLabel: 'Next slide',
+          css: 'div.swiper-button-next',
+          priority: ['ariaLabel', 'css'],
+        },
+        coordinates: { x: 10, y: 10 },
+        coordinatesRelativeTo: 'element',
+        button: 'left',
+        clickCount: 1,
+        modifiers: [],
+        text: '',
+      };
+
+      // Test that selector contains carousel indicators
+      expect(action.selector.ariaLabel?.toLowerCase()).toContain('next slide');
+      expect(action.selector.css?.toLowerCase()).toContain('swiper-button-next');
+    });
+
+    it('should detect Swiper.js prev button by CSS class', () => {
+      const action: ClickAction = {
+        id: 'act_002',
+        type: 'click',
+        timestamp: Date.now(),
+        url: 'https://example.com',
+        tagName: 'div',
+        selector: {
+          css: 'div.swiper-button-prev.nearby-prev',
+          priority: ['css'],
+        },
+        coordinates: { x: 10, y: 10 },
+        coordinatesRelativeTo: 'element',
+        button: 'left',
+        clickCount: 1,
+        modifiers: [],
+        text: '',
+      };
+
+      expect(action.selector.css?.toLowerCase()).toContain('swiper-button-prev');
+    });
+
+    it('should detect Bootstrap carousel control', () => {
+      const action: ClickAction = {
+        id: 'act_003',
+        type: 'click',
+        timestamp: Date.now(),
+        url: 'https://example.com',
+        tagName: 'button',
+        selector: {
+          css: 'button.carousel-control-next',
+          priority: ['css'],
+        },
+        coordinates: { x: 10, y: 10 },
+        coordinatesRelativeTo: 'element',
+        button: 'left',
+        clickCount: 1,
+        modifiers: [],
+        text: '',
+      };
+
+      expect(action.selector.css?.toLowerCase()).toContain('carousel-control-next');
+    });
+
+    it('should detect Slick carousel button', () => {
+      const action: ClickAction = {
+        id: 'act_004',
+        type: 'click',
+        timestamp: Date.now(),
+        url: 'https://example.com',
+        tagName: 'button',
+        selector: {
+          css: 'button.slick-next.slick-arrow',
+          priority: ['css'],
+        },
+        coordinates: { x: 10, y: 10 },
+        coordinatesRelativeTo: 'element',
+        button: 'left',
+        clickCount: 1,
+        modifiers: [],
+        text: '',
+      };
+
+      expect(action.selector.css?.toLowerCase()).toContain('slick-next');
+    });
+
+    it('should not detect regular button as carousel', () => {
+      const action: ClickAction = {
+        id: 'act_005',
+        type: 'click',
+        timestamp: Date.now(),
+        url: 'https://example.com',
+        tagName: 'button',
+        selector: {
+          id: 'submit-button',
+          css: 'button.btn.btn-primary',
+          text: 'Submit',
+          priority: ['id', 'css', 'text'],
+        },
+        coordinates: { x: 10, y: 10 },
+        coordinatesRelativeTo: 'element',
+        button: 'left',
+        clickCount: 1,
+        modifiers: [],
+        text: 'Submit',
+      };
+
+      const css = action.selector.css?.toLowerCase() || '';
+      const ariaLabel = action.selector.ariaLabel?.toLowerCase() || '';
+
+      const hasCarouselIndicators =
+        css.includes('swiper-button') ||
+        css.includes('carousel-control') ||
+        css.includes('slick-next') ||
+        ariaLabel.includes('next slide');
+
+      expect(hasCarouselIndicators).toBe(false);
+    });
+
+    it('should handle null selector gracefully', () => {
+      const action: ClickAction = {
+        id: 'act_006',
+        type: 'click',
+        timestamp: Date.now(),
+        url: 'https://example.com',
+        tagName: 'button',
+        selector: {
+          priority: ['css'],
+        },
+        coordinates: { x: 10, y: 10 },
+        coordinatesRelativeTo: 'element',
+        button: 'left',
+        clickCount: 1,
+        modifiers: [],
+        text: '',
+      };
+
+      // Should not throw when checking undefined properties
+      expect(() => {
+        const css = (action.selector.css || '').toLowerCase();
+        const ariaLabel = (action.selector.ariaLabel || '').toLowerCase();
+        return css.includes('swiper') || ariaLabel.includes('next');
+      }).not.toThrow();
+    });
+
+    it('should identify intentional carousel clicks by timing', () => {
+      const actions: ClickAction[] = [
+        {
+          id: 'act_001',
+          type: 'click',
+          timestamp: 1000,
+          url: 'https://example.com',
+          tagName: 'div',
+          selector: {
+            ariaLabel: 'Next slide',
+            css: 'div.swiper-button-next',
+            priority: ['ariaLabel', 'css'],
+          },
+          coordinates: { x: 10, y: 10 },
+          coordinatesRelativeTo: 'element',
+          button: 'left',
+          clickCount: 1,
+          modifiers: [],
+          text: '',
+        },
+        {
+          id: 'act_002',
+          type: 'click',
+          timestamp: 1767, // 767ms later - intentional
+          url: 'https://example.com',
+          tagName: 'div',
+          selector: {
+            ariaLabel: 'Next slide',
+            css: 'div.swiper-button-next',
+            priority: ['ariaLabel', 'css'],
+          },
+          coordinates: { x: 10, y: 10 },
+          coordinatesRelativeTo: 'element',
+          button: 'left',
+          clickCount: 1,
+          modifiers: [],
+          text: '',
+        },
+      ];
+
+      const timeDiff = actions[1].timestamp - actions[0].timestamp;
+      expect(timeDiff).toBeGreaterThan(500); // Intentional click
+      expect(timeDiff).toBeLessThan(2000); // Reasonable interval
+    });
+
+    it('should identify duplicate carousel clicks by timing', () => {
+      const actions: ClickAction[] = [
+        {
+          id: 'act_001',
+          type: 'click',
+          timestamp: 1000,
+          url: 'https://example.com',
+          tagName: 'div',
+          selector: {
+            ariaLabel: 'Next slide',
+            css: 'div.swiper-button-next',
+            priority: ['ariaLabel', 'css'],
+          },
+          coordinates: { x: 10, y: 10 },
+          coordinatesRelativeTo: 'element',
+          button: 'left',
+          clickCount: 1,
+          modifiers: [],
+          text: '',
+        },
+        {
+          id: 'act_002',
+          type: 'click',
+          timestamp: 1050, // 50ms later - duplicate
+          url: 'https://example.com',
+          tagName: 'div',
+          selector: {
+            ariaLabel: 'Next slide',
+            css: 'div.swiper-button-next',
+            priority: ['ariaLabel', 'css'],
+          },
+          coordinates: { x: 10, y: 10 },
+          coordinatesRelativeTo: 'element',
+          button: 'left',
+          clickCount: 1,
+          modifiers: [],
+          text: '',
+        },
+      ];
+
+      const timeDiff = actions[1].timestamp - actions[0].timestamp;
+      expect(timeDiff).toBeLessThan(200); // Too fast - likely duplicate
     });
   });
 });

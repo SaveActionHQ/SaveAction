@@ -1,0 +1,5034 @@
+{
+  "id": "rec_1765811221075",
+  "version": "1.0.0",
+  "testName": "test",
+  "url": "https://www.mosquepay.co.uk/login/",
+  "startTime": "2025-12-15T15:07:01.075Z",
+  "endTime": "2025-12-15T15:08:08.415Z",
+  "viewport": {
+    "width": 1536,
+    "height": 695
+  },
+  "windowSize": {
+    "width": 1536,
+    "height": 816
+  },
+  "screenSize": {
+    "width": 1536,
+    "height": 864
+  },
+  "devicePixelRatio": 1.25,
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "actions": [
+    {
+      "alternativeSelectors": [],
+      "clickCount": 1,
+      "completedAt": 1130,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 208.5999755859375,
+        "y": 27.199981689453125
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_001",
+      "modifiers": [],
+      "selector": {
+        "css": "section.login-section > div.container > div.login-box > form.login-form > div.login-form-group > input.form-control.w-full[type=\"email\"]",
+        "id": "email",
+        "name": "email",
+        "position": {
+          "index": 1,
+          "parent": "div.login-form-group"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"email\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/form[1]/div[1]/input[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "email"
+        },
+        {
+          "confidence": 85,
+          "priority": 4,
+          "strategy": "name",
+          "value": "email"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.login-section > div.container > div.login-box > form.login-form > div.login-form-group > input.form-control.w-full[type=\"email\"]"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//input[@id=\"email\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.login-form-group > :nth-child(2)"
+        }
+      ],
+      "tagName": "input",
+      "text": "",
+      "timestamp": 1080,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/login/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 2278,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_002",
+      "inputType": "email",
+      "isSensitive": false,
+      "selector": {
+        "css": "section.login-section > div.container > div.login-box > form.login-form > div.login-form-group > input.form-control.w-full[type=\"email\"]",
+        "id": "email",
+        "name": "email",
+        "position": {
+          "index": 1,
+          "parent": "div.login-form-group"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"email\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/form[1]/div[1]/input[1]"
+      },
+      "simulationType": "type",
+      "tagName": "input",
+      "timestamp": 1081,
+      "type": "input",
+      "typingDelay": 57,
+      "url": "https://www.mosquepay.co.uk/login/",
+      "value": "lemonybananathefourth",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 8406,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_003",
+      "inputType": "email",
+      "isSensitive": false,
+      "selector": {
+        "css": "section.login-section > div.container > div.login-box > form.login-form > div.login-form-group > input.form-control.w-full[type=\"email\"]",
+        "id": "email",
+        "name": "email",
+        "position": {
+          "index": 1,
+          "parent": "div.login-form-group"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"email\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/form[1]/div[1]/input[1]"
+      },
+      "simulationType": "type",
+      "tagName": "input",
+      "timestamp": 5926,
+      "type": "input",
+      "typingDelay": 80,
+      "url": "https://www.mosquepay.co.uk/login/",
+      "value": "lemonybananathefourth@gmail.com",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 9586,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 59.5999755859375,
+        "y": 10.600006103515625
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_004",
+      "modifiers": [],
+      "selector": {
+        "css": "div.container > div.login-box > form.login-form > div.login-form-group > div.login-form-password > input.form-control.w-full[type=\"password\"]",
+        "id": "password",
+        "name": "password",
+        "position": {
+          "index": 0,
+          "parent": "div.login-form-password"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"password\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "password"
+        },
+        {
+          "confidence": 85,
+          "priority": 4,
+          "strategy": "name",
+          "value": "password"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.container > div.login-box > form.login-form > div.login-form-group > div.login-form-password > input.form-control.w-full[type=\"password\"]"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//input[@id=\"password\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.login-form-password > :nth-child(1)"
+        }
+      ],
+      "tagName": "input",
+      "text": "",
+      "timestamp": 9536,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/login/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 9586,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_005",
+      "inputType": "password",
+      "isSensitive": true,
+      "selector": {
+        "css": "div.container > div.login-box > form.login-form > div.login-form-group > div.login-form-password > input.form-control.w-full[type=\"password\"]",
+        "id": "password",
+        "name": "password",
+        "position": {
+          "index": 0,
+          "parent": "div.login-form-password"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"password\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "simulationType": "type",
+      "tagName": "input",
+      "timestamp": 9539,
+      "type": "input",
+      "typingDelay": 1,
+      "url": "https://www.mosquepay.co.uk/login/",
+      "value": "1",
+      "variableName": "PASSWORD",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Login",
+          "xpath": "//button[text()=\"Login\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 10442,
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/login/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "same-page"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "submit-form"
+      },
+      "coordinates": {
+        "x": 3.5999755859375,
+        "y": 27
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_006",
+      "modifiers": [],
+      "selector": {
+        "css": "section.login-section > div.container > div.login-box > form.login-form > button.wel-btn.w-full",
+        "position": {
+          "index": 3,
+          "parent": "form.login-form"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Login",
+        "xpath": "//form[contains(@class, \"login-form\")]/button[text()='Login']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/form[1]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "login-box",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Login"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".wel-btn:has-text('Login')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.login-section > div.container > div.login-box > form.login-form > button.wel-btn.w-full"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//form[contains(@class, \"login-form\")]/button[text()='Login']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "form.login-form > :nth-child(4)"
+        }
+      ],
+      "tagName": "button",
+      "text": "Login",
+      "timestamp": 10392,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/login/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "completedAt": 10568,
+      "id": "act_007",
+      "selector": {
+        "css": "section.login-section > div.container > div.login-box > form.login-form",
+        "position": {
+          "index": 2,
+          "parent": "div.login-box"
+        },
+        "priority": [
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "textContains": "Email Address\n                ",
+        "xpath": "//form[contains(@class, \"login-form\")]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/form[1]"
+      },
+      "tagName": "form",
+      "timestamp": 10518,
+      "type": "submit",
+      "url": "https://www.mosquepay.co.uk/login/"
+    },
+    {
+      "id": "act_008",
+      "type": "navigation",
+      "timestamp": 12525,
+      "completedAt": 12525,
+      "url": "https://www.mosquepay.co.uk/members/dashboard/?type=donation",
+      "from": "https://www.mosquepay.co.uk/login/",
+      "to": "https://www.mosquepay.co.uk/members/dashboard/?type=donation",
+      "navigationTrigger": "form-submit",
+      "waitUntil": "load",
+      "duration": 0,
+      "relatedAction": "act_007"
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Submit",
+          "xpath": "//button[text()=\"Submit\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 13396,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Submit",
+          "heading": "Assalamu'alaikum! Welcome back Muhammad,",
+          "imageSrc": "https://www.mosquepay.co.uk/images/location-icon.png",
+          "linkHref": "/members/dashboard/detail/?id=137&type=donation",
+          "price": "£2.00",
+          "subheading": "West Bromwich, West Midlands"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": true,
+          "hasLink": true,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/dashboard/?type=donation",
+          "isSuccessFlow": true,
+          "patterns": [
+            "/account/",
+            "/orders/",
+            "/order/",
+            "/thank-you",
+            "/confirmation",
+            "/success"
+          ],
+          "type": "success"
+        },
+        "isLazyLoaded": false,
+        "isTerminalAction": true,
+        "navigationIntent": "checkout-complete"
+      },
+      "coordinates": {
+        "x": 50.2125244140625,
+        "y": 23.199996948242188
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_009",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-wrapper > div.panel-main > div.panel-card > form.dashboard-form > div.dashboard-form-input-wrapper > button.dashboard-form-submit",
+        "position": {
+          "index": 1,
+          "parent": "div.dashboard-form-input-wrapper"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Submit",
+        "xpath": "//div[contains(@class, \"dashboard-form-input-wrapper\")]/button[text()='Submit']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/form[1]/div[1]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "dashboard-form-input-wrapper",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Submit"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".dashboard-form-submit:has-text('Submit')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-wrapper > div.panel-main > div.panel-card > form.dashboard-form > div.dashboard-form-input-wrapper > button.dashboard-form-submit"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"dashboard-form-input-wrapper\")]/button[text()='Submit']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.dashboard-form-input-wrapper > :nth-child(2)"
+        }
+      ],
+      "tagName": "button",
+      "text": "Submit",
+      "timestamp": 13346,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/dashboard/?type=donation",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "completedAt": 13486,
+      "id": "act_010",
+      "selector": {
+        "css": "section.panel-section > div.container > div.panel-wrapper > div.panel-main > div.panel-card > form.dashboard-form",
+        "position": {
+          "index": 1,
+          "parent": "div.panel-card"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Submit",
+        "xpath": "//form[contains(@class, \"dashboard-form\")]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/form[1]"
+      },
+      "tagName": "form",
+      "timestamp": 13436,
+      "type": "submit",
+      "url": "https://www.mosquepay.co.uk/members/dashboard/?type=donation"
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Profile",
+          "xpath": "//a[text()=\"Profile\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 14466,
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/dashboard/?type=donation",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "redirect"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "navigate-to-page"
+      },
+      "coordinates": {
+        "x": 106.59999084472656,
+        "y": 6.5999908447265625
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_011",
+      "modifiers": [],
+      "selector": {
+        "css": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item",
+        "position": {
+          "index": 1,
+          "parent": "div.panel-sidebar-link"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Profile",
+        "xpath": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Profile']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/a[2]"
+      },
+      "selectors": [
+        {
+          "confidence": 82,
+          "priority": 5,
+          "strategy": "href-pattern",
+          "value": "/members/profile/"
+        },
+        {
+          "confidence": 75,
+          "context": "panel-sidebar-link-item",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Profile"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".panel-sidebar-link-item:has-text('Profile')"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Profile']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.panel-sidebar-link > :nth-child(2)"
+        }
+      ],
+      "tagName": "a",
+      "text": "Profile",
+      "timestamp": 14416,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/dashboard/?type=donation",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "id": "act_012",
+      "type": "navigation",
+      "timestamp": 14939,
+      "completedAt": 14939,
+      "url": "https://www.mosquepay.co.uk/members/profile/",
+      "from": "https://www.mosquepay.co.uk/members/dashboard/?type=donation",
+      "to": "https://www.mosquepay.co.uk/members/profile/",
+      "navigationTrigger": "form-submit",
+      "waitUntil": "load",
+      "duration": 0,
+      "relatedAction": "act_010"
+    },
+    {
+      "completedAt": 16023,
+      "element": "window",
+      "id": "act_013",
+      "scrollX": 0,
+      "scrollY": 600,
+      "timestamp": 15823,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "completedAt": 17196,
+      "element": "window",
+      "id": "act_014",
+      "scrollX": 0,
+      "scrollY": 0,
+      "timestamp": 16996,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "alternativeSelectors": [],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 17916,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Submit changes",
+          "heading": "Full Name"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card-subcard",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 144.5999755859375,
+        "y": 44.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_015",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-card > div.panel-card-body > div.panel-card-subcard > form#profile-form > div.profile-form-group > input.panel-form-control[type=\"text\"]",
+        "id": "display_name",
+        "name": "display_name",
+        "position": {
+          "index": 1,
+          "parent": "div.profile-form-group"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"display_name\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[2]/input[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "display_name"
+        },
+        {
+          "confidence": 85,
+          "priority": 4,
+          "strategy": "name",
+          "value": "display_name"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-card > div.panel-card-body > div.panel-card-subcard > form#profile-form > div.profile-form-group > input.panel-form-control[type=\"text\"]"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//input[@id=\"display_name\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.profile-form-group > :nth-child(2)"
+        }
+      ],
+      "tagName": "input",
+      "text": "",
+      "timestamp": 17866,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/profile/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 18293,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_016",
+      "inputType": "text",
+      "isSensitive": false,
+      "selector": {
+        "css": "div.panel-card > div.panel-card-body > div.panel-card-subcard > form#profile-form > div.profile-form-group > input.panel-form-control[type=\"text\"]",
+        "id": "display_name",
+        "name": "display_name",
+        "position": {
+          "index": 1,
+          "parent": "div.profile-form-group"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"display_name\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[2]/input[1]"
+      },
+      "simulationType": "type",
+      "tagName": "input",
+      "timestamp": 17867,
+      "type": "input",
+      "typingDelay": 71,
+      "url": "https://www.mosquepay.co.uk/members/profile/",
+      "value": "Naeem1",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 18235,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Submit changes",
+          "heading": "Review your personal details"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 21.600006103515625,
+        "y": 359.1999969482422
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": false,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_017",
+      "modifiers": [],
+      "selector": {
+        "css": "section.panel-section > div.container > div.panel-wrapper > div.panel-main > div.panel-card",
+        "position": {
+          "index": 0,
+          "parent": "div.panel-main"
+        },
+        "priority": [
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "textContains": "Review your personal details\n ",
+        "xpath": "//div[contains(@class, \"panel-card\")]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.panel-section > div.container > div.panel-wrapper > div.panel-main > div.panel-card"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"panel-card\")]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.panel-main > :nth-child(1)"
+        }
+      ],
+      "tagName": "div",
+      "text": "Review your personal details\n              \n                \n                  \n                    \n                        Full Name\n                        \n                            \n                        \n                    \n                    \n                    \n                        \n                            Display Name \n                        \n                        \n                        \n                            \n                            \n                        \n                        6/100\n                    \n                    \n                    \n                        Postcode\n                        \n                        (Your postcode helps us show local mosques and relevant Janazah updates.)  \n                        \n                            \n                        \n                        \n                    \n\n                    \n                        Mobile Number\n                        \n                    \n\n                    \n                    \n                    \n                        Email\n                        \n                    \n                    \n                    \n                        \n                    Password\n                     (optional)\n                     \n                     \n                        \n                    \n                    \n                    \n                        Submit changes",
+      "timestamp": 18185,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/profile/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "completedAt": 22278,
+      "element": "window",
+      "id": "act_018",
+      "scrollX": 0,
+      "scrollY": 600,
+      "timestamp": 22078,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Submit changes",
+          "xpath": "//button[text()=\"Submit changes\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 22419,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Submit changes",
+          "heading": "Full Name"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card-subcard",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/profile/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "same-page"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "submit-form"
+      },
+      "coordinates": {
+        "x": 149.5999755859375,
+        "y": 29.199981689453125
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_019",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-main > div.panel-card > div.panel-card-body > div.panel-card-subcard > form#profile-form > button.btn.btn-green.w-full",
+        "position": {
+          "index": 7,
+          "parent": "form#profile-form"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Submit changes",
+        "xpath": "//button[text()='Submit changes']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "panel-card-subcard",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Submit changes"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".btn:has-text('Submit changes')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-main > div.panel-card > div.panel-card-body > div.panel-card-subcard > form#profile-form > button.btn.btn-green.w-full"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//button[text()='Submit changes']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "form#profile-form > :nth-child(8)"
+        }
+      ],
+      "tagName": "button",
+      "text": "Submit changes",
+      "timestamp": 22369,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/profile/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "completedAt": 22508,
+      "id": "act_020",
+      "selector": {
+        "css": "div.panel-wrapper > div.panel-main > div.panel-card > div.panel-card-body > div.panel-card-subcard > form",
+        "id": "profile-form",
+        "position": {
+          "index": 0,
+          "parent": "div.panel-card-subcard"
+        },
+        "priority": [
+          "id",
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "textContains": "Full Name\n                    ",
+        "xpath": "//form[@id=\"profile-form\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]"
+      },
+      "tagName": "form",
+      "timestamp": 22458,
+      "type": "submit",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "animationDuration": 150,
+      "completedAt": 23274,
+      "event": "modal-opened",
+      "id": "act_021",
+      "initialState": "swal2-popup",
+      "modalId": "modal-0-1161-1765811244199",
+      "modalSelector": "div",
+      "timestamp": 23124,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "animationDuration": 300,
+      "completedAt": 23425,
+      "event": "modal-opened",
+      "id": "act_022",
+      "initialState": "default",
+      "modalId": "modal-31-1170-1765811244200",
+      "modalSelector": "div",
+      "timestamp": 23125,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "animationDuration": 750,
+      "completedAt": 23875,
+      "event": "modal-opened",
+      "id": "act_023",
+      "initialState": "default",
+      "modalId": "modal-40-1190-1765811244200",
+      "modalSelector": "span",
+      "timestamp": 23125,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "animationDuration": 750,
+      "completedAt": 23875,
+      "event": "modal-opened",
+      "id": "act_024",
+      "initialState": "default",
+      "modalId": "modal-57-1199-1765811244200",
+      "modalSelector": "span",
+      "timestamp": 23125,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "animationDuration": 300,
+      "completedAt": 23875,
+      "event": "modal-opened",
+      "id": "act_025",
+      "initialState": "default",
+      "modalId": "modal-26-1187-1765811244200",
+      "modalSelector": "div",
+      "timestamp": 23125,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "animationDuration": 300,
+      "completedAt": 23875,
+      "event": "modal-opened",
+      "id": "act_026",
+      "initialState": "default",
+      "modalId": "modal-34-1184-1765811244200",
+      "modalSelector": "div",
+      "timestamp": 23125,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "animationDuration": 4250,
+      "completedAt": 27375,
+      "event": "modal-opened",
+      "id": "act_027",
+      "initialState": "default",
+      "modalId": "modal-15-1189-1765811244200",
+      "modalSelector": "div",
+      "timestamp": 23125,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 27375,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "duration": 391,
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "100"
+      },
+      "id": "act_028",
+      "isDropdownParent": true,
+      "selector": {
+        "css": "nav.navbar-blue.bg-white",
+        "position": {
+          "index": 1,
+          "parent": "body.swal2-toast-shown.swal2-shown"
+        },
+        "priority": [
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "textContains": "Get the app\n        \n        \n",
+        "xpath": "//nav[contains(@class, \"navbar-blue\") and contains(@class, \"bg-white\")]",
+        "xpathAbsolute": "/html/body[1]/nav[1]"
+      },
+      "tagName": "nav",
+      "text": "Get the app\n        \n        \n          \n         ",
+      "timestamp": 24738,
+      "type": "hover",
+      "url": "https://www.mosquepay.co.uk/members/profile/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "completedAt": 27952,
+      "element": "window",
+      "id": "act_029",
+      "scrollX": 0,
+      "scrollY": 0,
+      "timestamp": 27752,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/profile/"
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Badges",
+          "xpath": "//a[text()=\"Badges\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 28642,
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/profile/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "redirect"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "navigate-to-page"
+      },
+      "coordinates": {
+        "x": 69.59999084472656,
+        "y": 29
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_030",
+      "modifiers": [],
+      "selector": {
+        "css": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item",
+        "position": {
+          "index": 2,
+          "parent": "div.panel-sidebar-link"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Badges",
+        "xpath": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Badges']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/a[3]"
+      },
+      "selectors": [
+        {
+          "confidence": 82,
+          "priority": 5,
+          "strategy": "href-pattern",
+          "value": "/members/badges/"
+        },
+        {
+          "confidence": 75,
+          "context": "panel-sidebar-link-item",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Badges"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".panel-sidebar-link-item:has-text('Badges')"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Badges']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.panel-sidebar-link > :nth-child(3)"
+        }
+      ],
+      "tagName": "a",
+      "text": "Badges",
+      "timestamp": 28592,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/profile/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "animationDuration": 150,
+      "completedAt": 29904,
+      "event": "modal-opened",
+      "id": "act_031",
+      "initialState": "swal2-popup",
+      "modalId": "modal-0-0-1765811250829",
+      "modalSelector": "div",
+      "timestamp": 29754,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/badges/"
+    },
+    {
+      "animationDuration": 300,
+      "completedAt": 30055,
+      "event": "modal-opened",
+      "id": "act_032",
+      "initialState": "default",
+      "modalId": "modal-0-0-1765811250830",
+      "modalSelector": "div",
+      "timestamp": 29755,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/badges/"
+    },
+    {
+      "completedAt": 30055,
+      "event": "modal-closed",
+      "id": "act_033",
+      "modalId": "modal-0-0-1765811250830",
+      "modalSelector": "div",
+      "timestamp": 29755,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/badges/"
+    },
+    {
+      "id": "act_034",
+      "type": "navigation",
+      "timestamp": 29805,
+      "completedAt": 29805,
+      "url": "https://www.mosquepay.co.uk/members/badges/",
+      "from": "https://www.mosquepay.co.uk/members/profile/",
+      "to": "https://www.mosquepay.co.uk/members/badges/",
+      "navigationTrigger": "click",
+      "waitUntil": "load",
+      "duration": 0,
+      "relatedAction": "act_030"
+    },
+    {
+      "completedAt": 31413.333333333332,
+      "element": "window",
+      "id": "act_035",
+      "scrollX": 0,
+      "scrollY": 700,
+      "timestamp": 31180,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/badges/"
+    },
+    {
+      "completedAt": 32086,
+      "element": "window",
+      "id": "act_036",
+      "scrollX": 0,
+      "scrollY": 0,
+      "timestamp": 31886,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/badges/"
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Favourites",
+          "xpath": "//a[text()=\"Favourites\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 32380,
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/badges/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "redirect"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "navigate-to-page"
+      },
+      "coordinates": {
+        "x": 104.59999084472656,
+        "y": 25.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_037",
+      "modifiers": [],
+      "selector": {
+        "css": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item",
+        "position": {
+          "index": 3,
+          "parent": "div.panel-sidebar-link"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Favourites",
+        "xpath": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Favourites']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/a[4]"
+      },
+      "selectors": [
+        {
+          "confidence": 82,
+          "priority": 5,
+          "strategy": "href-pattern",
+          "value": "/members/favourite/"
+        },
+        {
+          "confidence": 75,
+          "context": "panel-sidebar-link-item",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Favourites"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".panel-sidebar-link-item:has-text('Favourites')"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Favourites']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.panel-sidebar-link > :nth-child(4)"
+        }
+      ],
+      "tagName": "a",
+      "text": "Favourites",
+      "timestamp": 32330,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/badges/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "id": "act_038",
+      "type": "navigation",
+      "timestamp": 33359,
+      "completedAt": 33359,
+      "url": "https://www.mosquepay.co.uk/members/favourite/",
+      "from": "https://www.mosquepay.co.uk/members/badges/",
+      "to": "https://www.mosquepay.co.uk/members/favourite/",
+      "navigationTrigger": "click",
+      "waitUntil": "load",
+      "duration": 0,
+      "relatedAction": "act_037"
+    },
+    {
+      "completedAt": 34931,
+      "element": "window",
+      "id": "act_039",
+      "scrollX": 0,
+      "scrollY": 600,
+      "timestamp": 34731,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/favourite/"
+    },
+    {
+      "completedAt": 35690,
+      "element": "window",
+      "id": "act_040",
+      "scrollX": 0,
+      "scrollY": 0,
+      "timestamp": 35490,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/favourite/"
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Following",
+          "xpath": "//a[text()=\"Following\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 36038,
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/favourite/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "redirect"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "navigate-to-page"
+      },
+      "coordinates": {
+        "x": 54.59999084472656,
+        "y": 16.79998779296875
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_041",
+      "modifiers": [],
+      "selector": {
+        "css": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item",
+        "position": {
+          "index": 4,
+          "parent": "div.panel-sidebar-link"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Following",
+        "xpath": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Following']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/a[5]"
+      },
+      "selectors": [
+        {
+          "confidence": 82,
+          "priority": 5,
+          "strategy": "href-pattern",
+          "value": "/members/following/"
+        },
+        {
+          "confidence": 75,
+          "context": "panel-sidebar-link-item",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Following"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".panel-sidebar-link-item:has-text('Following')"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Following']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.panel-sidebar-link > :nth-child(5)"
+        }
+      ],
+      "tagName": "a",
+      "text": "Following",
+      "timestamp": 35988,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/favourite/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "id": "act_042",
+      "type": "navigation",
+      "timestamp": 39528,
+      "completedAt": 39528,
+      "url": "https://www.mosquepay.co.uk/members/following/",
+      "from": "https://www.mosquepay.co.uk/members/favourite/",
+      "to": "https://www.mosquepay.co.uk/members/following/",
+      "navigationTrigger": "back",
+      "waitUntil": "load",
+      "duration": 0
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Account Preferences",
+          "xpath": "//a[text()=\"Account Preferences\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 40747,
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/following/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "redirect"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "navigate-to-page"
+      },
+      "coordinates": {
+        "x": 135.59999084472656,
+        "y": 12.600006103515625
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_043",
+      "modifiers": [],
+      "selector": {
+        "css": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item",
+        "position": {
+          "index": 6,
+          "parent": "div.panel-sidebar-link"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Account Preferences",
+        "xpath": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Account Preferences']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/a[7]"
+      },
+      "selectors": [
+        {
+          "confidence": 82,
+          "priority": 5,
+          "strategy": "href-pattern",
+          "value": "/members/preferences/"
+        },
+        {
+          "confidence": 75,
+          "context": "panel-sidebar-link-item",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Account Preferences"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".panel-sidebar-link-item:has-text('Account Preferences')"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Account Preferences']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.panel-sidebar-link > :nth-child(7)"
+        }
+      ],
+      "tagName": "a",
+      "text": "Account Preferences",
+      "timestamp": 40697,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/following/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "animationDuration": 150,
+      "completedAt": 41546,
+      "event": "modal-opened",
+      "id": "act_044",
+      "initialState": "swal2-popup",
+      "modalId": "modal-0-0-1765811262471",
+      "modalSelector": "div",
+      "timestamp": 41396,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/preferences/"
+    },
+    {
+      "completedAt": 41696,
+      "event": "modal-closed",
+      "id": "act_045",
+      "modalId": "modal-0-0-1765811262471",
+      "modalSelector": "div",
+      "timestamp": 41396,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/preferences/"
+    },
+    {
+      "id": "act_046",
+      "type": "navigation",
+      "timestamp": 41530,
+      "completedAt": 41530,
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "from": "https://www.mosquepay.co.uk/members/following/",
+      "to": "https://www.mosquepay.co.uk/members/preferences/",
+      "navigationTrigger": "click",
+      "waitUntil": "load",
+      "duration": 0,
+      "relatedAction": "act_043"
+    },
+    {
+      "alternativeSelectors": [],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 43291,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Save"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card-subcard",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 10.5999755859375,
+        "y": 9
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_047",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "mosque",
+        "name": "donated_mosque_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"mosque\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[3]/div[1]/input[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "mosque"
+        },
+        {
+          "confidence": 85,
+          "priority": 4,
+          "strategy": "name",
+          "value": "donated_mosque_preference"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//input[@id=\"mosque\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.preference-form-check > :nth-child(1)"
+        }
+      ],
+      "tagName": "input",
+      "text": "",
+      "timestamp": 43241,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 43652,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_048",
+      "inputType": "checkbox",
+      "isSensitive": false,
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "mosque",
+        "name": "donated_mosque_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"mosque\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[3]/div[1]/input[1]"
+      },
+      "simulationType": "type",
+      "tagName": "input",
+      "timestamp": 43242,
+      "type": "input",
+      "typingDelay": 50,
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "value": "on",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 43652,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Save"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card-subcard",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 7.5999755859375,
+        "y": 14.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_049",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "amount",
+        "name": "donation_amount_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"amount\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "amount"
+        },
+        {
+          "confidence": 85,
+          "priority": 4,
+          "strategy": "name",
+          "value": "donation_amount_preference"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//input[@id=\"amount\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.preference-form-check > :nth-child(1)"
+        }
+      ],
+      "tagName": "input",
+      "text": "",
+      "timestamp": 43602,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 44074,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_050",
+      "inputType": "checkbox",
+      "isSensitive": false,
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "amount",
+        "name": "donation_amount_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"amount\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "simulationType": "type",
+      "tagName": "input",
+      "timestamp": 43604,
+      "type": "input",
+      "typingDelay": 50,
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "value": "on",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 43755,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Save"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card-subcard",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 7.5999755859375,
+        "y": 14.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_051",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "amount",
+        "name": "donation_amount_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"amount\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "amount"
+        },
+        {
+          "confidence": 85,
+          "priority": 4,
+          "strategy": "name",
+          "value": "donation_amount_preference"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//input[@id=\"amount\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.preference-form-check > :nth-child(1)"
+        }
+      ],
+      "tagName": "input",
+      "text": "",
+      "timestamp": 43705,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 44074,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Save"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card-subcard",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 7.5999755859375,
+        "y": 4
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_052",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "mosque",
+        "name": "donated_mosque_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"mosque\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[3]/div[1]/input[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "mosque"
+        },
+        {
+          "confidence": 85,
+          "priority": 4,
+          "strategy": "name",
+          "value": "donated_mosque_preference"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//input[@id=\"mosque\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.preference-form-check > :nth-child(1)"
+        }
+      ],
+      "tagName": "input",
+      "text": "",
+      "timestamp": 44024,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 44412,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_053",
+      "inputType": "checkbox",
+      "isSensitive": false,
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "mosque",
+        "name": "donated_mosque_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"mosque\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[3]/div[1]/input[1]"
+      },
+      "simulationType": "type",
+      "tagName": "input",
+      "timestamp": 44025,
+      "type": "input",
+      "typingDelay": 50,
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "value": "on",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 44154,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Save"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card-subcard",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 7.5999755859375,
+        "y": 4
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_054",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "mosque",
+        "name": "donated_mosque_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"mosque\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[3]/div[1]/input[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "mosque"
+        },
+        {
+          "confidence": 85,
+          "priority": 4,
+          "strategy": "name",
+          "value": "donated_mosque_preference"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//input[@id=\"mosque\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.preference-form-check > :nth-child(1)"
+        }
+      ],
+      "tagName": "input",
+      "text": "",
+      "timestamp": 44104,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 44412,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Save"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card-subcard",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 10.5999755859375,
+        "y": 8.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_055",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "amount",
+        "name": "donation_amount_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"amount\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "amount"
+        },
+        {
+          "confidence": 85,
+          "priority": 4,
+          "strategy": "name",
+          "value": "donation_amount_preference"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//input[@id=\"amount\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.preference-form-check > :nth-child(1)"
+        }
+      ],
+      "tagName": "input",
+      "text": "",
+      "timestamp": 44362,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 44498,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_056",
+      "inputType": "checkbox",
+      "isSensitive": false,
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "amount",
+        "name": "donation_amount_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"amount\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "simulationType": "type",
+      "tagName": "input",
+      "timestamp": 44363,
+      "type": "input",
+      "typingDelay": 50,
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "value": "on",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 44498,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Save"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card-subcard",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 10.5999755859375,
+        "y": 8.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_057",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]",
+        "id": "amount",
+        "name": "donation_amount_preference",
+        "position": {
+          "index": 0,
+          "parent": "div.preference-form-check"
+        },
+        "priority": [
+          "id",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "xpath": "//input[@id=\"amount\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/div[2]/div[1]/input[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "amount"
+        },
+        {
+          "confidence": 85,
+          "priority": 4,
+          "strategy": "name",
+          "value": "donation_amount_preference"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-card-body > div.panel-card-subcard > form#preference-form > div.preference-form-group > div.preference-form-check > input.preference-form-check-input[type=\"checkbox\"]"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//input[@id=\"amount\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.preference-form-check > :nth-child(1)"
+        }
+      ],
+      "tagName": "input",
+      "text": "",
+      "timestamp": 44448,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Save",
+          "xpath": "//button[text()=\"Save\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 45060,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Save"
+        },
+        "elementType": "card",
+        "fallbackPosition": 0,
+        "listContainer": {
+          "itemSelector": "div.panel-card-subcard",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/preferences/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "same-page"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "submit-form"
+      },
+      "coordinates": {
+        "x": 243.5999755859375,
+        "y": 17.79998779296875
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_058",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-main > div.panel-card > div.panel-card-body > div.panel-card-subcard > form#preference-form > button.btn.btn-green.w-full",
+        "id": "preference-form-save",
+        "position": {
+          "index": 3,
+          "parent": "form#preference-form"
+        },
+        "priority": [
+          "id",
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Save",
+        "xpath": "//button[@id=\"preference-form-save\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "preference-form-save"
+        },
+        {
+          "confidence": 75,
+          "context": "panel-card-subcard",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Save"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".btn:has-text('Save')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-main > div.panel-card > div.panel-card-body > div.panel-card-subcard > form#preference-form > button.btn.btn-green.w-full"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//button[@id=\"preference-form-save\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "form#preference-form > :nth-child(4)"
+        }
+      ],
+      "tagName": "button",
+      "text": "Save",
+      "timestamp": 45010,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "completedAt": 45164,
+      "id": "act_059",
+      "selector": {
+        "css": "div.panel-wrapper > div.panel-main > div.panel-card > div.panel-card-body > div.panel-card-subcard > form",
+        "id": "preference-form",
+        "position": {
+          "index": 0,
+          "parent": "div.panel-card-subcard"
+        },
+        "priority": [
+          "id",
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "textContains": "Opt out of sharing street addr",
+        "xpath": "//form[@id=\"preference-form\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[1]/form[1]"
+      },
+      "tagName": "form",
+      "timestamp": 45114,
+      "type": "submit",
+      "url": "https://www.mosquepay.co.uk/members/preferences/"
+    },
+    {
+      "completedAt": 47776,
+      "element": "window",
+      "id": "act_060",
+      "scrollX": 0,
+      "scrollY": 200,
+      "timestamp": 47576,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/preferences/"
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Refer Friend",
+          "xpath": "//a[text()=\"Refer Friend\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 47842,
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/preferences/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "redirect"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "navigate-to-page"
+      },
+      "coordinates": {
+        "x": 66.59999084472656,
+        "y": 25
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_061",
+      "modifiers": [],
+      "selector": {
+        "css": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item",
+        "position": {
+          "index": 7,
+          "parent": "div.panel-sidebar-link"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Refer Friend",
+        "xpath": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Refer Friend']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/a[8]"
+      },
+      "selectors": [
+        {
+          "confidence": 82,
+          "priority": 5,
+          "strategy": "href-pattern",
+          "value": "/members/referral/"
+        },
+        {
+          "confidence": 75,
+          "context": "panel-sidebar-link-item",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Refer Friend"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".panel-sidebar-link-item:has-text('Refer Friend')"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Refer Friend']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.panel-sidebar-link > :nth-child(8)"
+        }
+      ],
+      "tagName": "a",
+      "text": "Refer Friend",
+      "timestamp": 47792,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/preferences/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "animationDuration": 150,
+      "completedAt": 48812,
+      "event": "modal-opened",
+      "id": "act_062",
+      "initialState": "swal2-popup",
+      "modalId": "modal-0-0-1765811269737",
+      "modalSelector": "div",
+      "timestamp": 48662,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/referral/"
+    },
+    {
+      "animationDuration": 300,
+      "completedAt": 48963,
+      "event": "modal-opened",
+      "id": "act_063",
+      "initialState": "default",
+      "modalId": "modal-0-0-1765811269738",
+      "modalSelector": "div",
+      "timestamp": 48663,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/referral/"
+    },
+    {
+      "completedAt": 48963,
+      "event": "modal-closed",
+      "id": "act_064",
+      "modalId": "modal-0-0-1765811269738",
+      "modalSelector": "div",
+      "timestamp": 48663,
+      "type": "modal-lifecycle",
+      "url": "https://www.mosquepay.co.uk/members/referral/"
+    },
+    {
+      "id": "act_065",
+      "type": "navigation",
+      "timestamp": 48739,
+      "completedAt": 48739,
+      "url": "https://www.mosquepay.co.uk/members/referral/",
+      "from": "https://www.mosquepay.co.uk/members/preferences/",
+      "to": "https://www.mosquepay.co.uk/members/referral/",
+      "navigationTrigger": "form-submit",
+      "waitUntil": "load",
+      "duration": 0,
+      "relatedAction": "act_059"
+    },
+    {
+      "completedAt": 50446,
+      "element": "window",
+      "id": "act_066",
+      "scrollX": 0,
+      "scrollY": 600,
+      "timestamp": 50246,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/referral/"
+    },
+    {
+      "completedAt": 52225,
+      "element": "window",
+      "id": "act_067",
+      "scrollX": 0,
+      "scrollY": 200,
+      "timestamp": 52025,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/referral/"
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "COPY",
+          "xpath": "//button[text()=\"COPY\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 52372,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "COPY",
+          "heading": "Share your referral code with your friends or contacts",
+          "subheading": "Total donations through your referral code"
+        },
+        "elementType": "card",
+        "fallbackPosition": 1,
+        "listContainer": {
+          "itemSelector": "div.panel-card-body",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 37.699951171875,
+        "y": 20.199996948242188
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "flex",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_068",
+      "modifiers": [],
+      "selector": {
+        "css": "div.panel-wrapper > div.panel-main > div.panel-card > div.panel-card-body > div.referral-code > button.referral-code-copy",
+        "id": "referral-code-copy",
+        "position": {
+          "index": 1,
+          "parent": "div.referral-code"
+        },
+        "priority": [
+          "id",
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "COPY",
+        "xpath": "//button[@id=\"referral-code-copy\"]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[2]/div[1]/div[1]/div[2]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 90,
+          "priority": 2,
+          "strategy": "id",
+          "value": "referral-code-copy"
+        },
+        {
+          "confidence": 75,
+          "context": "referral-code",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "COPY"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".referral-code-copy:has-text('COPY')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div.panel-wrapper > div.panel-main > div.panel-card > div.panel-card-body > div.referral-code > button.referral-code-copy"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//button[@id=\"referral-code-copy\"]"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.referral-code > :nth-child(2)"
+        }
+      ],
+      "tagName": "button",
+      "text": "COPY",
+      "timestamp": 52322,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/referral/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Leaderboards",
+          "xpath": "//a[text()=\"Leaderboards\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 53682,
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/referral/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "redirect"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "navigate-to-page"
+      },
+      "coordinates": {
+        "x": 131.59999084472656,
+        "y": 20.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_069",
+      "modifiers": [],
+      "selector": {
+        "css": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item",
+        "position": {
+          "index": 8,
+          "parent": "div.panel-sidebar-link"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Leaderboards",
+        "xpath": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Leaderboards']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/a[9]"
+      },
+      "selectors": [
+        {
+          "confidence": 82,
+          "priority": 5,
+          "strategy": "href-pattern",
+          "value": "/members/leaderboards/"
+        },
+        {
+          "confidence": 75,
+          "context": "panel-sidebar-link-item",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Leaderboards"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".panel-sidebar-link-item:has-text('Leaderboards')"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Leaderboards']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.panel-sidebar-link > :nth-child(9)"
+        }
+      ],
+      "tagName": "a",
+      "text": "Leaderboards",
+      "timestamp": 53632,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/referral/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "id": "act_070",
+      "type": "navigation",
+      "timestamp": 55335,
+      "completedAt": 55335,
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "from": "https://www.mosquepay.co.uk/members/referral/",
+      "to": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "navigationTrigger": "click",
+      "waitUntil": "load",
+      "duration": 0,
+      "relatedAction": "act_069"
+    },
+    {
+      "completedAt": 56460,
+      "element": "window",
+      "id": "act_071",
+      "scrollX": 0,
+      "scrollY": 600,
+      "timestamp": 56260,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/"
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Select Time Range\n                            ▾",
+          "xpath": "//button[text()=\"Select Time Range\n                            ▾\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 56884,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Select Time Range\n                            ▾"
+        },
+        "elementType": "list-item",
+        "fallbackPosition": 1,
+        "listContainer": {
+          "itemSelector": "div.donation-overview-graph-labels.d-flex",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/leaderboards/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "same-page"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "submit-form"
+      },
+      "coordinates": {
+        "x": 64.4000244140625,
+        "y": 23.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_072",
+      "modifiers": [],
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn",
+        "position": {
+          "index": 0,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Select Time Range\n                            ▾",
+        "xpath": "//div[contains(@class, \"dropdown\")]/button[text()='Select Time Range\n                            ▾']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "dropdown",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Select Time Range\n                            ▾"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".dropdown-btn:has-text('Select Time Range\n                            ▾')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"dropdown\")]/button[text()='Select Time Range\n                            ▾']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.dropdown > :nth-child(1)"
+        }
+      ],
+      "tagName": "button",
+      "text": "Select Time Range\n                            ▾",
+      "timestamp": 56834,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Select Time Range\n                            ▾",
+          "xpath": "//button[text()=\"Select Time Range\n                            ▾\"]"
+        }
+      ],
+      "completedAt": 57164,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "duration": 259,
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_073",
+      "isDropdownParent": true,
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn",
+        "position": {
+          "index": 0,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Select Time Range\n                            ▾",
+        "xpath": "//div[contains(@class, \"dropdown\")]/button[text()='Select Time Range\n                            ▾']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/button[1]"
+      },
+      "tagName": "button",
+      "text": "Select Time Range\n                            ▾",
+      "timestamp": 56905,
+      "type": "hover",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Select Time Range\n                            ▾",
+          "xpath": "//button[text()=\"Select Time Range\n                            ▾\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 57164,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Select Time Range\n                            ▾"
+        },
+        "elementType": "list-item",
+        "fallbackPosition": 1,
+        "listContainer": {
+          "itemSelector": "div.donation-overview-graph-labels.d-flex",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/leaderboards/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "same-page"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "submit-form"
+      },
+      "coordinates": {
+        "x": 64.4000244140625,
+        "y": 23.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_074",
+      "modifiers": [],
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn",
+        "position": {
+          "index": 0,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Select Time Range\n                            ▾",
+        "xpath": "//div[contains(@class, \"dropdown\")]/button[text()='Select Time Range\n                            ▾']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "dropdown",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Select Time Range\n                            ▾"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".dropdown-btn:has-text('Select Time Range\n                            ▾')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"dropdown\")]/button[text()='Select Time Range\n                            ▾']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.dropdown > :nth-child(1)"
+        }
+      ],
+      "tagName": "button",
+      "text": "Select Time Range\n                            ▾",
+      "timestamp": 56906,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "last 365 Days",
+          "xpath": "//li[text()=\"last 365 Days\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 57875,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 75.5999755859375,
+        "y": 20.800003051757812
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "list-item",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_075",
+      "modifiers": [],
+      "selector": {
+        "css": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li:nth-child(1)",
+        "position": {
+          "index": 0,
+          "parent": "ul#dropdownMenu"
+        },
+        "priority": [
+          "text",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "last 365 Days",
+        "xpath": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='last 365 Days']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/ul[1]/li[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "li",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "last 365 Days"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='last 365 Days']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "ul#dropdownMenu > :nth-child(1)"
+        }
+      ],
+      "tagName": "li",
+      "text": "last 365 Days",
+      "timestamp": 57825,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 58821,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "duration": 883,
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "1000"
+      },
+      "id": "act_076",
+      "isDropdownParent": true,
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul.dropdown-menu",
+        "id": "dropdownMenu",
+        "position": {
+          "index": 1,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "id",
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "textContains": "last 365 Days\n                ",
+        "xpath": "//ul[@id=\"dropdownMenu\"]",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/ul[1]"
+      },
+      "tagName": "ul",
+      "text": "last 365 Days\n                            \n       ",
+      "timestamp": 57938,
+      "type": "hover",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "last 365 Days",
+          "xpath": "//li[text()=\"last 365 Days\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 58821,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 75.5999755859375,
+        "y": 20.800003051757812
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "list-item",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_077",
+      "modifiers": [],
+      "selector": {
+        "css": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li:nth-child(1)",
+        "position": {
+          "index": 0,
+          "parent": "ul#dropdownMenu"
+        },
+        "priority": [
+          "text",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "last 365 Days",
+        "xpath": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='last 365 Days']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/ul[1]/li[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "li",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "last 365 Days"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='last 365 Days']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "ul#dropdownMenu > :nth-child(1)"
+        }
+      ],
+      "tagName": "li",
+      "text": "last 365 Days",
+      "timestamp": 57938,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "completedAt": 59080,
+      "element": "window",
+      "id": "act_078",
+      "scrollX": 0,
+      "scrollY": 100,
+      "timestamp": 58880,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/"
+    },
+    {
+      "completedAt": 59695,
+      "element": "window",
+      "id": "act_079",
+      "scrollX": 0,
+      "scrollY": 300,
+      "timestamp": 59495,
+      "type": "scroll",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/"
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "last 365 Days ▾",
+          "xpath": "//button[text()=\"last 365 Days ▾\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 59836,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "last 365 Days ▾"
+        },
+        "elementType": "list-item",
+        "fallbackPosition": 1,
+        "listContainer": {
+          "itemSelector": "div.donation-overview-graph-labels.d-flex",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/leaderboards/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "same-page"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "submit-form"
+      },
+      "coordinates": {
+        "x": 65.4000244140625,
+        "y": 18.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_080",
+      "modifiers": [],
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn",
+        "position": {
+          "index": 0,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "last 365 Days ▾",
+        "xpath": "//div[contains(@class, \"dropdown\")]/button[text()='last 365 Days ▾']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "dropdown",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "last 365 Days ▾"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".dropdown-btn:has-text('last 365 Days ▾')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"dropdown\")]/button[text()='last 365 Days ▾']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.dropdown > :nth-child(1)"
+        }
+      ],
+      "tagName": "button",
+      "text": "last 365 Days ▾",
+      "timestamp": 59786,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "last 365 Days ▾",
+          "xpath": "//button[text()=\"last 365 Days ▾\"]"
+        }
+      ],
+      "completedAt": 60209,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "duration": 345,
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_081",
+      "isDropdownParent": true,
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn",
+        "position": {
+          "index": 0,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "last 365 Days ▾",
+        "xpath": "//div[contains(@class, \"dropdown\")]/button[text()='last 365 Days ▾']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/button[1]"
+      },
+      "tagName": "button",
+      "text": "last 365 Days ▾",
+      "timestamp": 59864,
+      "type": "hover",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "last 365 Days ▾",
+          "xpath": "//button[text()=\"last 365 Days ▾\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 60209,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "last 365 Days ▾"
+        },
+        "elementType": "list-item",
+        "fallbackPosition": 1,
+        "listContainer": {
+          "itemSelector": "div.donation-overview-graph-labels.d-flex",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/leaderboards/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "same-page"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "submit-form"
+      },
+      "coordinates": {
+        "x": 65.4000244140625,
+        "y": 18.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_082",
+      "modifiers": [],
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn",
+        "position": {
+          "index": 0,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "last 365 Days ▾",
+        "xpath": "//div[contains(@class, \"dropdown\")]/button[text()='last 365 Days ▾']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "dropdown",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "last 365 Days ▾"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".dropdown-btn:has-text('last 365 Days ▾')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"dropdown\")]/button[text()='last 365 Days ▾']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.dropdown > :nth-child(1)"
+        }
+      ],
+      "tagName": "button",
+      "text": "last 365 Days ▾",
+      "timestamp": 59865,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Last 30 Days",
+          "xpath": "//li[text()=\"Last 30 Days\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 60492,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 46.5999755859375,
+        "y": 18.79998779296875
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "list-item",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_083",
+      "modifiers": [],
+      "selector": {
+        "css": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li:nth-child(2)",
+        "position": {
+          "index": 1,
+          "parent": "ul#dropdownMenu"
+        },
+        "priority": [
+          "text",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Last 30 Days",
+        "xpath": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='Last 30 Days']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/ul[1]/li[2]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "li",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Last 30 Days"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='Last 30 Days']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "ul#dropdownMenu > :nth-child(2)"
+        }
+      ],
+      "tagName": "li",
+      "text": "Last 30 Days",
+      "timestamp": 60442,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 60975,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "duration": 447,
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "1000"
+      },
+      "id": "act_084",
+      "isDropdownParent": true,
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul.dropdown-menu",
+        "id": "dropdownMenu",
+        "position": {
+          "index": 1,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "id",
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "textContains": "last 365 Days\n                ",
+        "xpath": "//ul[@id=\"dropdownMenu\"]",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/ul[1]"
+      },
+      "tagName": "ul",
+      "text": "last 365 Days\n                            \n       ",
+      "timestamp": 60528,
+      "type": "hover",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Last 30 Days",
+          "xpath": "//li[text()=\"Last 30 Days\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 60975,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 46.5999755859375,
+        "y": 18.79998779296875
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "list-item",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_085",
+      "modifiers": [],
+      "selector": {
+        "css": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li:nth-child(2)",
+        "position": {
+          "index": 1,
+          "parent": "ul#dropdownMenu"
+        },
+        "priority": [
+          "text",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Last 30 Days",
+        "xpath": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='Last 30 Days']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/ul[1]/li[2]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "li",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Last 30 Days"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='Last 30 Days']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "ul#dropdownMenu > :nth-child(2)"
+        }
+      ],
+      "tagName": "li",
+      "text": "Last 30 Days",
+      "timestamp": 60529,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Last 30 Days ▾",
+          "xpath": "//button[text()=\"Last 30 Days ▾\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 61643,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Last 30 Days ▾"
+        },
+        "elementType": "list-item",
+        "fallbackPosition": 1,
+        "listContainer": {
+          "itemSelector": "div.donation-overview-graph-labels.d-flex",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/leaderboards/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "same-page"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "submit-form"
+      },
+      "coordinates": {
+        "x": 49.4000244140625,
+        "y": 30.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_086",
+      "modifiers": [],
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn",
+        "position": {
+          "index": 0,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Last 30 Days ▾",
+        "xpath": "//div[contains(@class, \"dropdown\")]/button[text()='Last 30 Days ▾']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "dropdown",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Last 30 Days ▾"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".dropdown-btn:has-text('Last 30 Days ▾')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"dropdown\")]/button[text()='Last 30 Days ▾']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.dropdown > :nth-child(1)"
+        }
+      ],
+      "tagName": "button",
+      "text": "Last 30 Days ▾",
+      "timestamp": 61593,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Last 30 Days ▾",
+          "xpath": "//button[text()=\"Last 30 Days ▾\"]"
+        }
+      ],
+      "completedAt": 62049,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "duration": 376,
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_087",
+      "isDropdownParent": true,
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn",
+        "position": {
+          "index": 0,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Last 30 Days ▾",
+        "xpath": "//div[contains(@class, \"dropdown\")]/button[text()='Last 30 Days ▾']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/button[1]"
+      },
+      "tagName": "button",
+      "text": "Last 30 Days ▾",
+      "timestamp": 61673,
+      "type": "hover",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Last 30 Days ▾",
+          "xpath": "//button[text()=\"Last 30 Days ▾\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 62049,
+      "contentSignature": {
+        "contentFingerprint": {
+          "buttonText": "Last 30 Days ▾"
+        },
+        "elementType": "list-item",
+        "fallbackPosition": 1,
+        "listContainer": {
+          "itemSelector": "div.donation-overview-graph-labels.d-flex",
+          "selector": "div.container"
+        },
+        "visualHints": {
+          "hasButton": true,
+          "hasImage": false,
+          "hasLink": false,
+          "hasPrice": false,
+          "hasRating": false
+        }
+      },
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/leaderboards/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "same-page"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "submit-form"
+      },
+      "coordinates": {
+        "x": 49.4000244140625,
+        "y": 30.399993896484375
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "inline-block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_088",
+      "modifiers": [],
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn",
+        "position": {
+          "index": 0,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Last 30 Days ▾",
+        "xpath": "//div[contains(@class, \"dropdown\")]/button[text()='Last 30 Days ▾']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/button[1]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "dropdown",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Last 30 Days ▾"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".dropdown-btn:has-text('Last 30 Days ▾')"
+        },
+        {
+          "confidence": 65,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > button.dropdown-btn"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"dropdown\")]/button[text()='Last 30 Days ▾']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.dropdown > :nth-child(1)"
+        }
+      ],
+      "tagName": "button",
+      "text": "Last 30 Days ▾",
+      "timestamp": 61674,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "last 7 Days",
+          "xpath": "//li[text()=\"last 7 Days\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 62323,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 68.5999755859375,
+        "y": 30.79998779296875
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "list-item",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_089",
+      "modifiers": [],
+      "selector": {
+        "css": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li:nth-child(3)",
+        "position": {
+          "index": 2,
+          "parent": "ul#dropdownMenu"
+        },
+        "priority": [
+          "text",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "last 7 Days",
+        "xpath": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='last 7 Days']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/ul[1]/li[3]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "li",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "last 7 Days"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='last 7 Days']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "ul#dropdownMenu > :nth-child(3)"
+        }
+      ],
+      "tagName": "li",
+      "text": "last 7 Days",
+      "timestamp": 62273,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [],
+      "completedAt": 62624,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "duration": 256,
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "1000"
+      },
+      "id": "act_090",
+      "isDropdownParent": true,
+      "selector": {
+        "css": "section.donation-overview-graph > div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul.dropdown-menu",
+        "id": "dropdownMenu",
+        "position": {
+          "index": 1,
+          "parent": "div.dropdown"
+        },
+        "priority": [
+          "id",
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "textContains": "last 365 Days\n                ",
+        "xpath": "//ul[@id=\"dropdownMenu\"]",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/ul[1]"
+      },
+      "tagName": "ul",
+      "text": "last 365 Days\n                            \n       ",
+      "timestamp": 62368,
+      "type": "hover",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "last 7 Days",
+          "xpath": "//li[text()=\"last 7 Days\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 62624,
+      "context": {
+        "isLazyLoaded": false
+      },
+      "coordinates": {
+        "x": 68.5999755859375,
+        "y": 30.79998779296875
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "list-item",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_091",
+      "modifiers": [],
+      "selector": {
+        "css": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li:nth-child(3)",
+        "position": {
+          "index": 2,
+          "parent": "ul#dropdownMenu"
+        },
+        "priority": [
+          "text",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "last 7 Days",
+        "xpath": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='last 7 Days']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[2]/div[1]/section[2]/div[1]/article[1]/div[1]/div[2]/ul[1]/li[3]"
+      },
+      "selectors": [
+        {
+          "confidence": 75,
+          "context": "li",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "last 7 Days"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "div > article.donation-overview-graph-article.bg-white > div.donation-overview-graph-labels.d-flex > div.dropdown > ul#dropdownMenu > li"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//ul[contains(@class, \"dropdown-menu\")]/li[text()='last 7 Days']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "ul#dropdownMenu > :nth-child(3)"
+        }
+      ],
+      "tagName": "li",
+      "text": "last 7 Days",
+      "timestamp": 62369,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "alternativeSelectors": [
+        {
+          "priority": 1,
+          "text": "Du'wah request list",
+          "xpath": "//a[text()=\"Du'wah request list\"]"
+        }
+      ],
+      "button": "left",
+      "clickCount": 1,
+      "completedAt": 63427,
+      "context": {
+        "expectedUrlChange": {
+          "beforeUrl": "https://www.mosquepay.co.uk/members/leaderboards/",
+          "isSuccessFlow": false,
+          "patterns": [],
+          "type": "redirect"
+        },
+        "isLazyLoaded": false,
+        "navigationIntent": "navigate-to-page"
+      },
+      "coordinates": {
+        "x": 84.59999084472656,
+        "y": 20.199981689453125
+      },
+      "coordinatesRelativeTo": "element",
+      "elementState": {
+        "display": "block",
+        "enabled": true,
+        "inViewport": true,
+        "opacity": "1",
+        "visible": true,
+        "zIndex": "auto"
+      },
+      "id": "act_092",
+      "modifiers": [],
+      "selector": {
+        "css": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item",
+        "position": {
+          "index": 9,
+          "parent": "div.panel-sidebar-link"
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "text": "Du'wah request list",
+        "xpath": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Du'wah request list']",
+        "xpathAbsolute": "/html/body[1]/main[1]/section[1]/div[1]/div[1]/div[1]/div[1]/a[10]"
+      },
+      "selectors": [
+        {
+          "confidence": 82,
+          "priority": 5,
+          "strategy": "href-pattern",
+          "value": "/members/duwah-request/"
+        },
+        {
+          "confidence": 75,
+          "context": "panel-sidebar-link-item",
+          "priority": 7,
+          "strategy": "text-content",
+          "value": "Du'wah request list"
+        },
+        {
+          "confidence": 70,
+          "priority": 8,
+          "strategy": "css-semantic",
+          "value": ".panel-sidebar-link-item:has-text('Du'wah request list')"
+        },
+        {
+          "confidence": 45,
+          "priority": 9,
+          "strategy": "css",
+          "value": "section.panel-section > div.container > div.panel-wrapper > div.panel-sidebar > div.panel-sidebar-link > a.panel-sidebar-link-item"
+        },
+        {
+          "confidence": 55,
+          "priority": 10,
+          "strategy": "xpath",
+          "value": "//div[contains(@class, \"panel-sidebar-link\")]/a[text()='Du'wah request list']"
+        },
+        {
+          "confidence": 30,
+          "priority": 11,
+          "strategy": "position",
+          "value": "div.panel-sidebar-link > :nth-child(10)"
+        }
+      ],
+      "tagName": "a",
+      "text": "Du'wah request list",
+      "timestamp": 63377,
+      "type": "click",
+      "url": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "waitConditions": {
+        "elementStable": true,
+        "elementVisible": true,
+        "networkIdle": true,
+        "parentVisible": true
+      }
+    },
+    {
+      "id": "act_093",
+      "type": "navigation",
+      "timestamp": 64640,
+      "completedAt": 64640,
+      "url": "https://www.mosquepay.co.uk/members/duwah-request/",
+      "from": "https://www.mosquepay.co.uk/members/leaderboards/",
+      "to": "https://www.mosquepay.co.uk/members/duwah-request/",
+      "navigationTrigger": "form-submit",
+      "waitUntil": "load",
+      "duration": 0,
+      "relatedAction": "act_088"
+    }
+  ],
+  "variables": [
+    {
+      "name": "PASSWORD",
+      "description": "password field (#password)",
+      "fieldType": "password",
+      "selector": "#password",
+      "placeholder": "${PASSWORD}"
+    }
+  ]
+}

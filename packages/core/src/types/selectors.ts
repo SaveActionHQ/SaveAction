@@ -40,7 +40,11 @@ export type SelectorType =
   | 'xpathAbsolute'
   | 'text'
   | 'textContains'
-  | 'position';
+  | 'position'
+  | 'text-content' // Text-based search (may need context scoping)
+  | 'css-semantic' // CSS with :has-text() pseudo-selector
+  | 'href-pattern' // Link href pattern matching
+  | 'src-pattern'; // Image/media src pattern matching
 
 /**
  * Configuration for selector generation

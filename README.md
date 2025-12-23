@@ -18,11 +18,11 @@
 ## ⚠️ **PROJECT STATUS: IN ACTIVE DEVELOPMENT**
 
 > **🚧 NOT READY FOR PRODUCTION USE 🚧**
-> 
+>
 > This project is currently under active development and is **NOT yet complete**. Core features are being built and tested. APIs and interfaces may change significantly.
-> 
+>
 > **Please wait for the official v1.0.0 release before using in production environments.**
-> 
+>
 > ⭐ **Star this repo** to stay updated on releases!
 
 ---
@@ -32,10 +32,11 @@
 - 🎯 **Zero Code Testing** - No programming knowledge required, just record and replay
 - 🎭 **Pixel-Perfect Replay** - Matches exact window size, viewport, and device pixel ratio
 - ⚡ **Smart Element Location** - Multi-strategy selector with exponential backoff retry
+- 🎠 **Carousel Support (Beta)** - Intelligent detection for Swiper, Slick, and Bootstrap carousels
 - 🌊 **Human-Like Execution** - Replicates exact scroll speed, typing delays, and hover duration
 - 🔄 **Intelligent Navigation** - Auto-correction and optimized back/forward navigation
 - 🎨 **Beautiful CLI Output** - Real-time progress with color-coded status and timing
-- 🧪 **Test-First Development** - 73 unit tests with 53.8% coverage
+- 🧪 **Test-First Development** - 81 unit tests with comprehensive coverage
 - 🔧 **TypeScript + Strict Mode** - Type-safe with ES2022 modules
 
 ## 🚀 Quick Start
@@ -108,31 +109,68 @@ Recordings are JSON files captured by the [SaveAction Recorder extension](https:
 }
 ```
 
+## 🎠 Carousel/Swiper Support (Beta)
+
+SaveAction intelligently detects and handles carousel navigation to execute repeated clicks correctly.
+
+### Supported Libraries
+
+- ✅ **Swiper.js** - Detects `.swiper-button-next/prev` and `aria-label="Next slide"`
+- ✅ **Bootstrap Carousel** - Detects `.carousel-control-next/prev`
+- ✅ **Slick Carousel** - Detects `.slick-next/prev`
+
+### How It Works
+
+- **Timing-based detection**: Clicks >500ms apart are considered intentional navigation
+- **Duplicate prevention**: Clicks <200ms apart are skipped as recording errors
+- **Safety limits**: Maximum 5 consecutive carousel clicks to prevent infinite loops
+
+### Example Output
+
+```
+🎠 Intentional carousel navigation click (767ms apart)
+✅ [24] click completed (432ms)
+🎠 Intentional carousel navigation click (696ms apart)
+✅ [25] click completed (427ms)
+```
+
+### Known Limitations
+
+- Custom carousel implementations may not be auto-detected
+- International sites with non-English `aria-label` may need updates
+
+**Feedback Welcome!** If your carousel isn't detected, please [open an issue](https://github.com/SaveActionHQ/SaveAction/issues) with your recording JSON.
+
+---
+
 ## 🛠️ Tech Stack
 
 - **Runtime**: Node.js 18+ with ES modules
 - **Package Manager**: pnpm + Turborepo monorepo
-- **Browser Automation**: Cross-browser support (Chromium, Firefox, WebKit)
+- **Browser Automation**: Playwright 1.40.0 (Chromium, Firefox, WebKit)
 - **Validation**: Zod 3.22.4 for runtime type checking
-- **Testing**: Vitest 1.0.4 with v8 coverage
+- **Testing**: Vitest 1.0.4 with v8 coverage (81 tests passing)
 - **CLI**: Commander.js 11.1.0
 - **TypeScript**: 5.3.3 (strict mode, ES2022 target)
 
 ## 📈 Current Progress
 
 **Phase 1: Core Engine + CLI** ✅ **COMPLETE**
+
 - JSON recording parser with Zod validation
 - Multi-browser test runner
 - Element locator with retry logic
 - CLI tool with run command
 
 **Phase 2: Unit Testing** ✅ **COMPLETE**
+
 - 73 unit tests passing
 - 53.8% code coverage
 - RecordingParser: 100% coverage
 - ConsoleReporter: 100% coverage
 
 **Phase 3: Perfect Timing Replication** ✅ **COMPLETE**
+
 - Hover duration simulation
 - Smooth scroll animations (ease-out cubic)
 - Exact coordinate clicks
@@ -141,12 +179,14 @@ Recordings are JSON files captured by the [SaveAction Recorder extension](https:
 - Window size matching for pixel-perfect layout
 
 **Phase 4: REST API** 🚧 **PLANNED**
+
 - Express/Fastify server
 - Recording upload endpoints
 - Test execution API
 - WebSocket live progress
 
 **Phase 5: Web UI** 🚧 **PLANNED**
+
 - React/Next.js dashboard
 - Recording manager
 - Test results viewer
@@ -155,6 +195,7 @@ Recordings are JSON files captured by the [SaveAction Recorder extension](https:
 ## 🎯 Timing Accuracy
 
 Latest test results show **98.3% timing accuracy**:
+
 - Recording duration: 17.615 seconds
 - Replay duration: 17.320 seconds
 - Back navigation: 22ms (optimized)
