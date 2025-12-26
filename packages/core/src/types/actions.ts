@@ -44,6 +44,34 @@ export interface ContentSignature {
 }
 
 /**
+ * Click intent classification (v2.0)
+ */
+export interface ClickIntent {
+  type:
+    | 'carousel-navigation'
+    | 'pagination'
+    | 'form-submit'
+    | 'increment'
+    | 'toggle'
+    | 'navigation'
+    | 'generic-click';
+  allowMultiple: boolean;
+  requiresDelay: boolean;
+  confidence: number;
+}
+
+/**
+ * Validation metadata from browser extension (v2.0)
+ */
+export interface ValidationMetadata {
+  isDuplicate: boolean;
+  duplicateOf: string | null;
+  isOsEvent: boolean;
+  confidence: number;
+  flags: string[];
+}
+
+/**
  * Navigation intent metadata from recorder
  */
 export interface NavigationIntentMetadata {
@@ -92,6 +120,10 @@ export interface BaseAction {
 
   // Phase 2: Content signature for fallback
   contentSignature?: ContentSignature;
+
+  // v2.0: Intent classification and validation
+  clickIntent?: ClickIntent;
+  validation?: ValidationMetadata;
 }
 
 /**

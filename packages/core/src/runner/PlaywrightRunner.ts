@@ -2160,6 +2160,45 @@ export class PlaywrightRunner {
   private shouldSkipAction(action: Action, page: Page): boolean {
     const context = action.context;
 
+    // Check 0: v2.0 validation metadata (highest priority)
+    if (action.validation) {
+      // If extension marked this as duplicate, skip it
+      if (action.validation.isDuplicate) {
+        console.log(
+          `⏭️  Skipping action marked as duplicate by extension (duplicateOf: ${action.validation.duplicateOf})`
+        );
+        return true;
+      }
+
+      // If extension marked this as OS event (double-click), skip it
+      // The previous action should have been recorded with clickCount: 2
+      if (action.validation.isOsEvent && action.validation.flags.includes('os-event-detail-2')) {
+        console.log(`⏭️  Skipping OS double-click event (merged with previous action)`);
+        return true;
+      }
+
+      // If extension has low confidence, warn but execute
+      if (action.validation.confidence < 50) {
+        console.warn(
+          `⚠️  Low confidence action (${action.validation.confidence}%), executing anyway`
+        );
+      }
+
+      // v2.0 recordings with validation: skip time-based duplicate detection
+      // Trust the extension's judgment
+      if (context) {
+        // Check for action groups
+        if (context.actionGroup && this.skippedActionGroups.has(context.actionGroup)) {
+          console.log(`⏭️  SKIPPING action ${action.id}: Group already completed`);
+          return true;
+        }
+      }
+
+      // Extension says it's good - don't apply legacy duplicate detection
+      return false;
+    }
+
+    // Legacy mode: Old recordings without validation metadata
     // Check 0: Is this a duplicate click (same element clicked recently)?
     if (action.type === 'click' && this.lastClickedElement) {
       const timeSinceLastClick = action.timestamp - this.lastClickedElement.timestamp;
@@ -2167,7 +2206,9 @@ export class PlaywrightRunner {
 
       // If same element clicked within 500ms, it's likely a duplicate recording
       if (sameElement && timeSinceLastClick < 500) {
-        console.log(`⏭️  Skipping duplicate click on same element (${timeSinceLastClick}ms apart)`);
+        console.log(
+          `⏭️  Skipping duplicate click on same element (${timeSinceLastClick}ms apart) [LEGACY MODE]`
+        );
         return true;
       }
     }
