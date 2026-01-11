@@ -50,11 +50,13 @@ export class ElementLocator {
     // **FIX: Always prefer CSS/xpath/semantic selectors over text-content for buttons**
     const sortedSelectors = [...selectors].sort((a, b) => {
       // Check if we're dealing with button-related selectors
-      const aIsButtonCss = a.strategy === 'css' && typeof a.value === 'string' && a.value.includes('button');
-      const bIsButtonCss = b.strategy === 'css' && typeof b.value === 'string' && b.value.includes('button');
+      const aIsButtonCss =
+        a.strategy === 'css' && typeof a.value === 'string' && a.value.includes('button');
+      const bIsButtonCss =
+        b.strategy === 'css' && typeof b.value === 'string' && b.value.includes('button');
       const aIsTextContent = a.strategy === 'text-content';
       const bIsTextContent = b.strategy === 'text-content';
-      
+
       // Always prioritize button CSS over text-content
       if (aIsButtonCss && bIsTextContent) {
         console.log(`  🎯 Boosting button CSS selector over text-content`);
@@ -64,11 +66,11 @@ export class ElementLocator {
         console.log(`  🎯 Boosting button CSS selector over text-content`);
         return 1; // B comes first
       }
-      
+
       // For button clicks, also prefer css-semantic over text-content
       const aIsCssSemantic = a.strategy === 'css-semantic';
       const bIsCssSemantic = b.strategy === 'css-semantic';
-      
+
       if (aIsCssSemantic && bIsTextContent) {
         console.log(`  🎯 Boosting css-semantic over text-content`);
         return -1;
@@ -77,7 +79,7 @@ export class ElementLocator {
         console.log(`  🎯 Boosting css-semantic over text-content`);
         return 1;
       }
-      
+
       // Otherwise use normal priority sorting
       return a.priority - b.priority;
     });
@@ -310,7 +312,17 @@ export class ElementLocator {
     const maxRetries = 3;
     const baseDelay = 500;
 
+    // DEBUG: Log what we're looking for
+    console.log(`\n🔍 [DEBUG] Searching for element with ${selector.priority.length} strategies:`);
+    console.log(`   CSS: ${selector.css?.substring(0, 80)}...`);
+    console.log(`   Has validation: ${!!(selector as any).validation}`);
+    console.log(`   cssMatches from recording: ${(selector as any).validation?.cssMatches}`);
+
     for (let attempt = 0; attempt < maxRetries; attempt++) {
+      if (attempt > 0) {
+        console.log(`   🔄 Retry attempt ${attempt + 1}/${maxRetries}`);
+      }
+
       try {
         // Try selectors in priority order
         for (const selectorType of selector.priority) {
@@ -320,6 +332,8 @@ export class ElementLocator {
           try {
             const locator = this.getLocator(page, selectorType, selectorValue);
             const count = await locator.count();
+
+            console.log(`   [${selectorType}] Matched ${count} elements`);
 
             if (count === 1) {
               // Perfect match - single element found
@@ -396,12 +410,27 @@ export class ElementLocator {
         return filtered.first();
       }
     } // Strategy 2: Check if this is an autocomplete/dropdown scenario
+    // BUT EXCLUDE carousel controls and elements with validated unique selectors
+    const hasCarouselIndicators =
+      selector.css?.includes('carousel') ||
+      selector.css?.includes('arrow') ||
+      selector.css?.includes('.next') ||
+      selector.css?.includes('.prev') ||
+      selector.css?.includes('slide') ||
+      selector.css?.includes('swiper');
+
+    const hasValidatedUniqueSelector =
+      (selector as any).validation?.cssMatches === 1 &&
+      (selector as any).validation?.isUnique === true;
+
     const isAutocomplete =
-      selector.css?.includes('autocomplete') ||
-      selector.css?.includes('dropdown') ||
-      selector.css?.includes('suggestion') ||
-      selector.css?.includes('menu-item') ||
-      (selector.css?.includes('ul') && selector.css?.includes('li'));
+      !hasCarouselIndicators && // Don't treat carousels as autocomplete
+      !hasValidatedUniqueSelector && // Trust validated unique selectors
+      (selector.css?.includes('autocomplete') ||
+        selector.css?.includes('dropdown') ||
+        selector.css?.includes('suggestion') ||
+        selector.css?.includes('menu-item') ||
+        (selector.css?.includes('ul') && selector.css?.includes('li')));
 
     if (isAutocomplete) {
       // Try to find first visible element

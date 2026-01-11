@@ -103,50 +103,105 @@ export class PlaywrightRunner {
   }
 
   /**
-   * Deduplicate input actions - keep only the final value for each field
-   * Eliminates backspace/correction noise during typing
+   * Deduplicate input actions with form-boundary awareness
+   * Handles user corrections after validation errors by preserving position but using final value
    */
   private deduplicateInputActions(actions: Action[]): Action[] {
-    const inputsByField = new Map<string, { action: InputAction; timestamp: number }>();
+    // Step 1: Identify form boundaries (submit actions)
+    const formBoundaries = this.identifyFormBoundaries(actions);
 
-    // First pass: identify all input actions and keep track of latest per field BY TIMESTAMP
+    // Step 2: Group all inputs by field (track ALL occurrences)
+    const fieldInputMap = new Map<string, InputAction[]>();
+
     actions.forEach((action) => {
       if (isInputAction(action)) {
         const fieldKey = this.getFieldKey(action);
-        const existingEntry = inputsByField.get(fieldKey);
+        if (!fieldInputMap.has(fieldKey)) {
+          fieldInputMap.set(fieldKey, []);
+        }
+        fieldInputMap.get(fieldKey)!.push(action);
 
         console.log(
           `   [DEBUG] Found input action ${action.id}: fieldKey="${fieldKey}", timestamp=${action.timestamp}, value="${action.value?.substring(0, 15)}..."`
         );
-
-        // Keep the input action with the LATEST timestamp (most recent typing)
-        if (!existingEntry || action.timestamp > existingEntry.timestamp) {
-          console.log(`      → Keeping ${action.id} for ${fieldKey} (newer)`);
-          inputsByField.set(fieldKey, { action, timestamp: action.timestamp });
-        } else {
-          console.log(
-            `      → Skipping ${action.id} for ${fieldKey} (older than ${existingEntry.action.id})`
-          );
-        }
       }
     });
 
-    // Second pass: filter out intermediate inputs, keep only final values
-    const deduplicatedActions = actions.filter((action) => {
-      if (!isInputAction(action)) return true;
+    // Step 3: Mark actions for deletion based on form-boundary-aware logic
+    let correctionCount = 0;
+    let normalDedupeCount = 0;
 
-      const fieldKey = this.getFieldKey(action);
-      const latestEntry = inputsByField.get(fieldKey);
+    for (const [fieldKey, inputs] of fieldInputMap) {
+      if (inputs.length === 1) {
+        // No duplicates, keep it
+        console.log(`      → Keeping ${inputs[0].id} for ${fieldKey} (only occurrence)`);
+        continue;
+      }
 
-      // Keep only the input action with the latest timestamp for this field
-      return latestEntry && action.timestamp === latestEntry.timestamp;
-    });
+      // Find related submit action for this field
+      const relatedSubmit = this.findRelatedSubmit(inputs, formBoundaries);
+
+      if (relatedSubmit) {
+        // Separate inputs before and after submit
+        const beforeSubmit = inputs.filter((i) => i.timestamp < relatedSubmit.timestamp);
+        const afterSubmit = inputs.filter((i) => i.timestamp > relatedSubmit.timestamp);
+
+        if (beforeSubmit.length > 0 && afterSubmit.length > 0) {
+          // USER CORRECTION DETECTED: Input before submit, then corrected after
+          const firstInput = beforeSubmit[0]; // Earliest position
+          const lastInput = afterSubmit[afterSubmit.length - 1]; // Latest value
+
+          console.log(`      → 🔧 Correction detected for ${fieldKey}:`);
+          console.log(`         Before submit: ${beforeSubmit.map((i) => i.id).join(', ')}`);
+          console.log(`         After submit: ${afterSubmit.map((i) => i.id).join(', ')}`);
+          console.log(
+            `         Keeping ${firstInput.id} position with ${lastInput.id} value "${lastInput.value?.substring(0, 20)}..."`
+          );
+
+          // Update first input with final value
+          firstInput.value = lastInput.value;
+
+          // Mark all others for deletion
+          inputs.forEach((input) => {
+            if (input !== firstInput) {
+              (input as any)._markedForDeletion = true;
+            }
+          });
+
+          correctionCount++;
+          continue;
+        }
+      }
+
+      // Normal case: All inputs on same side of submit (or no submit found)
+      // Keep the LATEST timestamp
+      const latest = inputs.reduce((prev, curr) => (curr.timestamp > prev.timestamp ? curr : prev));
+
+      console.log(`      → Keeping ${latest.id} for ${fieldKey} (latest of ${inputs.length})`);
+
+      // Mark all others for deletion
+      inputs.forEach((input) => {
+        if (input !== latest) {
+          (input as any)._markedForDeletion = true;
+        }
+      });
+
+      normalDedupeCount++;
+    }
+
+    // Filter out marked actions
+    const deduplicatedActions = actions.filter((a) => !(a as any)._markedForDeletion);
 
     const removedCount = actions.length - deduplicatedActions.length;
     if (removedCount > 0) {
       console.log(
         `   ✅ Removed ${removedCount} intermediate input actions (keeping final values)`
       );
+      if (correctionCount > 0) {
+        console.log(
+          `      🔧 Fixed ${correctionCount} post-submit corrections (moved final values before submit)`
+        );
+      }
 
       // Debug: Show which input actions were kept
       const keptInputs = deduplicatedActions.filter((a) => isInputAction(a));
@@ -162,6 +217,52 @@ export class PlaywrightRunner {
     }
 
     return deduplicatedActions;
+  }
+
+  /**
+   * Identify form boundaries (submit actions) in the action sequence
+   */
+  private identifyFormBoundaries(actions: Action[]): Array<{ action: Action; index: number }> {
+    const boundaries: Array<{ action: Action; index: number }> = [];
+
+    actions.forEach((action, index) => {
+      if (action.type === 'submit') {
+        boundaries.push({ action, index });
+      }
+    });
+
+    return boundaries;
+  }
+
+  /**
+   * Find the submit action related to a set of input actions
+   * Returns the first submit action that comes after the first input
+   */
+  private findRelatedSubmit(
+    inputs: InputAction[],
+    formBoundaries: Array<{ action: Action; index: number }>
+  ): Action | null {
+    if (formBoundaries.length === 0 || inputs.length === 0) {
+      return null;
+    }
+
+    // Get the earliest input timestamp
+    const earliestInput = inputs.reduce((prev, curr) =>
+      curr.timestamp < prev.timestamp ? curr : prev
+    );
+
+    // Find first submit action after the earliest input
+    // Also check if inputs and submit are on same page (URL match)
+    for (const boundary of formBoundaries) {
+      if (boundary.action.timestamp > earliestInput.timestamp) {
+        // Check if they're on the same page
+        if (boundary.action.url === earliestInput.url) {
+          return boundary.action;
+        }
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -973,7 +1074,29 @@ export class PlaywrightRunner {
     if (isModalLifecycleAction(action)) {
       await this.handleModalLifecycle(page, action);
     } else if (isClickAction(action)) {
-      await this.executeClick(page, action);
+      // Special handling for carousel controls - skip if element doesn't exist
+      // This handles dynamic content where carousels may not be present
+      const actionData = action as any;
+      const isCarousel = actionData.carouselContext?.isCarouselControl;
+
+      if (isCarousel) {
+        try {
+          await this.executeClick(page, action);
+        } catch (error) {
+          const errorMsg = error instanceof Error ? error.message : String(error);
+
+          // If carousel control not found, it's likely the listing has only 1 image
+          if (errorMsg.includes('Element not found')) {
+            console.log(`⏭️  Skipping carousel action (element has no carousel/only 1 image)`);
+            return; // Gracefully skip - not an error
+          }
+
+          // Other errors should still throw
+          throw error;
+        }
+      } else {
+        await this.executeClick(page, action);
+      }
     } else if (isInputAction(action)) {
       await this.executeInput(page, action);
     } else if (isSelectAction(action)) {
