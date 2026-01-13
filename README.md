@@ -7,7 +7,7 @@
   
   Automate your testing workflow without writing a single line of code. Record user interactions with our browser extension, then replay them with pixel-perfect precision for cross-browser validation.
   
-  [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+  [![License: BSL 1.1](https://img.shields.io/badge/License-BSL%201.1-blue.svg)](LICENSE)
   [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
   [![TypeScript](https://img.shields.io/badge/TypeScript-5.3.3-blue)](https://www.typescriptlang.org/)
   
@@ -232,7 +232,31 @@ Contributions are welcome once the project reaches v1.0.0! This project follows:
 
 ## 📄 License
 
-MIT License - see [LICENSE](./LICENSE) file for details
+SaveAction is licensed under the **Business Source License 1.1 (BSL 1.1)**, which converts to **Apache 2.0** on **January 14, 2031**.
+
+### What This Means for You
+
+✅ **Allowed:**
+- Self-host SaveAction for your organization (production use allowed)
+- Use SaveAction for internal/commercial testing
+- Modify and customize the source code
+- Integrate SaveAction into your CI/CD pipelines
+
+❌ **Not Allowed:**
+- Offer SaveAction as a hosted/managed SaaS service to third parties
+- Provide SaveAction testing as your primary commercial offering
+
+**Full license:** [LICENSE](./LICENSE)  
+**Questions?** See [LICENSE-FAQ.md](./LICENSE-FAQ.md) for detailed scenarios
+
+### Why BSL 1.1?
+
+We chose BSL 1.1 to:
+1. Enable free self-hosting and internal use for everyone
+2. Protect our ability to build a sustainable SaaS business
+3. Guarantee an open-source future (Apache 2.0 conversion in 5 years)
+
+This is the same license used by HashiCorp (Terraform), CockroachDB, and Sentry.
 
 ## 🌟 Star History
 

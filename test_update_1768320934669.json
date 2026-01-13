@@ -1,0 +1,2162 @@
+{
+  "id": "rec_1768320934669",
+  "version": "1.0.0",
+  "testName": "test_update",
+  "url": "https://www.rightbiz.co.uk/",
+  "startTime": "2026-01-13T16:15:34.669Z",
+  "endTime": "2026-01-13T16:16:18.269Z",
+  "viewport": {
+    "width": 1891,
+    "height": 1127
+  },
+  "windowSize": {
+    "width": 1907,
+    "height": 1256
+  },
+  "screenSize": {
+    "width": 3440,
+    "height": 1440
+  },
+  "devicePixelRatio": 1,
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+  "actions": [
+    {
+      "id": "act_001",
+      "type": "click",
+      "timestamp": 1853,
+      "completedAt": 1903,
+      "url": "https://www.rightbiz.co.uk/",
+      "selector": {
+        "css": "div.iubenda-cs-container > div.iubenda-cs-content > div.iubenda-cs-rationale > div.iubenda-cs-opt-group > div.iubenda-cs-opt-group-consent > button.iubenda-cs-accept-btn.iubenda-cs-btn-primary.hover",
+        "text": "Accept",
+        "xpath": "//div[contains(@class, \"iubenda-cs-opt-group-consent\")]/button[text()='Accept']",
+        "xpathAbsolute": "/html/body[1]/div[3]/div[1]/div[1]/div[1]/div[4]/div[2]/button[2]",
+        "position": {
+          "parent": "div.iubenda-cs-opt-group-consent",
+          "index": 1
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320936522
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 1313.96875,
+            "y": 1058.203125,
+            "viewportX": 1313.96875,
+            "viewportY": 1058.203125
+          },
+          "textContent": "Accept",
+          "siblingIndex": 1,
+          "uniqueParent": ".iubenda-cs-opt-group-consent"
+        }
+      },
+      "tagName": "button",
+      "text": "Accept",
+      "coordinates": {
+        "x": 53.03125,
+        "y": 17.796875
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "block",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isInsideModal": true,
+        "modalId": "unknown-modal",
+        "isLazyLoaded": false,
+        "modalState": "iubenda-cs-content",
+        "requiresModalState": true,
+        "navigationIntent": "submit-form",
+        "expectedUrlChange": {
+          "type": "same-page",
+          "patterns": [],
+          "isSuccessFlow": false,
+          "beforeUrl": "https://www.rightbiz.co.uk/"
+        },
+        "actionGroup": "modal-unknown-modal"
+      },
+      "alternativeSelectors": [
+        {
+          "text": "Accept",
+          "xpath": "//button[text()=\"Accept\"]",
+          "priority": 1
+        }
+      ],
+      "clickType": "submit",
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "form-submit",
+        "allowMultiple": false,
+        "requiresDelay": true,
+        "confidence": 100
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_002",
+      "type": "click",
+      "timestamp": 3449,
+      "completedAt": 3499,
+      "url": "https://www.rightbiz.co.uk/",
+      "selector": {
+        "id": "sector-input",
+        "ariaLabel": "Sector",
+        "name": "category",
+        "css": "div.form-wrapper > form#form-business > div.form-group > div.relative > div.form-search-sector > input.text-sm.with-placeholder[type=\"text\"]",
+        "xpath": "//input[@id=\"sector-input\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/input[1]",
+        "position": {
+          "parent": "div.form-search-sector",
+          "index": 0
+        },
+        "priority": [
+          "id",
+          "ariaLabel",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320938118
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 475,
+            "y": 352.796875,
+            "viewportX": 475,
+            "viewportY": 352.796875
+          },
+          "textContent": "",
+          "siblingIndex": 0,
+          "uniqueParent": ".form-search-sector"
+        }
+      },
+      "tagName": "input",
+      "text": "",
+      "coordinates": {
+        "x": 159,
+        "y": 4.203125
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "block",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "standard",
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "generic-click",
+        "allowMultiple": false,
+        "requiresDelay": false,
+        "confidence": 70
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_003",
+      "type": "input",
+      "timestamp": 3449,
+      "completedAt": 3602,
+      "url": "https://www.rightbiz.co.uk/",
+      "selector": {
+        "id": "sector-input",
+        "ariaLabel": "Sector",
+        "name": "category",
+        "css": "div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > div.form-search-sector > input.text-sm.with-placeholder[type=\"text\"]",
+        "xpath": "//input[@id=\"sector-input\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/input[1]",
+        "position": {
+          "parent": "div.form-search-sector",
+          "index": 0
+        },
+        "priority": [
+          "id",
+          "ariaLabel",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320939939
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 475,
+            "y": 352.796875,
+            "viewportX": 475,
+            "viewportY": 352.796875
+          },
+          "textContent": "",
+          "siblingIndex": 0,
+          "uniqueParent": ".form-search-sector"
+        }
+      },
+      "tagName": "input",
+      "value": "Res",
+      "inputType": "text",
+      "isSensitive": false,
+      "simulationType": "type",
+      "typingDelay": 51,
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "block",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": []
+    },
+    {
+      "id": "act_004",
+      "type": "click",
+      "timestamp": 6689,
+      "completedAt": 6739,
+      "url": "https://www.rightbiz.co.uk/",
+      "selector": {
+        "css": ".form__autocomplete > li:nth-child(4)",
+        "text": "Restaurants for Sale",
+        "xpath": "//ul[contains(@class, \"form__autocomplete\")]/li[text()='Restaurants for Sale']",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[1]/div[1]/div[1]/ul[1]/li[4]",
+        "position": {
+          "parent": "ul.form__autocomplete",
+          "index": 3
+        },
+        "priority": [
+          "text",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 0,
+          "strategy": "nth-child-with-parent",
+          "isUnique": true,
+          "verifiedAt": 1768320941358,
+          "warnings": [
+            "XPath matches 0 elements (CSS will be used as primary)"
+          ]
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 414,
+            "y": 520.796875,
+            "viewportX": 414,
+            "viewportY": 520.796875
+          },
+          "textContent": "Restaurants for Sale",
+          "siblingIndex": 3,
+          "uniqueParent": ".form__autocomplete"
+        }
+      },
+      "tagName": "li",
+      "text": "Restaurants for Sale",
+      "coordinates": {
+        "x": 184,
+        "y": 35.203125
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [
+        {
+          "text": "Restaurants for Sale",
+          "xpath": "//li[text()=\"Restaurants for Sale\"]",
+          "priority": 1
+        }
+      ],
+      "clickType": "submit",
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "form-submit",
+        "allowMultiple": false,
+        "requiresDelay": true,
+        "confidence": 100
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_005",
+      "type": "click",
+      "timestamp": 7376,
+      "completedAt": 7426,
+      "url": "https://www.rightbiz.co.uk/",
+      "selector": {
+        "id": "location-input",
+        "ariaLabel": "Location",
+        "name": "search-locs",
+        "css": "div.form > div.form-wrapper > form#form-business > div.form-group > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
+        "xpath": "//input[@id=\"location-input\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]",
+        "position": {
+          "parent": "div.relative",
+          "index": 2
+        },
+        "priority": [
+          "id",
+          "ariaLabel",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320942045
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 414,
+            "y": 416.796875,
+            "viewportX": 414,
+            "viewportY": 416.796875
+          },
+          "textContent": "",
+          "siblingIndex": 2
+        }
+      },
+      "tagName": "input",
+      "text": "",
+      "coordinates": {
+        "x": 200,
+        "y": 8.203125
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "inline-block",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "standard",
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "generic-click",
+        "allowMultiple": false,
+        "requiresDelay": false,
+        "confidence": 70
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_006",
+      "type": "input",
+      "timestamp": 7376,
+      "completedAt": 7541,
+      "url": "https://www.rightbiz.co.uk/",
+      "selector": {
+        "id": "location-input",
+        "ariaLabel": "Location",
+        "name": "search-locs",
+        "css": "div.form > div.form-wrapper > form#form-business > div.form-group.mobile-active > div.relative > input.text-sm.with-placeholder.form-control[type=\"text\"]",
+        "xpath": "//input[@id=\"location-input\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/input[1]",
+        "position": {
+          "parent": "div.relative",
+          "index": 2
+        },
+        "priority": [
+          "id",
+          "ariaLabel",
+          "name",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320944556
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 414,
+            "y": 416.796875,
+            "viewportX": 414,
+            "viewportY": 416.796875
+          },
+          "textContent": "",
+          "siblingIndex": 2
+        }
+      },
+      "tagName": "input",
+      "value": "Lon",
+      "inputType": "text",
+      "isSensitive": false,
+      "simulationType": "type",
+      "typingDelay": 55,
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "inline-block",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": []
+    },
+    {
+      "id": "act_007",
+      "type": "click",
+      "timestamp": 11443,
+      "completedAt": 11493,
+      "url": "https://www.rightbiz.co.uk/",
+      "selector": {
+        "css": ".form__autocomplete > li:nth-child(1)",
+        "text": "London",
+        "xpath": "//ul[contains(@class, \"form__autocomplete\")]/li[text()='London']",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/div[2]/div[1]/ul[1]/li[1]",
+        "position": {
+          "parent": "ul.form__autocomplete",
+          "index": 0
+        },
+        "priority": [
+          "text",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 0,
+          "strategy": "nth-child-with-parent",
+          "isUnique": true,
+          "verifiedAt": 1768320946113,
+          "warnings": [
+            "XPath matches 0 elements (CSS will be used as primary)"
+          ]
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 414,
+            "y": 476.796875,
+            "viewportX": 414,
+            "viewportY": 476.796875
+          },
+          "textContent": "London",
+          "siblingIndex": 0,
+          "uniqueParent": ".form__autocomplete"
+        }
+      },
+      "tagName": "li",
+      "text": "London",
+      "coordinates": {
+        "x": 141,
+        "y": 35.203125
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [
+        {
+          "text": "London",
+          "xpath": "//li[text()=\"London\"]",
+          "priority": 1
+        }
+      ],
+      "clickType": "submit",
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "form-submit",
+        "allowMultiple": false,
+        "requiresDelay": true,
+        "confidence": 100
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_008",
+      "type": "click",
+      "timestamp": 13288,
+      "completedAt": 13338,
+      "url": "https://www.rightbiz.co.uk/",
+      "selector": {
+        "id": "search-submit-text",
+        "css": "div.header__wrapper > div.form > div.form-wrapper > form#form-business > button#ga4_homepage_search_businesses_button > span",
+        "text": "Data-Driven Search (744)",
+        "xpath": "//span[@id=\"search-submit-text\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]/button[1]/span[1]",
+        "position": {
+          "parent": "button#ga4_homepage_search_businesses_button",
+          "index": 0
+        },
+        "priority": [
+          "id",
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320947957
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 514.5625,
+            "y": 558.796875,
+            "viewportX": 514.5625,
+            "viewportY": 558.796875
+          },
+          "textContent": "Data-Driven Search (744)",
+          "siblingIndex": 0,
+          "parentId": "ga4_homepage_search_businesses_button",
+          "uniqueParent": ".btn-orange"
+        }
+      },
+      "tagName": "span",
+      "text": "Data-Driven Search (744)",
+      "coordinates": {
+        "x": 36.4375,
+        "y": 3.203125
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "block",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "standard",
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "generic-click",
+        "allowMultiple": false,
+        "requiresDelay": false,
+        "confidence": 70
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_009",
+      "type": "submit",
+      "timestamp": 13419,
+      "completedAt": 13469,
+      "url": "https://www.rightbiz.co.uk/",
+      "selector": {
+        "id": "form-business",
+        "css": "header > div.container > div.header__wrapper > div.form > div.form-wrapper > form.active",
+        "textContains": "Restaurants ×\n                ",
+        "xpath": "//form[@id=\"form-business\"]",
+        "xpathAbsolute": "/html/body[1]/header[1]/div[1]/div[1]/div[1]/div[2]/form[1]",
+        "position": {
+          "parent": "div.form-wrapper",
+          "index": 0
+        },
+        "priority": [
+          "id",
+          "css",
+          "textContains",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320948089
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 414,
+            "y": 340.796875,
+            "viewportX": 414,
+            "viewportY": 340.796875
+          },
+          "textContent": "Restaurants ×\n                  \n                  \n                    \n                  \n        ",
+          "siblingIndex": 0,
+          "uniqueParent": ".form-wrapper"
+        }
+      },
+      "tagName": "form"
+    },
+    {
+      "id": "act_010",
+      "type": "navigation",
+      "timestamp": 15016,
+      "completedAt": 15016,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "from": "https://www.rightbiz.co.uk/",
+      "to": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "navigationTrigger": "form-submit",
+      "waitUntil": "load",
+      "duration": 0,
+      "relatedAction": "act_009"
+    },
+    {
+      "id": "act_011",
+      "type": "scroll",
+      "timestamp": 18027,
+      "completedAt": 18227,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "scrollX": 0,
+      "scrollY": 600,
+      "element": "window"
+    },
+    {
+      "id": "act_012",
+      "type": "scroll",
+      "timestamp": 18643,
+      "completedAt": 19009.666666666668,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "scrollX": 0,
+      "scrollY": 1100,
+      "element": "window"
+    },
+    {
+      "id": "act_013",
+      "type": "scroll",
+      "timestamp": 19620,
+      "completedAt": 20120,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "scrollX": 0,
+      "scrollY": 1500,
+      "element": "window"
+    },
+    {
+      "id": "act_014",
+      "type": "click",
+      "timestamp": 20995,
+      "completedAt": 21045,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "selector": {
+        "css": "div.content__body > ul#listings_cn > li.top-category-list > div.category-item-wrapper > div.expand > span",
+        "text": "see more",
+        "xpath": "//div[contains(@class, \"expand\")]/span[text()='see more']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[6]/div[1]/div[2]/span[1]",
+        "position": {
+          "parent": "div.expand",
+          "index": 0
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 0,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320955663,
+          "warnings": [
+            "XPath matches 0 elements (CSS will be used as primary)"
+          ]
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 874.65625,
+            "y": 1955.984375,
+            "viewportX": 874.65625,
+            "viewportY": 455.984375
+          },
+          "textContent": "see more",
+          "siblingIndex": 0,
+          "uniqueParent": ".expand"
+        }
+      },
+      "tagName": "span",
+      "text": "see more",
+      "coordinates": {
+        "x": 40.34375,
+        "y": 15.015625
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "1",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "contentSignature": {
+        "elementType": "list-item",
+        "listContainer": {
+          "selector": "li.top-category-list",
+          "itemSelector": "div.category-item-wrapper"
+        },
+        "contentFingerprint": {
+          "linkHref": "/search/?sector=restaurants&location=city-of-london-london"
+        },
+        "visualHints": {
+          "hasImage": false,
+          "hasButton": false,
+          "hasLink": true,
+          "hasPrice": false,
+          "hasRating": false
+        },
+        "fallbackPosition": 1
+      },
+      "clickType": "standard",
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "generic-click",
+        "allowMultiple": false,
+        "requiresDelay": false,
+        "confidence": 70
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_015",
+      "type": "scroll",
+      "timestamp": 22716,
+      "completedAt": 23349.333333333332,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "scrollX": 0,
+      "scrollY": 1900,
+      "element": "window"
+    },
+    {
+      "id": "act_016",
+      "type": "click",
+      "timestamp": 24599,
+      "completedAt": 24649,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "selector": {
+        "css": "div.listing-alert-popup-dialog > div.listing-alert-popup-content > div#listing-alert-popup-body > div > div.text-center > a.btn-outline.btn-outline-blue.btn-inline",
+        "text": "No thanks",
+        "xpath": "//div[contains(@class, \"text-center\")]/a[text()='No thanks']",
+        "xpathAbsolute": "/html/body[1]/div[5]/div[1]/div[1]/div[1]/div[1]/div[1]/a[1]",
+        "position": {
+          "parent": "div.text-center",
+          "index": 0
+        },
+        "priority": [
+          "text",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320959268
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 898.328125,
+            "y": 2507,
+            "viewportX": 898.328125,
+            "viewportY": 607
+          },
+          "textContent": "No thanks",
+          "siblingIndex": 0
+        }
+      },
+      "tagName": "a",
+      "text": "No thanks",
+      "coordinates": {
+        "x": 26.671875,
+        "y": 27
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "inline-flex",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isInsideModal": true,
+        "modalId": "unknown-modal",
+        "isLazyLoaded": false,
+        "modalState": "default",
+        "requiresModalState": true,
+        "navigationIntent": "navigate-to-page",
+        "expectedUrlChange": {
+          "type": "redirect",
+          "patterns": [],
+          "isSuccessFlow": false,
+          "beforeUrl": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1"
+        },
+        "actionGroup": "modal-unknown-modal"
+      },
+      "alternativeSelectors": [
+        {
+          "text": "No thanks",
+          "xpath": "//a[text()=\"No thanks\"]",
+          "priority": 1
+        }
+      ],
+      "clickType": "submit",
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "form-submit",
+        "allowMultiple": false,
+        "requiresDelay": true,
+        "confidence": 100
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_017",
+      "type": "scroll",
+      "timestamp": 25671,
+      "completedAt": 26371,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "scrollX": 0,
+      "scrollY": 2100,
+      "element": "window"
+    },
+    {
+      "id": "act_018",
+      "type": "click",
+      "timestamp": 26982,
+      "completedAt": 27032,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "selector": {
+        "css": "ul#listings_cn > li:nth-child(8) > div.content__body__item-img > div.content__body__item-img__wrapper > span.content__body__item-img-arrow.next > span",
+        "xpath": "//ul[@id='listings_cn']/li[8]//span[contains(@class, 'next') and contains(@class, 'content__body__item-img-arrow')]/span[1]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[8]/div[1]/div[1]/span[2]/span[1]",
+        "position": {
+          "parent": "span.content__body__item-img-arrow.next",
+          "index": 0
+        },
+        "priority": [
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320961650
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 618,
+            "y": 2448.984375,
+            "viewportX": 618,
+            "viewportY": 348.984375
+          },
+          "textContent": "",
+          "siblingIndex": 0
+        }
+      },
+      "tagName": "span",
+      "text": "",
+      "coordinates": {
+        "x": 10,
+        "y": 11.015625
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "carousel-navigation",
+      "carouselContext": {
+        "isCarouselControl": true,
+        "carouselType": "product-gallery",
+        "direction": "next",
+        "containerSelector": "ul#listings_cn > li:nth-child(8)",
+        "affectsElement": "img",
+        "detectionMethod": "pattern",
+        "confidence": 95,
+        "isCustomImplementation": true,
+        "isDisabled": false,
+        "pageType": "listing-grid"
+      },
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "carousel-navigation",
+        "allowMultiple": true,
+        "requiresDelay": false,
+        "confidence": 95
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "redirected-to-parent",
+          "svg-child-click",
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_019",
+      "type": "scroll",
+      "timestamp": 27579,
+      "completedAt": 28279,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "scrollX": 0,
+      "scrollY": 2100,
+      "element": "window"
+    },
+    {
+      "id": "act_020",
+      "type": "click",
+      "timestamp": 27909,
+      "completedAt": 28279,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "selector": {
+        "css": "ul#listings_cn > li:nth-child(8) > div.content__body__item-img > div.content__body__item-img__wrapper > span.content__body__item-img-arrow.next > span",
+        "xpath": "//ul[@id='listings_cn']/li[8]//span[contains(@class, 'next') and contains(@class, 'content__body__item-img-arrow')]/span[1]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[8]/div[1]/div[1]/span[2]/span[1]",
+        "position": {
+          "parent": "span.content__body__item-img-arrow.next",
+          "index": 0
+        },
+        "priority": [
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320962577
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 618,
+            "y": 2448.984375,
+            "viewportX": 618,
+            "viewportY": 348.984375
+          },
+          "textContent": "",
+          "siblingIndex": 0
+        }
+      },
+      "tagName": "span",
+      "text": "",
+      "coordinates": {
+        "x": 10,
+        "y": 11.015625
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "carousel-navigation",
+      "carouselContext": {
+        "isCarouselControl": true,
+        "carouselType": "product-gallery",
+        "direction": "next",
+        "containerSelector": "ul#listings_cn > li:nth-child(8)",
+        "affectsElement": "img",
+        "detectionMethod": "pattern",
+        "confidence": 95,
+        "isCustomImplementation": true,
+        "isDisabled": false,
+        "pageType": "listing-grid"
+      },
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "carousel-navigation",
+        "allowMultiple": true,
+        "requiresDelay": false,
+        "confidence": 95
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "redirected-to-parent",
+          "svg-child-click",
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_021",
+      "type": "scroll",
+      "timestamp": 28521,
+      "completedAt": 29221,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "scrollX": 0,
+      "scrollY": 2100,
+      "element": "window"
+    },
+    {
+      "id": "act_022",
+      "type": "click",
+      "timestamp": 28943,
+      "completedAt": 29221,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "selector": {
+        "css": "ul#listings_cn > li:nth-child(8) > div.content__body__item-img > div.content__body__item-img__wrapper > span.content__body__item-img-arrow.next > span",
+        "xpath": "//ul[@id='listings_cn']/li[8]//span[contains(@class, 'next') and contains(@class, 'content__body__item-img-arrow')]/span[1]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[8]/div[1]/div[1]/span[2]/span[1]",
+        "position": {
+          "parent": "span.content__body__item-img-arrow.next",
+          "index": 0
+        },
+        "priority": [
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320963612
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 618,
+            "y": 2448.984375,
+            "viewportX": 618,
+            "viewportY": 348.984375
+          },
+          "textContent": "",
+          "siblingIndex": 0
+        }
+      },
+      "tagName": "span",
+      "text": "",
+      "coordinates": {
+        "x": 10,
+        "y": 11.015625
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "carousel-navigation",
+      "carouselContext": {
+        "isCarouselControl": true,
+        "carouselType": "product-gallery",
+        "direction": "next",
+        "containerSelector": "ul#listings_cn > li:nth-child(8)",
+        "affectsElement": "img",
+        "detectionMethod": "pattern",
+        "confidence": 95,
+        "isCustomImplementation": true,
+        "isDisabled": false,
+        "pageType": "listing-grid"
+      },
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "carousel-navigation",
+        "allowMultiple": true,
+        "requiresDelay": false,
+        "confidence": 95
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "redirected-to-parent",
+          "svg-child-click",
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_023",
+      "type": "scroll",
+      "timestamp": 29566,
+      "completedAt": 30266,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "scrollX": 0,
+      "scrollY": 2100,
+      "element": "window"
+    },
+    {
+      "id": "act_024",
+      "type": "click",
+      "timestamp": 30150,
+      "completedAt": 30266,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "selector": {
+        "css": "ul#listings_cn > li:nth-child(8) > div.content__body__item-img > div.content__body__item-img__wrapper > span.content__body__item-img-arrow.next > span",
+        "xpath": "//ul[@id='listings_cn']/li[8]//span[contains(@class, 'next') and contains(@class, 'content__body__item-img-arrow')]/span[1]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[8]/div[1]/div[1]/span[2]/span[1]",
+        "position": {
+          "parent": "span.content__body__item-img-arrow.next",
+          "index": 0
+        },
+        "priority": [
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320964818
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 618,
+            "y": 2448.984375,
+            "viewportX": 618,
+            "viewportY": 348.984375
+          },
+          "textContent": "",
+          "siblingIndex": 0
+        }
+      },
+      "tagName": "span",
+      "text": "",
+      "coordinates": {
+        "x": 10,
+        "y": 11.015625
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "carousel-navigation",
+      "carouselContext": {
+        "isCarouselControl": true,
+        "carouselType": "product-gallery",
+        "direction": "next",
+        "containerSelector": "ul#listings_cn > li:nth-child(8)",
+        "affectsElement": "img",
+        "detectionMethod": "pattern",
+        "confidence": 95,
+        "isCustomImplementation": true,
+        "isDisabled": false,
+        "pageType": "listing-grid"
+      },
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "carousel-navigation",
+        "allowMultiple": true,
+        "requiresDelay": false,
+        "confidence": 95
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "redirected-to-parent",
+          "svg-child-click",
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_025",
+      "type": "scroll",
+      "timestamp": 30749,
+      "completedAt": 31449,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "scrollX": 0,
+      "scrollY": 2100,
+      "element": "window"
+    },
+    {
+      "id": "act_026",
+      "type": "click",
+      "timestamp": 32595,
+      "completedAt": 32645,
+      "url": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "selector": {
+        "ariaLabel": "Advert",
+        "css": "#listings_cn > li.content__body__item.shadow:nth-child(8) > div.content__body__item-info:nth-child(2) > a.link-title:nth-child(1)",
+        "textContains": "A3/A5 restaurant for sale in P",
+        "xpath": "//div[contains(@class, \"content__body__item-info\")]/a[text()='A3/A5 restaurant for sale in Putney London with late license and new lease available']",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[3]/ul[1]/li[8]/div[2]/a[1]",
+        "position": {
+          "parent": "div.content__body__item-info",
+          "index": 0
+        },
+        "priority": [
+          "textContains",
+          "ariaLabel",
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "position-path",
+          "isUnique": true,
+          "verifiedAt": 1768320967263
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 685,
+            "y": 2360.984375,
+            "viewportX": 685,
+            "viewportY": 260.984375
+          },
+          "textContent": "A3/A5 restaurant for sale in Putney London with late license and new lease available",
+          "siblingIndex": 0
+        }
+      },
+      "tagName": "a",
+      "text": "A3/A5 restaurant for sale in Putney London with late license and new lease available",
+      "coordinates": {
+        "x": 69,
+        "y": 22.015625
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flow-root",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false,
+        "navigationIntent": "navigate-to-page",
+        "expectedUrlChange": {
+          "type": "redirect",
+          "patterns": [],
+          "isSuccessFlow": false,
+          "beforeUrl": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1"
+        }
+      },
+      "alternativeSelectors": [
+        {
+          "text": "A3/A5 restaurant for sale in Putney London with late license and new lease available",
+          "xpath": "//a[text()=\"A3/A5 restaurant for sale in Putney London with late license and new lease available\"]",
+          "priority": 1
+        },
+        {
+          "ariaLabel": "Advert",
+          "css": "a[aria-label=\"Advert\"]",
+          "priority": 2
+        }
+      ],
+      "contentSignature": {
+        "elementType": "list-item",
+        "listContainer": {
+          "selector": "li.content__body__item.shadow",
+          "itemSelector": "div.content__body__item-info"
+        },
+        "contentFingerprint": {
+          "heading": "A3/A5 restaurant for sale in Putney London with late license and new lease available",
+          "subheading": "Putney, London",
+          "linkHref": "/buy_business/for_sale/643273_london.html",
+          "price": "£10,000  Leasehold"
+        },
+        "visualHints": {
+          "hasImage": false,
+          "hasButton": false,
+          "hasLink": true,
+          "hasPrice": true,
+          "hasRating": false
+        },
+        "fallbackPosition": 1
+      },
+      "clickType": "standard",
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "navigation",
+        "allowMultiple": false,
+        "requiresDelay": true,
+        "confidence": 80
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_027",
+      "type": "navigation",
+      "timestamp": 33907,
+      "completedAt": 33907,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "from": "https://www.rightbiz.co.uk/search/?more_category=none&sector=restaurants&location=london&more_category=&sortby=new&noindex=1",
+      "to": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "navigationTrigger": "click",
+      "waitUntil": "load",
+      "duration": 0,
+      "relatedAction": "act_026"
+    },
+    {
+      "id": "act_028",
+      "type": "scroll",
+      "timestamp": 35560,
+      "completedAt": 35760,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "scrollX": 0,
+      "scrollY": 200,
+      "element": "window"
+    },
+    {
+      "id": "act_029",
+      "type": "click",
+      "timestamp": 36954,
+      "completedAt": 37004,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "selector": {
+        "css": "#content > div.container > div.content__wrapper > div.content__body > div.content__body__img-wrapper > span.content__body__img-arrow.next",
+        "xpath": "//span[contains(@class, 'next') and contains(@class, 'content__body__img-arrow')]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/span[2]",
+        "position": {
+          "parent": "div.content__body__img-wrapper",
+          "index": 2
+        },
+        "priority": [
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320971623
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 1130,
+            "y": 555.5,
+            "viewportX": 1130,
+            "viewportY": 355.5
+          },
+          "textContent": "",
+          "siblingIndex": 2,
+          "uniqueParent": ".content__body__img-wrapper"
+        }
+      },
+      "tagName": "span",
+      "text": "",
+      "coordinates": {
+        "x": 31,
+        "y": 14.5
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "10",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "carousel-navigation",
+      "carouselContext": {
+        "isCarouselControl": true,
+        "carouselType": "image-gallery",
+        "direction": "next",
+        "containerSelector": "#content",
+        "affectsElement": "img.lazyloaded.content__body__img",
+        "detectionMethod": "pattern",
+        "confidence": 95,
+        "isCustomImplementation": true,
+        "isDisabled": false,
+        "pageType": "unknown"
+      },
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "carousel-navigation",
+        "allowMultiple": true,
+        "requiresDelay": false,
+        "confidence": 95
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_030",
+      "type": "scroll",
+      "timestamp": 37766,
+      "completedAt": 37966,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "scrollX": 0,
+      "scrollY": 200,
+      "element": "window"
+    },
+    {
+      "id": "act_031",
+      "type": "click",
+      "timestamp": 38393,
+      "completedAt": 38443,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "selector": {
+        "css": "#content > div.container > div.content__wrapper > div.content__body > div.content__body__img-wrapper > span.content__body__img-arrow.next",
+        "xpath": "//span[contains(@class, 'next') and contains(@class, 'content__body__img-arrow')]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/span[2]",
+        "position": {
+          "parent": "div.content__body__img-wrapper",
+          "index": 2
+        },
+        "priority": [
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320973062
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 1130,
+            "y": 555.5,
+            "viewportX": 1130,
+            "viewportY": 355.5
+          },
+          "textContent": "",
+          "siblingIndex": 2,
+          "uniqueParent": ".content__body__img-wrapper"
+        }
+      },
+      "tagName": "span",
+      "text": "",
+      "coordinates": {
+        "x": 31,
+        "y": 14.5
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "10",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "carousel-navigation",
+      "carouselContext": {
+        "isCarouselControl": true,
+        "carouselType": "image-gallery",
+        "direction": "next",
+        "containerSelector": "#content",
+        "affectsElement": "img.lazyloaded.content__body__img",
+        "detectionMethod": "pattern",
+        "confidence": 95,
+        "isCustomImplementation": true,
+        "isDisabled": false,
+        "pageType": "unknown"
+      },
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "carousel-navigation",
+        "allowMultiple": true,
+        "requiresDelay": false,
+        "confidence": 95
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_032",
+      "type": "scroll",
+      "timestamp": 39404,
+      "completedAt": 39604,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "scrollX": 0,
+      "scrollY": 200,
+      "element": "window"
+    },
+    {
+      "id": "act_033",
+      "type": "click",
+      "timestamp": 39682,
+      "completedAt": 39732,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "selector": {
+        "css": "#content > div.container > div.content__wrapper > div.content__body > div.content__body__img-wrapper > span.content__body__img-arrow.next",
+        "xpath": "//span[contains(@class, 'next') and contains(@class, 'content__body__img-arrow')]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/span[2]",
+        "position": {
+          "parent": "div.content__body__img-wrapper",
+          "index": 2
+        },
+        "priority": [
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320974351
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 1130,
+            "y": 555.5,
+            "viewportX": 1130,
+            "viewportY": 355.5
+          },
+          "textContent": "",
+          "siblingIndex": 2,
+          "uniqueParent": ".content__body__img-wrapper"
+        }
+      },
+      "tagName": "span",
+      "text": "",
+      "coordinates": {
+        "x": 31,
+        "y": 14.5
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "10",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "carousel-navigation",
+      "carouselContext": {
+        "isCarouselControl": true,
+        "carouselType": "image-gallery",
+        "direction": "next",
+        "containerSelector": "#content",
+        "affectsElement": "img.lazyloaded.content__body__img",
+        "detectionMethod": "pattern",
+        "confidence": 95,
+        "isCustomImplementation": true,
+        "isDisabled": false,
+        "pageType": "unknown"
+      },
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "carousel-navigation",
+        "allowMultiple": true,
+        "requiresDelay": false,
+        "confidence": 95
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_034",
+      "type": "scroll",
+      "timestamp": 40495,
+      "completedAt": 40695,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "scrollX": 0,
+      "scrollY": 200,
+      "element": "window"
+    },
+    {
+      "id": "act_035",
+      "type": "click",
+      "timestamp": 40807,
+      "completedAt": 40857,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "selector": {
+        "css": "#content > div.container > div.content__wrapper > div.content__body > div.content__body__img-wrapper > span.content__body__img-arrow.next",
+        "xpath": "//span[contains(@class, 'next') and contains(@class, 'content__body__img-arrow')]",
+        "xpathAbsolute": "/html/body[1]/section[1]/div[1]/div[1]/div[1]/div[1]/span[2]",
+        "position": {
+          "parent": "div.content__body__img-wrapper",
+          "index": 2
+        },
+        "priority": [
+          "css",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "existing",
+          "isUnique": true,
+          "verifiedAt": 1768320975475
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 1130,
+            "y": 555.5,
+            "viewportX": 1130,
+            "viewportY": 355.5
+          },
+          "textContent": "",
+          "siblingIndex": 2,
+          "uniqueParent": ".content__body__img-wrapper"
+        }
+      },
+      "tagName": "span",
+      "text": "",
+      "coordinates": {
+        "x": 31,
+        "y": 14.5
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "10",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false
+      },
+      "alternativeSelectors": [],
+      "clickType": "carousel-navigation",
+      "carouselContext": {
+        "isCarouselControl": true,
+        "carouselType": "image-gallery",
+        "direction": "next",
+        "containerSelector": "#content",
+        "affectsElement": "img.lazyloaded.content__body__img",
+        "detectionMethod": "pattern",
+        "confidence": 95,
+        "isCustomImplementation": true,
+        "isDisabled": false,
+        "pageType": "unknown"
+      },
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "carousel-navigation",
+        "allowMultiple": true,
+        "requiresDelay": false,
+        "confidence": 95
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    },
+    {
+      "id": "act_036",
+      "type": "scroll",
+      "timestamp": 41637,
+      "completedAt": 41837,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "scrollX": 0,
+      "scrollY": 200,
+      "element": "window"
+    },
+    {
+      "id": "act_037",
+      "type": "click",
+      "timestamp": 43447,
+      "completedAt": 43497,
+      "url": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html",
+      "selector": {
+        "css": "#saveaction-recording-indicator > div:nth-child(3) > button:nth-child(2)",
+        "text": "⬇️",
+        "xpath": "//button[text()='⬇️']",
+        "xpathAbsolute": "/html/body[1]/div[9]/div[3]/button[2]",
+        "position": {
+          "parent": "div",
+          "index": 1
+        },
+        "priority": [
+          "css",
+          "text",
+          "xpath",
+          "xpathAbsolute",
+          "position"
+        ],
+        "validation": {
+          "cssMatches": 1,
+          "xpathMatches": 1,
+          "strategy": "nth-child-with-parent",
+          "isUnique": true,
+          "verifiedAt": 1768320978115
+        },
+        "fallback": {
+          "visualPosition": {
+            "x": 1808,
+            "y": 235.25,
+            "viewportX": 1808,
+            "viewportY": 35.25
+          },
+          "textContent": "⬇️",
+          "siblingIndex": 1,
+          "uniqueParent": "#saveaction-recording-indicator > div:nth-child(3)"
+        }
+      },
+      "tagName": "button",
+      "text": "⬇️",
+      "coordinates": {
+        "x": 15,
+        "y": 19.75
+      },
+      "coordinatesRelativeTo": "element",
+      "button": "left",
+      "clickCount": 1,
+      "modifiers": [],
+      "elementState": {
+        "visible": true,
+        "inViewport": true,
+        "opacity": "1",
+        "display": "flex",
+        "zIndex": "auto",
+        "enabled": true
+      },
+      "waitConditions": {
+        "elementVisible": true,
+        "parentVisible": true,
+        "networkIdle": true,
+        "elementStable": true
+      },
+      "context": {
+        "isLazyLoaded": false,
+        "navigationIntent": "submit-form",
+        "expectedUrlChange": {
+          "type": "same-page",
+          "patterns": [],
+          "isSuccessFlow": false,
+          "beforeUrl": "https://www.rightbiz.co.uk/buy_business/for_sale/643273_london.html"
+        }
+      },
+      "alternativeSelectors": [
+        {
+          "text": "⬇️",
+          "xpath": "//button[text()=\"⬇️\"]",
+          "priority": 1
+        }
+      ],
+      "clickType": "submit",
+      "isInDropdown": false,
+      "clickIntent": {
+        "type": "form-submit",
+        "allowMultiple": false,
+        "requiresDelay": true,
+        "confidence": 100
+      },
+      "validation": {
+        "isDuplicate": false,
+        "duplicateOf": null,
+        "isOsEvent": false,
+        "confidence": 80,
+        "flags": [
+          "moving-target"
+        ]
+      }
+    }
+  ],
+  "variables": []
+}
