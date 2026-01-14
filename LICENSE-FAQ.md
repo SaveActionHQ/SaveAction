@@ -98,8 +98,8 @@ This is the same license used by:
 
 ## 📞 Contact
 
-- **General Questions**: [hello@saveaction.dev](mailto:hello@saveaction.dev)
-- **Licensing Inquiries**: [licensing@saveaction.dev](mailto:licensing@saveaction.dev)
+- **General Questions**: [hello@saveaction.com](mailto:hello@saveaction.com)
+- **Licensing Inquiries**: [licensing@saveaction.com](mailto:licensing@saveaction.com)
 - **GitHub Issues**: [https://github.com/SaveActionHQ/SaveAction/issues](https://github.com/SaveActionHQ/SaveAction/issues)
 
 ---
