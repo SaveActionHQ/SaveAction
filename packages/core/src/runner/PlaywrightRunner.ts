@@ -1078,31 +1078,25 @@ export class PlaywrightRunner {
     }
   }
 
-  /**
-   * Check if action expects form-submit navigation (for cookie preservation)
-   */
+  // NOTE: These methods are kept for potential future use with recorder flags
+  // They are commented out to avoid unused method warnings
+  /*
   private expectsFormSubmitNavigation(action: Action): boolean {
     const context = (action as any).context;
     if (!context) return false;
-
-    // Check if action has navigationIntent: "submit-form"
     if (context.navigationIntent === 'submit-form') {
       return true;
     }
-
     return false;
   }
 
-  /**
-   * Check if next action is a navigation triggered by form-submit
-   */
   private nextActionIsFormSubmitNavigation(currentAction: Action): boolean {
     const nextAction = this.getNextAction(currentAction);
     if (!nextAction || nextAction.type !== 'navigation') return false;
-
     const navAction = nextAction as any;
     return navAction.navigationTrigger === 'form-submit';
   }
+  */
 
   /**
    * Check if submit action is redundant because previous action clicked a submit button
@@ -1297,22 +1291,18 @@ export class PlaywrightRunner {
   }
 
   /**
-   * Execute form submit with smart handling and navigation tracking
+   * Execute form submit with human-like behavior: submit, then observe and react
    * Prefers clicking submit button to preserve JavaScript event handlers
    *
-   * Note: If the preceding click action has isAjaxForm=true or expectsNavigation=false,
-   * the form submission was already handled via AJAX and this action becomes a no-op.
+   * PRINCIPLE: Like a human - click submit and see what happens
    */
   private async executeSubmit(page: Page, action: any): Promise<void> {
     const urlBeforeSubmit = page.url();
 
-    console.log(
-      `ℹ️ Form submit action detected - checking if already handled by previous click...`
-    );
+    console.log(`ℹ️ Form submit action detected...`);
 
     try {
-      // Try to find and click the submit button instead of calling .submit()
-      // This preserves JavaScript event handlers and preventDefault()
+      // Try to find the form element
       const formElement = await this.elementLocator.findElement(page, action.selector);
       await formElement.waitFor({ state: 'visible', timeout: this.options.timeout });
 
@@ -1323,81 +1313,32 @@ export class PlaywrightRunner {
       const submitButtonCount = await submitButton.count();
 
       if (submitButtonCount > 0) {
-        console.log(
-          `✓ Clicking submit button instead of calling .submit() (preserves JS handlers)`
-        );
-
-        // Check if this might be an AJAX form by looking for data attributes or form action
-        const formAction = await formElement.getAttribute('action').catch(() => null);
-        const isAjaxLikely = !formAction || formAction === '#' || formAction === '';
-
-        if (isAjaxLikely) {
-          console.log('   📡 Form looks like AJAX (no action URL) - using shorter timeout');
-
-          // Click without long navigation wait
-          await submitButton.click();
-
-          // Short wait for AJAX response
-          await page.waitForTimeout(500);
-          await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {
-            console.log('   ⏱️ Network not idle after submit (normal for AJAX forms)');
-          });
-        } else {
-          // Traditional form - race against navigation
-          await Promise.race([
-            submitButton.click(),
-            page.waitForNavigation({ timeout: 5000 }).catch(() => {}),
-          ]);
-
-          // Wait for any requests to complete
-          await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
-        }
+        console.log(`  ✓ Found submit button, clicking...`);
+        await submitButton.click();
       } else {
         // Fallback: Use legacy .submit() method if no button found
-        console.warn(`⚠️ No submit button found in form, using legacy .submit() method`);
-        await Promise.race([
-          formElement.evaluate((el: any) => el.submit()),
-          page.waitForNavigation({ timeout: 5000 }).catch(() => {}),
-        ]);
+        console.warn(`  ⚠️ No submit button found, using form.submit()`);
+        await formElement.evaluate((el: any) => el.submit());
       }
 
-      // Track navigation if URL changed
-      const urlAfterSubmit = page.url();
-      if (urlAfterSubmit !== urlBeforeSubmit) {
-        console.log(`✓ Form submit triggered navigation: ${urlBeforeSubmit} → ${urlAfterSubmit}`);
-        this.navigationHistory.recordNavigation(urlAfterSubmit);
+      // ============================================================
+      // HUMAN-LIKE: Observe what happened and react appropriately
+      // ============================================================
+      await this.observeAndReactAfterSubmit(page, urlBeforeSubmit);
 
-        // Extra wait for login/signup forms to establish session
-        if (
-          urlBeforeSubmit.includes('signin') ||
-          urlBeforeSubmit.includes('signup') ||
-          urlBeforeSubmit.includes('login') ||
-          urlBeforeSubmit.includes('auth')
-        ) {
-          console.log(
-            '   🔐 Authentication form detected, waiting 5s for session establishment...'
-          );
-          await page.waitForTimeout(5000);
-          await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
-        }
-      } else {
-        console.log('   ✓ Form submitted via AJAX (no URL change)');
-      }
     } catch (error: any) {
       // Check if form already submitted (URL changed or form not found)
       const urlAfterAttempt = page.url();
 
       if (urlAfterAttempt !== urlBeforeSubmit) {
-        console.log(
-          `✓ Form already submitted (URL changed from ${urlBeforeSubmit} to ${urlAfterAttempt})`
-        );
+        console.log(`  ✓ Form already submitted (navigated to ${urlAfterAttempt})`);
         this.navigationHistory.recordNavigation(urlAfterAttempt);
         return;
       }
 
       if (error.message?.includes('Element not found')) {
         // Form might have already been submitted by previous click action
-        console.warn(`⚠️ Form not found - may have been submitted by previous action`);
+        console.warn(`  ⚠️ Form not found - may have been submitted by previous action`);
         return;
       }
 
@@ -1406,14 +1347,105 @@ export class PlaywrightRunner {
   }
 
   /**
-   * Execute click action with exact mouse coordinates and navigation tracking
+   * Observe what happened after form submit and react appropriately
+   */
+  private async observeAndReactAfterSubmit(page: Page, urlBeforeSubmit: string): Promise<void> {
+    // Give JavaScript a moment to process the submit
+    await page.waitForTimeout(50);
+
+    // Check if navigation started
+    let currentUrl = page.url();
+    
+    if (currentUrl !== urlBeforeSubmit) {
+      // Navigation already started
+      console.log(`  🔄 Navigation detected: ${urlBeforeSubmit} → ${currentUrl}`);
+      await this.waitForNavigationToComplete(page, urlBeforeSubmit);
+      
+      const finalUrl = page.url();
+      if (finalUrl !== urlBeforeSubmit) {
+        this.navigationHistory.recordNavigation(finalUrl);
+        console.log(`  ✅ Form submit navigation complete: ${finalUrl}`);
+      }
+
+      // Extra wait for auth pages
+      if (this.isAuthPage(urlBeforeSubmit)) {
+        console.log('  🔐 Auth form detected, waiting for session...');
+        await page.waitForTimeout(2000);
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+      }
+
+      return;
+    }
+
+    // No immediate navigation - poll for changes
+    const maxWaitTime = 3000;
+    const checkInterval = 100;
+    const startTime = Date.now();
+
+    let networkSettled = false;
+    const networkIdlePromise = page
+      .waitForLoadState('networkidle', { timeout: maxWaitTime })
+      .then(() => { networkSettled = true; })
+      .catch(() => {});
+
+    while (Date.now() - startTime < maxWaitTime) {
+      await page.waitForTimeout(checkInterval);
+
+      currentUrl = page.url();
+      if (currentUrl !== urlBeforeSubmit) {
+        console.log(`  🔄 Delayed navigation detected: ${urlBeforeSubmit} → ${currentUrl}`);
+        await this.waitForNavigationToComplete(page, urlBeforeSubmit);
+        
+        const finalUrl = page.url();
+        if (finalUrl !== urlBeforeSubmit) {
+          this.navigationHistory.recordNavigation(finalUrl);
+          console.log(`  ✅ Form submit navigation complete: ${finalUrl}`);
+        }
+
+        if (this.isAuthPage(urlBeforeSubmit)) {
+          console.log('  🔐 Auth form detected, waiting for session...');
+          await page.waitForTimeout(2000);
+          await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+        }
+
+        return;
+      }
+
+      if (networkSettled) {
+        break;
+      }
+    }
+
+    // Wait for network to complete
+    await Promise.race([
+      networkIdlePromise,
+      page.waitForTimeout(500),
+    ]);
+
+    // Final check
+    currentUrl = page.url();
+    if (currentUrl !== urlBeforeSubmit) {
+      console.log(`  ✅ Form submit triggered navigation: ${currentUrl}`);
+      this.navigationHistory.recordNavigation(currentUrl);
+    } else {
+      console.log('  ✓ Form submitted (AJAX - no navigation)');
+      await page.waitForTimeout(150);
+    }
+  }
+
+  /**
+   * Execute click action with human-like behavior: click first, observe, then react
+   * 
+   * PRINCIPLE: Like a human, we don't predict what will happen - we click and see.
+   * - Click the element
+   * - Observe: Did URL change? Is network active? Did page load?
+   * - React: Wait appropriately based on what actually happened
    */
   private async executeClick(page: Page, action: ClickAction): Promise<void> {
     const urlBeforeClick = page.url();
 
     // DEFENSIVE FIX: Convert right-clicks on <select> elements to left-clicks
     // Browser generates synthetic right-click events when opening native dropdowns
-    // These should never be recorded as right-clicks since dropdowns use left-clicks
     let effectiveButton = action.button;
     if (action.tagName === 'select' && action.button === 'right') {
       console.warn(
@@ -1430,7 +1462,6 @@ export class PlaywrightRunner {
         if (modalId && !this.modalState.get(modalId)) {
           console.warn(`⚠️ Action requires modal "${modalId}" but it's not open, waiting...`);
 
-          // Wait for modal to appear
           await page
             .waitForSelector(`#${modalId}, [role="dialog"], [role="alertdialog"]`, {
               state: 'visible',
@@ -1440,17 +1471,15 @@ export class PlaywrightRunner {
               console.warn(`Modal "${modalId}" never appeared, proceeding anyway`);
             });
 
-          // Update state
           if (modalId) {
             this.modalState.set(modalId, true);
           }
 
-          // Wait for modal animation
           await page.waitForTimeout(500);
         }
       }
 
-      // Phase 2: Use multi-strategy selectors if available
+      // Find element using multi-strategy selectors
       let element;
       if (action.selectors && action.selectors.length > 0) {
         element = await this.elementLocator.findElement(
@@ -1465,7 +1494,6 @@ export class PlaywrightRunner {
           );
         }
       } else {
-        // Legacy: use single selector
         element = await this.elementLocator.findElement(page, action.selector);
       }
 
@@ -1475,262 +1503,15 @@ export class PlaywrightRunner {
       await page.keyboard.press('Escape').catch(() => {});
       await page.waitForTimeout(100);
 
-      // Check recorder's expectsNavigation flag (ground truth from recording)
-      const actionData = action as any;
-      const recorderExpectsNavigation = actionData.expectsNavigation;
+      // ============================================================
+      // HUMAN-LIKE CLICK: Click first, then observe and react
+      // ============================================================
 
-      // If recorder explicitly says no navigation, trust it (AJAX form)
-      if (recorderExpectsNavigation === false) {
-        console.log('  🔄 AJAX form detected (recorder confirmed no navigation)');
+      // Perform the actual click
+      await this.performClick(page, element, action, effectiveButton);
 
-        // Just click and wait for network to settle
-        if (action.coordinates && action.coordinatesRelativeTo === 'element') {
-          const box = await element.boundingBox();
-          if (box) {
-            const absoluteX = box.x + action.coordinates.x;
-            const absoluteY = box.y + action.coordinates.y;
-            await page.mouse.click(absoluteX, absoluteY, {
-              button:
-                effectiveButton === 'left'
-                  ? 'left'
-                  : effectiveButton === 'right'
-                    ? 'right'
-                    : 'middle',
-              clickCount: action.clickCount,
-            });
-          } else {
-            await element.click({
-              button:
-                effectiveButton === 'left'
-                  ? 'left'
-                  : effectiveButton === 'right'
-                    ? 'right'
-                    : 'middle',
-              clickCount: action.clickCount,
-              timeout: this.options.timeout,
-              force: false,
-            });
-          }
-        } else {
-          await element.click({
-            button:
-              effectiveButton === 'left'
-                ? 'left'
-                : effectiveButton === 'right'
-                  ? 'right'
-                  : 'middle',
-            clickCount: action.clickCount,
-            timeout: this.options.timeout,
-            force: false,
-          });
-        }
-
-        // Wait for network to settle
-        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {
-          console.log('  ⚠️ Network still active, proceeding...');
-        });
-
-        await page.waitForTimeout(300);
-      } else {
-        // Check if this is an AJAX form (from recorder flags)
-        const isAjaxForm = action.isAjaxForm || action.expectsNavigation === false;
-
-        // Use heuristics for backward compatibility or when recorder flag not present
-        const expectsNavigation =
-          !isAjaxForm &&
-          (this.expectsFormSubmitNavigation(action) ||
-            this.nextActionIsFormSubmitNavigation(action));
-
-        if (isAjaxForm) {
-          console.log('   📡 AJAX form detected - skipping navigation wait');
-
-          // Click without racing against navigation
-          if (action.coordinates && action.coordinatesRelativeTo === 'element') {
-            const box = await element.boundingBox();
-            if (box) {
-              const absoluteX = box.x + action.coordinates.x;
-              const absoluteY = box.y + action.coordinates.y;
-              await page.mouse.click(absoluteX, absoluteY, {
-                button:
-                  effectiveButton === 'left'
-                    ? 'left'
-                    : effectiveButton === 'right'
-                      ? 'right'
-                      : 'middle',
-                clickCount: action.clickCount,
-              });
-            } else {
-              await element.click({
-                button:
-                  effectiveButton === 'left'
-                    ? 'left'
-                    : effectiveButton === 'right'
-                      ? 'right'
-                      : 'middle',
-                clickCount: action.clickCount,
-                timeout: this.options.timeout,
-                force: false,
-              });
-            }
-          } else {
-            await element.click({
-              button:
-                effectiveButton === 'left'
-                  ? 'left'
-                  : effectiveButton === 'right'
-                    ? 'right'
-                    : 'middle',
-              clickCount: action.clickCount,
-              timeout: this.options.timeout,
-              force: false,
-            });
-          }
-
-          // Shorter wait for AJAX response (no navigation expected)
-          await page.waitForTimeout(500);
-          await page.waitForLoadState('networkidle', { timeout: 2000 }).catch(() => {
-            console.log(
-              '   ⏱️ Network not idle after AJAX submit (normal for background requests)'
-            );
-          });
-        } else if (expectsNavigation) {
-          console.log(
-            '  📍 Expecting form-submit navigation, waiting for natural redirect with cookies...'
-          );
-
-          // Use Promise.all to start listening BEFORE clicking
-          await Promise.all([
-            // Start listening for navigation
-            page
-              .waitForNavigation({
-                waitUntil: 'load',
-                timeout: 30000,
-              })
-              .catch(() => {
-                // Navigation might not happen (validation error, AJAX form, etc.)
-                console.log('  ⚠️ Navigation timeout (form might stay on page)');
-                return null;
-              }),
-
-            // Perform the click (this will trigger navigation)
-            (async () => {
-              if (action.coordinates && action.coordinatesRelativeTo === 'element') {
-                const box = await element.boundingBox();
-                if (box) {
-                  const absoluteX = box.x + action.coordinates.x;
-                  const absoluteY = box.y + action.coordinates.y;
-                  await page.mouse.click(absoluteX, absoluteY, {
-                    button:
-                      effectiveButton === 'left'
-                        ? 'left'
-                        : effectiveButton === 'right'
-                          ? 'right'
-                          : 'middle',
-                    clickCount: action.clickCount,
-                  });
-                } else {
-                  await element.click({
-                    button:
-                      effectiveButton === 'left'
-                        ? 'left'
-                        : effectiveButton === 'right'
-                          ? 'right'
-                          : 'middle',
-                    clickCount: action.clickCount,
-                    timeout: this.options.timeout,
-                    force: false,
-                  });
-                }
-              } else {
-                await element.click({
-                  button:
-                    effectiveButton === 'left'
-                      ? 'left'
-                      : effectiveButton === 'right'
-                        ? 'right'
-                        : 'middle',
-                  clickCount: action.clickCount,
-                  timeout: this.options.timeout,
-                  force: false,
-                });
-              }
-            })(),
-          ]);
-
-          console.log('  ✅ Form-submit navigation completed with cookies preserved');
-
-          // Extra wait for session establishment after auth forms
-          if (
-            urlBeforeClick.includes('signin') ||
-            urlBeforeClick.includes('login') ||
-            urlBeforeClick.includes('auth')
-          ) {
-            console.log('   🔐 Authentication form detected, waiting for session cookies...');
-            await page.waitForTimeout(2000);
-            await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {});
-          }
-        } else {
-          // Normal click without expected navigation
-          if (action.coordinates && action.coordinatesRelativeTo === 'element') {
-            const box = await element.boundingBox();
-            if (box) {
-              const absoluteX = box.x + action.coordinates.x;
-              const absoluteY = box.y + action.coordinates.y;
-              await Promise.race([
-                page.mouse.click(absoluteX, absoluteY, {
-                  button:
-                    effectiveButton === 'left'
-                      ? 'left'
-                      : effectiveButton === 'right'
-                        ? 'right'
-                        : 'middle',
-                  clickCount: action.clickCount,
-                }),
-                page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
-              ]);
-            } else {
-              await Promise.race([
-                element.click({
-                  button:
-                    effectiveButton === 'left'
-                      ? 'left'
-                      : effectiveButton === 'right'
-                        ? 'right'
-                        : 'middle',
-                  clickCount: action.clickCount,
-                  timeout: this.options.timeout,
-                  force: false,
-                }),
-                page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
-              ]);
-            }
-          } else {
-            await Promise.race([
-              element.click({
-                button:
-                  effectiveButton === 'left'
-                    ? 'left'
-                    : effectiveButton === 'right'
-                      ? 'right'
-                      : 'middle',
-                clickCount: action.clickCount,
-                timeout: this.options.timeout,
-                force: false,
-              }),
-              page.waitForNavigation({ timeout: 1000 }).catch(() => {}),
-            ]);
-          }
-
-          await page.waitForTimeout(300);
-        }
-      }
-
-      // Track navigation if URL changed
-      const urlAfterClick = page.url();
-      if (urlAfterClick !== urlBeforeClick) {
-        console.log(`✓ Click triggered navigation: ${urlBeforeClick} → ${urlAfterClick}`);
-        this.navigationHistory.recordNavigation(urlAfterClick);
-      }
+      // Observe what happened and react appropriately
+      await this.observeAndReactAfterClick(page, urlBeforeClick, action);
 
       // Track this click to detect duplicates
       this.lastClickedElement = {
@@ -1757,6 +1538,194 @@ export class PlaywrightRunner {
       }
       throw error;
     }
+  }
+
+  /**
+   * Perform the actual click on an element
+   * Extracted to reduce duplication and improve readability
+   */
+  private async performClick(
+    page: Page,
+    element: any,
+    action: ClickAction,
+    effectiveButton: string
+  ): Promise<void> {
+    const buttonOption =
+      effectiveButton === 'left' ? 'left' : effectiveButton === 'right' ? 'right' : 'middle';
+
+    if (action.coordinates && action.coordinatesRelativeTo === 'element') {
+      const box = await element.boundingBox();
+      if (box) {
+        const absoluteX = box.x + action.coordinates.x;
+        const absoluteY = box.y + action.coordinates.y;
+        await page.mouse.click(absoluteX, absoluteY, {
+          button: buttonOption,
+          clickCount: action.clickCount,
+        });
+        return;
+      }
+    }
+
+    // Fallback to element.click()
+    await element.click({
+      button: buttonOption,
+      clickCount: action.clickCount,
+      timeout: this.options.timeout,
+      force: false,
+    });
+  }
+
+  /**
+   * Observe what happened after a click and react appropriately
+   * 
+   * This is the core of the "human-like" approach:
+   * 1. Check immediately if URL changed (navigation started)
+   * 2. If yes: wait for page to load
+   * 3. If no: wait briefly for any AJAX/DOM updates, then proceed
+   */
+  private async observeAndReactAfterClick(
+    page: Page,
+    urlBeforeClick: string,
+    _action: ClickAction
+  ): Promise<void> {
+    // Give JavaScript a moment to start any navigation or AJAX
+    // This is crucial - some sites have slight delays before navigation starts
+    await page.waitForTimeout(50);
+
+    // Phase 1: Quick check - did navigation start?
+    let urlAfterClick = page.url();
+    let navigationDetected = urlAfterClick !== urlBeforeClick;
+
+    if (navigationDetected) {
+      // Navigation already started! Wait for it to complete
+      console.log(`  🔄 Navigation detected: ${urlBeforeClick} → ${urlAfterClick}`);
+      
+      await this.waitForNavigationToComplete(page, urlBeforeClick);
+      
+      // Record the navigation
+      const finalUrl = page.url();
+      if (finalUrl !== urlBeforeClick) {
+        this.navigationHistory.recordNavigation(finalUrl);
+        console.log(`  ✅ Navigation complete: ${finalUrl}`);
+      }
+
+      // Extra wait for auth pages to establish session
+      if (this.isAuthPage(urlBeforeClick)) {
+        console.log('  🔐 Auth page detected, waiting for session...');
+        await page.waitForTimeout(1500);
+        await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+      }
+
+      return;
+    }
+
+    // Phase 2: No immediate navigation - wait a bit more and check for:
+    // - Delayed navigation (some sites have JS that triggers navigation after a delay)
+    // - AJAX requests completing
+    // - DOM updates finishing
+
+    // Use a smart polling approach: check for URL changes multiple times
+    const maxWaitTime = 3000; // Maximum 3 seconds to wait
+    const checkInterval = 100; // Check every 100ms
+    const startTime = Date.now();
+
+    let networkSettled = false;
+
+    // Create a promise that resolves when network is idle
+    const networkIdlePromise = page
+      .waitForLoadState('networkidle', { timeout: maxWaitTime })
+      .then(() => {
+        networkSettled = true;
+      })
+      .catch(() => {
+        // Network didn't settle - that's OK for some sites
+      });
+
+    // Poll for URL changes while waiting for network
+    while (Date.now() - startTime < maxWaitTime) {
+      await page.waitForTimeout(checkInterval);
+
+      urlAfterClick = page.url();
+      if (urlAfterClick !== urlBeforeClick) {
+        console.log(`  🔄 Delayed navigation detected: ${urlBeforeClick} → ${urlAfterClick}`);
+        
+        // Wait for the navigation to complete
+        await this.waitForNavigationToComplete(page, urlBeforeClick);
+        
+        const finalUrl = page.url();
+        if (finalUrl !== urlBeforeClick) {
+          this.navigationHistory.recordNavigation(finalUrl);
+          console.log(`  ✅ Navigation complete: ${finalUrl}`);
+        }
+
+        // Extra wait for auth pages
+        if (this.isAuthPage(urlBeforeClick)) {
+          console.log('  🔐 Auth page detected, waiting for session...');
+          await page.waitForTimeout(1500);
+          await page.waitForLoadState('networkidle', { timeout: 3000 }).catch(() => {});
+        }
+
+        return;
+      }
+
+      // If network already settled and no navigation, we can proceed
+      if (networkSettled) {
+        break;
+      }
+    }
+
+    // Wait for the network idle promise to complete (if it hasn't already)
+    await Promise.race([
+      networkIdlePromise,
+      page.waitForTimeout(500), // Don't wait more than 500ms extra
+    ]);
+
+    // Final URL check
+    urlAfterClick = page.url();
+    if (urlAfterClick !== urlBeforeClick) {
+      console.log(`  ✅ Click triggered navigation: ${urlBeforeClick} → ${urlAfterClick}`);
+      this.navigationHistory.recordNavigation(urlAfterClick);
+    } else {
+      // No navigation - this was likely an AJAX action or UI update
+      // Add a small delay for any remaining DOM updates
+      await page.waitForTimeout(150);
+    }
+  }
+
+  /**
+   * Wait for a navigation to fully complete
+   * Handles various page load states and edge cases
+   */
+  private async waitForNavigationToComplete(page: Page, originalUrl: string): Promise<void> {
+    try {
+      // Wait for DOM to be ready first (fastest)
+      await page.waitForLoadState('domcontentloaded', { timeout: 10000 });
+
+      // Then wait for network to settle (catches AJAX-heavy pages)
+      await page.waitForLoadState('networkidle', { timeout: 5000 }).catch(() => {
+        // Network might not fully settle on some sites - that's OK
+        console.log('  ⏳ Network still active, proceeding...');
+      });
+
+      // Small buffer for any final JS execution
+      await page.waitForTimeout(100);
+    } catch (error: any) {
+      // If we're on a different URL, navigation succeeded even if load states failed
+      if (page.url() !== originalUrl) {
+        console.log('  ⚠️ Page load had issues but navigation completed');
+        return;
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Check if a URL is an authentication-related page
+   */
+  private isAuthPage(url: string): boolean {
+    const authPatterns = ['signin', 'sign-in', 'login', 'log-in', 'auth', 'authenticate', 'signup', 'sign-up', 'register'];
+    const urlLower = url.toLowerCase();
+    return authPatterns.some(pattern => urlLower.includes(pattern));
   }
 
   /**
