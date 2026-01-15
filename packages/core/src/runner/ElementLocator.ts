@@ -275,7 +275,7 @@ export class ElementLocator {
           await locator.first().waitFor({ state: 'attached', timeout: 5000 });
           return locator.first();
         }
-      } catch (error) {
+      } catch (_error) {
         continue;
       }
     }
@@ -295,7 +295,7 @@ export class ElementLocator {
           await locator.waitFor({ state: 'attached', timeout: 5000 });
           return locator;
         }
-      } catch (error) {
+      } catch (_error) {
         // Fallback position didn't work
       }
     }
@@ -341,7 +341,7 @@ export class ElementLocator {
               // Multiple matches - use intelligent filtering
               return await this.handleMultipleMatches(page, locator, selector, count);
             }
-          } catch (error) {
+          } catch (_error) {
             // Continue to next selector strategy
             continue;
           }
@@ -353,7 +353,7 @@ export class ElementLocator {
           const delay = baseDelay * Math.pow(2, attempt);
           await page.waitForTimeout(delay);
         }
-      } catch (error) {
+      } catch (_error) {
         if (attempt < maxRetries - 1) {
           const delay = baseDelay * Math.pow(2, attempt);
           await page.waitForTimeout(delay);
@@ -540,7 +540,7 @@ export class ElementLocator {
       // Level 4: Report clear failure (NO FORCE CLICK - keeping realistic behavior)
       console.log('⚠️ Cannot make element visible using realistic interactions');
       return false;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -748,7 +748,7 @@ export class ElementLocator {
         confidence: best.confidence >= 5 ? 'high' : best.confidence >= 3 ? 'medium' : 'low',
         level: best.level,
       };
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }
@@ -780,7 +780,7 @@ export class ElementLocator {
         // Or timeout
         page.waitForTimeout(maxWait),
       ]);
-    } catch (error) {
+    } catch (_error) {
       // Ignore errors, just wait the timeout
       await page.waitForTimeout(500);
     }
@@ -828,7 +828,7 @@ export class ElementLocator {
       }
 
       return false;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -864,7 +864,7 @@ export class ElementLocator {
       if (!parentSelector) return null;
 
       return page.locator(parentSelector).first();
-    } catch (error) {
+    } catch (_error) {
       return null;
     }
   }
@@ -899,7 +899,7 @@ export class ElementLocator {
       }
 
       return false;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }

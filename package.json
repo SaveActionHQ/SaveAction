@@ -2,6 +2,7 @@
   "name": "saveaction",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "description": "Open-source test automation platform - record & replay browser interactions",
   "author": "SaveAction",
   "license": "SEE LICENSE IN LICENSE",
@@ -13,15 +14,19 @@
     "dev": "turbo run dev",
     "test": "turbo run test",
     "test:watch": "turbo run test:watch",
-    "lint": "turbo run lint",
+    "lint": "eslint \"packages/*/src/**/*.ts\" --max-warnings 0",
+    "lint:fix": "eslint \"packages/*/src/**/*.ts\" --fix",
     "format": "prettier --write \"packages/**/*.{ts,tsx,json,md}\"",
     "clean": "turbo run clean && rm -rf node_modules"
   },
   "devDependencies": {
+    "@eslint/js": "^9.39.2",
     "@types/node": "^20.10.0",
+    "eslint": "^9.39.2",
     "prettier": "^3.1.1",
     "turbo": "^1.11.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^8.53.0"
   },
   "engines": {
     "node": ">=18.0.0",

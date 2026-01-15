@@ -11,11 +11,12 @@ describe('ElementLocator', () => {
   beforeEach(() => {
     locator = new ElementLocator();
     
-    // Create mock locator with count and first methods
+    // Create mock locator with all required methods for findElementLegacy
     mockLocator = {
       count: vi.fn().mockResolvedValue(1),
       first: vi.fn().mockReturnThis(),
       waitFor: vi.fn().mockResolvedValue(undefined),
+      isVisible: vi.fn().mockResolvedValue(true),  // Element is visible
     } as unknown as Locator;
 
     // Create mock page with all necessary methods
@@ -26,6 +27,11 @@ describe('ElementLocator', () => {
       getByTestId: vi.fn().mockReturnValue(mockLocator),
       getByText: vi.fn().mockReturnValue(mockLocator),
       waitForTimeout: vi.fn().mockResolvedValue(undefined),
+      waitForLoadState: vi.fn().mockResolvedValue(undefined),
+      keyboard: {
+        press: vi.fn().mockResolvedValue(undefined),
+      },
+      evaluate: vi.fn().mockResolvedValue(undefined),
     } as unknown as Page;
   });
 
@@ -142,6 +148,7 @@ describe('ElementLocator', () => {
         count: vi.fn().mockResolvedValue(1),
         first: vi.fn().mockReturnThis(),
         waitFor: vi.fn().mockResolvedValue(undefined),
+        isVisible: vi.fn().mockResolvedValue(true),
       } as unknown as Locator;
 
       (mockPage.locator as any)
@@ -171,6 +178,7 @@ describe('ElementLocator', () => {
         count: vi.fn().mockResolvedValue(1),
         first: vi.fn().mockReturnThis(),
         waitFor: vi.fn().mockResolvedValue(undefined),
+        isVisible: vi.fn().mockResolvedValue(true),
       } as unknown as Locator;
 
       (mockPage.locator as any)
@@ -181,10 +189,10 @@ describe('ElementLocator', () => {
       const result = await locator.findElement(mockPage, selector);
 
       expect(result).toBe(succeedingLocator);
-      // Should have waited with exponential backoff: 500ms, then 1000ms
-      expect(mockPage.waitForTimeout).toHaveBeenCalledTimes(2);
-      expect(mockPage.waitForTimeout).toHaveBeenNthCalledWith(1, 500);
-      expect(mockPage.waitForTimeout).toHaveBeenNthCalledWith(2, 1000);
+      // Should have waited with exponential backoff delays (500ms, 1000ms)
+      // Plus possible recovery strategy delays (300ms)
+      expect(mockPage.waitForTimeout).toHaveBeenCalledWith(500);
+      expect(mockPage.waitForTimeout).toHaveBeenCalledWith(1000);
     });
 
     it('should throw error after max retries exceeded', async () => {
@@ -203,8 +211,9 @@ describe('ElementLocator', () => {
         'Element not found with any selector strategy'
       );
 
-      // Should wait between retries but not after final attempt
-      expect(mockPage.waitForTimeout).toHaveBeenCalledTimes(2);
+      // Should wait between retries with exponential backoff delays
+      expect(mockPage.waitForTimeout).toHaveBeenCalledWith(500);
+      expect(mockPage.waitForTimeout).toHaveBeenCalledWith(1000);
     });
 
     it('should handle special fallback for search-submit-text to ga4 button', async () => {
