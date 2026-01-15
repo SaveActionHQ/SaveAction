@@ -200,7 +200,7 @@ export class NavigationHistoryManager {
         await page.goto(targetUrl, { waitUntil: 'domcontentloaded', timeout });
         this.recordNavigation(targetUrl);
         return { success: true, method: 'goto-error-fallback' };
-      } catch (gotoError) {
+      } catch (_gotoError) {
         return { success: false, method: 'all-failed' };
       }
     }

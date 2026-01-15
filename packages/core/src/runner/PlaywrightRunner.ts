@@ -836,7 +836,7 @@ export class PlaywrightRunner {
           this.navigationHistory.recordNavigation(expectedUrl);
           console.log(`✓ Auto-correction successful via direct navigation`);
           return true;
-        } catch (e) {
+        } catch (_e) {
           // Direct navigation also failed
         }
       }
@@ -850,7 +850,7 @@ export class PlaywrightRunner {
         this.navigationHistory.recordNavigation(expectedUrl);
         console.log(`✓ Auto-correction successful via direct navigation (final attempt)`);
         return true;
-      } catch (finalError) {
+      } catch (_finalError) {
         console.error(`❌ All auto-correction attempts failed`);
         return false;
       }
@@ -936,7 +936,7 @@ export class PlaywrightRunner {
             await page.waitForTimeout(1000); // Wait for page to stabilize
             return true;
           }
-        } catch (urlError) {
+        } catch (_urlError) {
           // URL parsing failed, continue with other strategies
         }
       }
@@ -960,7 +960,7 @@ export class PlaywrightRunner {
       }
 
       return true;
-    } catch (error) {
+    } catch (_error) {
       return false;
     }
   }
@@ -1594,7 +1594,7 @@ export class PlaywrightRunner {
 
     // Phase 1: Quick check - did navigation start?
     let urlAfterClick = page.url();
-    let navigationDetected = urlAfterClick !== urlBeforeClick;
+    const navigationDetected = urlAfterClick !== urlBeforeClick;
 
     if (navigationDetected) {
       // Navigation already started! Wait for it to complete
@@ -1863,7 +1863,7 @@ export class PlaywrightRunner {
             console.log(`   ✅ Found file: ${foundFile}`);
             break;
           }
-        } catch (err) {
+        } catch (_err) {
           // Skip invalid paths
         }
       }
