@@ -1,0 +1,5 @@
+echo "🔨 Building packages..."
+pnpm build
+
+echo "🧪 Running tests..."
+pnpm test
