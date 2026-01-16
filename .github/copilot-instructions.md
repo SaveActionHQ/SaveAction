@@ -12,6 +12,14 @@ SaveAction is an open-source test automation platform that replays browser inter
 
 ```
 SaveAction/
+├── .github/
+│   ├── workflows/
+│   │   └── ci.yml          # GitHub Actions CI pipeline
+│   └── copilot-instructions.md
+├── .husky/                 # Git hooks
+│   ├── pre-commit          # Runs lint-staged
+│   ├── commit-msg          # Validates conventional commits
+│   └── pre-push            # Runs build + tests
 ├── packages/
 │   ├── core/           # Core engine (@saveaction/core)
 │   │   ├── src/
@@ -26,6 +34,7 @@ SaveAction/
 │       ├── bin/
 │       │   └── saveaction.js  # Entry point
 │       └── package.json
+├── eslint.config.js    # ESLint flat config
 ├── turbo.json          # Turborepo build pipeline
 ├── pnpm-workspace.yaml # pnpm workspace config
 └── tsconfig.base.json  # Shared TypeScript config
@@ -39,6 +48,9 @@ SaveAction/
 - **Automation**: Playwright 1.40.0 (chromium/firefox/webkit)
 - **Validation**: Zod 3.22.4 for runtime schema validation
 - **Testing**: Vitest 1.0.4 with v8 coverage
+- **Linting**: ESLint 9.x with typescript-eslint (flat config)
+- **Git Hooks**: Husky 9.x with lint-staged
+- **CI/CD**: GitHub Actions
 - **CLI Framework**: Commander.js 11.1.0
 - **TypeScript**: 5.3.3, strict mode, ES2022 target, ESNext modules
 
@@ -97,6 +109,9 @@ pnpm build
 
 # Run tests
 pnpm test
+
+# Run linting
+pnpm lint
 
 # Run tests with coverage
 pnpm exec vitest run --coverage
@@ -244,9 +259,46 @@ interface Action {
 ## Git Workflow
 
 - **main** branch: Stable, working code
-- **Commit Messages**: Use conventional commits (feat:, fix:, test:, docs:)
+- **Commit Messages**: Use conventional commits (enforced by husky commit-msg hook)
 - **Testing**: All tests must pass before committing
 - **Build**: Code must build without errors
+
+### Commit Message Format
+
+Commit messages are validated by the `commit-msg` hook and must follow the Conventional Commits format:
+
+```
+<type>(<scope>): <subject>
+```
+
+**Allowed types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+
+**Examples**:
+```bash
+feat: add recording pause functionality
+fix(runner): resolve element location issue
+docs: update README with new features
+test(parser): add validation edge cases
+```
+
+### Git Hooks (Husky)
+
+| Hook | Action | Description |
+|------|--------|-------------|
+| `pre-commit` | `lint-staged` | Runs ESLint + Prettier on staged files |
+| `commit-msg` | Validates format | Ensures conventional commit format |
+| `pre-push` | `build + test` | Prevents pushing broken code |
+
+### CI Pipeline (GitHub Actions)
+
+The CI runs on every PR and push to `main`:
+
+| Job | Description |
+|-----|-------------|
+| `lint` | Runs ESLint with 0 warnings tolerance |
+| `typecheck` | Builds all packages (TypeScript strict mode) |
+| `test` | Runs all unit tests |
+| `test-coverage` | Uploads coverage to Codecov (main branch only) |
 
 ## Future Phases
 

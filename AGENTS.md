@@ -18,6 +18,9 @@ SaveAction is a test automation platform that:
 - Playwright 1.40.0 for browser automation
 - Zod 3.22.4 for JSON validation
 - Vitest 1.0.4 for testing
+- ESLint 9.x with typescript-eslint
+- Husky 9.x with lint-staged (git hooks)
+- GitHub Actions CI
 - Commander.js 11.1.0 for CLI
 
 ## Critical Rules
@@ -88,6 +91,11 @@ pnpm build
 pnpm test
 ```
 
+### Run Linting
+```bash
+pnpm lint
+```
+
 ### Run CLI
 ```bash
 node packages/cli/bin/saveaction.js run test8_1763549638010.json --headless false
@@ -106,8 +114,11 @@ pnpm exec vitest run --coverage
 - ✅ CLI with run command
 - ✅ JSON parser with Zod validation
 - ✅ Console reporter with emoji output
-- ✅ Unit tests (73 tests, 53.8% coverage)
+- ✅ Unit tests (81 tests)
 - ✅ Working with test recordings (100% pass rate)
+- ✅ ESLint + Prettier configuration
+- ✅ Husky git hooks (pre-commit, commit-msg, pre-push)
+- ✅ GitHub Actions CI pipeline
 
 **Next Phases**:
 - Phase 3: REST API + PostgreSQL database
@@ -142,11 +153,24 @@ Tests          → *.test.ts files next to source
 
 ## Commit Conventions
 
-Use conventional commits:
+Commit messages are **enforced by Husky** `commit-msg` hook.
+
+Use conventional commits format: `<type>(<scope>): <subject>`
+
+**Allowed types**:
 - `feat:` - New features
 - `fix:` - Bug fixes
 - `test:` - Test additions/changes
 - `docs:` - Documentation
 - `refactor:` - Code restructuring
+- `ci:` - CI/CD changes
+- `chore:` - Maintenance tasks
 
-Always run tests before committing.
+**Git Hooks**:
+| Hook | Action |
+|------|--------|
+| `pre-commit` | Runs lint-staged (ESLint + Prettier) |
+| `commit-msg` | Validates conventional commit format |
+| `pre-push` | Runs `pnpm build && pnpm test` |
+
+Broken code cannot be committed or pushed.
