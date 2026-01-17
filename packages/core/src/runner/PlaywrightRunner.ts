@@ -1325,7 +1325,6 @@ export class PlaywrightRunner {
       // HUMAN-LIKE: Observe what happened and react appropriately
       // ============================================================
       await this.observeAndReactAfterSubmit(page, urlBeforeSubmit);
-
     } catch (error: any) {
       // Check if form already submitted (URL changed or form not found)
       const urlAfterAttempt = page.url();
@@ -1355,12 +1354,12 @@ export class PlaywrightRunner {
 
     // Check if navigation started
     let currentUrl = page.url();
-    
+
     if (currentUrl !== urlBeforeSubmit) {
       // Navigation already started
       console.log(`  🔄 Navigation detected: ${urlBeforeSubmit} → ${currentUrl}`);
       await this.waitForNavigationToComplete(page, urlBeforeSubmit);
-      
+
       const finalUrl = page.url();
       if (finalUrl !== urlBeforeSubmit) {
         this.navigationHistory.recordNavigation(finalUrl);
@@ -1385,7 +1384,9 @@ export class PlaywrightRunner {
     let networkSettled = false;
     const networkIdlePromise = page
       .waitForLoadState('networkidle', { timeout: maxWaitTime })
-      .then(() => { networkSettled = true; })
+      .then(() => {
+        networkSettled = true;
+      })
       .catch(() => {});
 
     while (Date.now() - startTime < maxWaitTime) {
@@ -1395,7 +1396,7 @@ export class PlaywrightRunner {
       if (currentUrl !== urlBeforeSubmit) {
         console.log(`  🔄 Delayed navigation detected: ${urlBeforeSubmit} → ${currentUrl}`);
         await this.waitForNavigationToComplete(page, urlBeforeSubmit);
-        
+
         const finalUrl = page.url();
         if (finalUrl !== urlBeforeSubmit) {
           this.navigationHistory.recordNavigation(finalUrl);
@@ -1417,10 +1418,7 @@ export class PlaywrightRunner {
     }
 
     // Wait for network to complete
-    await Promise.race([
-      networkIdlePromise,
-      page.waitForTimeout(500),
-    ]);
+    await Promise.race([networkIdlePromise, page.waitForTimeout(500)]);
 
     // Final check
     currentUrl = page.url();
@@ -1435,7 +1433,7 @@ export class PlaywrightRunner {
 
   /**
    * Execute click action with human-like behavior: click first, observe, then react
-   * 
+   *
    * PRINCIPLE: Like a human, we don't predict what will happen - we click and see.
    * - Click the element
    * - Observe: Did URL change? Is network active? Did page load?
@@ -1577,7 +1575,7 @@ export class PlaywrightRunner {
 
   /**
    * Observe what happened after a click and react appropriately
-   * 
+   *
    * This is the core of the "human-like" approach:
    * 1. Check immediately if URL changed (navigation started)
    * 2. If yes: wait for page to load
@@ -1599,9 +1597,9 @@ export class PlaywrightRunner {
     if (navigationDetected) {
       // Navigation already started! Wait for it to complete
       console.log(`  🔄 Navigation detected: ${urlBeforeClick} → ${urlAfterClick}`);
-      
+
       await this.waitForNavigationToComplete(page, urlBeforeClick);
-      
+
       // Record the navigation
       const finalUrl = page.url();
       if (finalUrl !== urlBeforeClick) {
@@ -1648,10 +1646,10 @@ export class PlaywrightRunner {
       urlAfterClick = page.url();
       if (urlAfterClick !== urlBeforeClick) {
         console.log(`  🔄 Delayed navigation detected: ${urlBeforeClick} → ${urlAfterClick}`);
-        
+
         // Wait for the navigation to complete
         await this.waitForNavigationToComplete(page, urlBeforeClick);
-        
+
         const finalUrl = page.url();
         if (finalUrl !== urlBeforeClick) {
           this.navigationHistory.recordNavigation(finalUrl);
@@ -1723,9 +1721,19 @@ export class PlaywrightRunner {
    * Check if a URL is an authentication-related page
    */
   private isAuthPage(url: string): boolean {
-    const authPatterns = ['signin', 'sign-in', 'login', 'log-in', 'auth', 'authenticate', 'signup', 'sign-up', 'register'];
+    const authPatterns = [
+      'signin',
+      'sign-in',
+      'login',
+      'log-in',
+      'auth',
+      'authenticate',
+      'signup',
+      'sign-up',
+      'register',
+    ];
     const urlLower = url.toLowerCase();
-    return authPatterns.some(pattern => urlLower.includes(pattern));
+    return authPatterns.some((pattern) => urlLower.includes(pattern));
   }
 
   /**
@@ -2092,8 +2100,10 @@ export class PlaywrightRunner {
    * Launch browser based on options
    */
   private async launchBrowser(): Promise<Browser> {
-    // Stealth mode: Add arguments to hide automation
-    const stealthArgs = [
+    // Browser-specific stealth arguments
+    // Chromium args don't work on Firefox/Webkit and can cause issues
+    // Firefox misinterprets "--disable-blink-features=AutomationControlled" as URL "http://automationcontrolled"
+    const chromiumStealthArgs = [
       '--disable-blink-features=AutomationControlled',
       '--disable-dev-shm-usage',
       '--no-sandbox',
@@ -2106,18 +2116,32 @@ export class PlaywrightRunner {
       '--ignore-certificate-errors-spki-list',
     ];
 
-    const launchOptions: any = {
-      headless: this.options.headless,
-      args: stealthArgs,
-    };
+    // Firefox-specific args (Firefox doesn't use Chromium's arg format)
+    const firefoxStealthArgs: string[] = [
+      // Firefox doesn't need most stealth args as it doesn't expose webdriver by default
+    ];
+
+    // Webkit-specific args (Safari engine, minimal args needed)
+    const webkitStealthArgs: string[] = [
+      // Webkit has limited CLI arg support
+    ];
 
     switch (this.options.browser) {
       case 'chromium':
-        return await chromium.launch(launchOptions);
+        return await chromium.launch({
+          headless: this.options.headless,
+          args: chromiumStealthArgs,
+        });
       case 'firefox':
-        return await firefox.launch(launchOptions);
+        return await firefox.launch({
+          headless: this.options.headless,
+          args: firefoxStealthArgs,
+        });
       case 'webkit':
-        return await webkit.launch(launchOptions);
+        return await webkit.launch({
+          headless: this.options.headless,
+          args: webkitStealthArgs,
+        });
       default:
         throw new Error(`Unknown browser: ${this.options.browser}`);
     }
