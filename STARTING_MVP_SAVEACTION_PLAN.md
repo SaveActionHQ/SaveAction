@@ -1,9 +1,20 @@
 # SaveAction Platform - MVP Development Plan
 
-**Version:** 1.0.0  
-**Date:** November 23, 2025  
-**Status:** Planning Phase  
+**Version:** 1.2.0  
+**Date:** January 18, 2026  
+**Status:** Phase 2 In Progress  
 **Architecture:** Modular Monorepo (Option 1)
+
+> **Progress Summary:**
+> - ✅ Phase 1: Core Engine - **COMPLETED** 
+> - 🟡 Phase 2: CLI Tool - **PARTIAL** (run command done, others pending)
+> - ⏳ Phase 2.5: CLI Platform Integration - Not started (CI/CD support)
+> - ⏳ Phase 3: API Server - Not started (includes security & stability)
+> - ⏳ Phase 4: Web Dashboard - Not started
+> - ⏳ Phase 5: Docker Deployment - Not started (includes TLS & backups)
+> - ⏳ Phase 6: Extension Integration - Not started
+>
+> **Task Count:** 83 total | 17 done | 66 pending
 
 ---
 
@@ -539,11 +550,16 @@ CREATE INDEX idx_schedules_next_run_at ON schedules(next_run_at) WHERE enabled =
 
 **API Endpoints:**
 
+> **Versioning:** All endpoints use `/api/v1/` prefix (e.g., `/api/v1/auth/login`). This allows future breaking changes without affecting existing integrations.
+
 ```typescript
 // Authentication
-POST   /api/auth/register          // Register new user
-POST   /api/auth/login             // Login (returns JWT)
-POST   /api/auth/logout            // Logout
+POST   /api/v1/auth/register          // Register new user
+POST   /api/v1/auth/login             // Login (returns JWT)
+POST   /api/v1/auth/logout            // Logout
+POST   /api/v1/auth/refresh           // Refresh access token (using refresh token cookie)
+POST   /api/v1/auth/forgot-password   // Send password reset email
+POST   /api/v1/auth/reset-password    // Reset password with token
 GET    /api/auth/me                // Get current user
 POST   /api/auth/tokens            // Generate API token
 GET    /api/auth/tokens            // List API tokens
@@ -561,6 +577,7 @@ GET    /api/recordings/:id/runs    // Get runs for recording
 GET    /api/runs                   // List all runs (paginated)
 POST   /api/runs                   // Execute a test
 GET    /api/runs/:id               // Get run details
+POST   /api/runs/:id/cancel        // Cancel a running test
 GET    /api/runs/:id/actions       // Get detailed action results
 GET    /api/runs/:id/video         // Download video
 DELETE /api/runs/:id               // Delete run
@@ -844,64 +861,65 @@ packages/web/
 
 ## 🚀 MVP Implementation Phases
 
-### Phase 1: Core Engine (Week 1) ⭐ **START HERE**
+### Phase 1: Core Engine (Week 1) ⭐ **START HERE** ✅ COMPLETED
 
 **Goal:** Build the fundamental test execution engine that can parse JSON and replay tests.
 
+**Status:** ✅ COMPLETED (January 2026)
+
 #### Tasks:
 
-1. **Setup Project Structure**
+1. ✅ **Setup Project Structure**
    - Initialize monorepo with pnpm workspaces
    - Configure TypeScript (tsconfig.base.json)
    - Setup Turborepo for build orchestration
    - Configure ESLint + Prettier
    - Setup Vitest for testing
 
-2. **Copy Types from Recorder**
+2. ✅ **Copy Types from Recorder**
    - Copy `types/` folder from recorder repo
    - Ensure types are identical (no modifications)
    - Export all types from index.ts
 
-3. **Build Parser Module**
+3. ✅ **Build Parser Module**
    - `RecordingParser.ts`: Parse JSON file into Recording object
-   - `ActionParser.ts`: Parse individual actions
-   - `Validator.ts`: Validate JSON with Zod schemas
-   - Unit tests for all parsers (95% coverage)
+   - Zod schema validation
+   - Unit tests for parser (100% coverage)
 
-4. **Build Runner Module**
+4. ✅ **Build Runner Module**
    - `PlaywrightRunner.ts`: Main execution engine
-   - `ActionExecutor.ts`: Execute each action type
+   - All action types implemented:
      - Click action
      - Input action
      - Navigation action
      - Scroll action
-     - Select action (future)
-     - Keypress action (future)
+     - Select action
+     - Keypress action
+     - Submit action
+     - Hover action
    - `ElementLocator.ts`: Multi-strategy element location
-     - Try selectors in priority order
-     - Fallback to next strategy if not found
-   - `WaitStrategy.ts`: Handle timing and waits
-     - Calculate delay between actions
-     - Wait for navigation
-     - Auto-wait for elements
-   - `NavigationHandler.ts`: Handle page transitions
+     - Try selectors in priority order (id → dataTestId → ariaLabel → name → css → xpath → position)
+     - Exponential backoff retry (500ms → 1000ms → 2000ms)
+   - `NavigationHistoryManager.ts`: Track page navigations
+   - `NavigationAnalyzer.ts`: Detect missing prerequisites
+   - Cross-browser support (Chromium, Firefox, WebKit)
 
-5. **Build Reporter Module**
-   - `ConsoleReporter.ts`: Pretty CLI output
-   - `JSONReporter.ts`: Structured JSON output
+5. ✅ **Build Reporter Module**
+   - `ConsoleReporter.ts`: Pretty CLI output with emojis
 
-6. **Integration Tests**
-   - Test with real recording (test8_1763549638010.json)
+6. ✅ **Integration Tests**
+   - Test with real recordings (22 actions, 100% pass rate)
    - Test multi-page navigation
    - Test error handling (element not found)
-   - Test different browsers
+   - Test all 3 browsers (Chromium, Firefox, WebKit)
 
 **Deliverables:**
 - ✅ `@saveaction/core` package functional
 - ✅ Can parse JSON recordings
-- ✅ Can execute click, input, navigation, scroll actions
-- ✅ 90%+ test coverage
-- ✅ Works with test8 JSON file
+- ✅ Can execute all action types
+- ✅ 81 unit tests passing
+- ✅ Works with real recording files
+- ✅ Cross-browser support (Chromium, Firefox, WebKit)
 
 **Success Criteria:**
 ```typescript
@@ -919,51 +937,55 @@ console.log(result.actionsExecuted); // 11
 
 ---
 
-### Phase 2: CLI Tool (Week 1) ⭐ **SECOND PRIORITY**
+### Phase 2: CLI Tool (Week 1) ⭐ **SECOND PRIORITY** 🟡 PARTIAL
 
 **Goal:** Create command-line interface for developers to run tests locally.
 
+**Status:** 🟡 PARTIAL - `run` command complete, other commands pending
+
 #### Tasks:
 
-1. **Setup CLI Package**
+1. ✅ **Setup CLI Package**
    - Initialize package with Commander.js
    - Setup bin entry point
    - Configure CLI help text
 
 2. **Implement Commands**
-   - `saveaction run <file>`: Execute test
-   - `saveaction validate <file>`: Validate JSON
-   - `saveaction info <file>`: Show recording details
-   - `saveaction --version`: Show version
-   - `saveaction --help`: Show help
+   - ✅ `saveaction run <file>`: Execute test
+   - ⏳ `saveaction validate <file>`: Validate JSON
+   - ⏳ `saveaction info <file>`: Show recording details
+   - ✅ `saveaction --version`: Show version
+   - ✅ `saveaction --help`: Show help
 
-3. **Add CLI Options**
+3. ✅ **Add CLI Options** (for run command)
    - `--headless`: Run in headless mode
-   - `--browser <name>`: Select browser
+   - `--browser <name>`: Select browser (chromium/firefox/webkit)
    - `--video`: Record video
-   - `--output <format>`: Output format (console, json)
-   - `--output-file <path>`: Save results to file
+   - `--timeout`: Custom timeout
+   - `--timing-mode`: realistic/fast/instant
+   - `--speed`: Speed multiplier
+   - `--max-delay`: Maximum delay between actions
 
-4. **Configuration File Support**
+4. ⏳ **Configuration File Support**
    - Support `.saveactionrc.json`
    - Support `.saveactionrc.js`
    - Load config from file or CLI args
 
-5. **Pretty CLI Output**
-   - Use Chalk for colors
-   - Use Ora for spinners
-   - Progress indicators
+5. ✅ **Pretty CLI Output**
+   - Emoji indicators (✅ ❌ 🎯)
+   - Progress display
    - Error formatting
+   - Duration and summary
 
-6. **Testing**
+6. ⏳ **Testing**
    - Unit tests for commands
    - Integration tests (CLI E2E)
 
 **Deliverables:**
-- ✅ `@saveaction/cli` package published
-- ✅ Can install globally: `npm install -g @saveaction/cli`
-- ✅ Works without any setup (no database, no config)
-- ✅ Professional CLI UX
+- ✅ `@saveaction/cli` package functional
+- ✅ `run` command works with all options
+- ⏳ Additional commands (`validate`, `info`, `list`, `init`)
+- ⏳ Configuration file support
 
 **Success Criteria:**
 ```bash
@@ -985,9 +1007,11 @@ saveaction run test8_1763549638010.json --headless
 
 ---
 
-### Phase 3: API Server (Week 2)
+### Phase 3: API Server (Week 2) ⏳ NOT STARTED
 
 **Goal:** Build REST API with PostgreSQL for persistence and multi-user support.
+
+**Status:** ⏳ NOT STARTED
 
 #### Tasks:
 
@@ -1026,7 +1050,20 @@ saveaction run test8_1763549638010.json --headless
    - Store videos/screenshots
    - Handle errors gracefully
 
-7. **Testing**
+7. **Security & Stability (CRITICAL)**
+   - Input sanitization (XSS/injection prevention)
+   - Run timeout (kill after 10 minutes)
+   - Concurrent run limit (max 5 simultaneous)
+   - Run queue for overflow
+   - Orphan cleanup on restart
+   - Rate limiting (100 req/min)
+
+8. **Observability**
+   - Structured JSON logging (pino)
+   - Request ID tracing
+   - Health check endpoints
+
+9. **Testing**
    - Unit tests for services
    - Integration tests for API routes
    - Database transaction tests
@@ -1038,6 +1075,8 @@ saveaction run test8_1763549638010.json --headless
 - ✅ Can upload recordings via API
 - ✅ Can trigger runs via API
 - ✅ Results stored in database
+- ✅ Security hardening complete
+- ✅ Stable under concurrent load
 
 **Success Criteria:**
 ```bash
@@ -1069,9 +1108,11 @@ curl -X POST http://localhost:4000/api/runs \
 
 ---
 
-### Phase 4: Web Dashboard (Week 2-3)
+### Phase 4: Web Dashboard (Week 2-3) ⏳ NOT STARTED
 
 **Goal:** Build Next.js UI for managing recordings and viewing results.
+
+**Status:** ⏳ NOT STARTED
 
 #### Tasks:
 
@@ -1128,9 +1169,11 @@ curl -X POST http://localhost:4000/api/runs \
 
 ---
 
-### Phase 5: Docker Deployment (Week 3)
+### Phase 5: Docker Deployment (Week 3) ⏳ NOT STARTED
 
 **Goal:** Package everything for easy self-hosting.
+
+**Status:** ⏳ NOT STARTED
 
 #### Tasks:
 
@@ -1146,20 +1189,34 @@ curl -X POST http://localhost:4000/api/runs \
    - Nginx reverse proxy
    - Volume mounts for persistence
 
-3. **Environment Configuration**
+3. **Security Configuration**
+   - TLS/HTTPS termination (Let's Encrypt or custom certs)
+   - Secure headers configuration
+   - API tokens never transmitted over plaintext
+
+4. **Database Operations**
+   - Automated daily backups (pg_dump cron)
+   - Backup retention policy (7 days)
+   - Document restore procedure
+   - Optional: backup to S3/external storage
+
+5. **Environment Configuration**
    - .env.example file
    - Documentation for setup
    - Health checks
 
-4. **Documentation**
+6. **Documentation**
    - SELF_HOSTING.md guide
-   - Backup instructions
+   - Backup and restore instructions
    - Troubleshooting guide
+   - Security best practices
 
 **Deliverables:**
 - ✅ `docker-compose.yml` works out of the box
 - ✅ One command deployment
 - ✅ Production-ready setup
+- ✅ HTTPS enabled by default
+- ✅ Automated backups configured
 
 **Success Criteria:**
 ```bash
@@ -1181,25 +1238,31 @@ docker-compose up -d
 
 ---
 
-### Phase 6: Extension Integration (Week 4)
+### Phase 6: Extension Integration (Week 4) ⏳ NOT STARTED
 
 **Goal:** Allow browser extension to auto-upload recordings to platform.
 
+**Status:** ⏳ NOT STARTED (one bug fix completed: filter extension UI actions)
+
 #### Tasks (Extension Repo):
 
-1. **Add Settings Page**
+1. ⏳ **Add Settings Page**
    - Platform URL input
    - API token input
    - Auto-upload toggle
    - Connection test button
 
-2. **Implement Upload Logic**
+2. ⏳ **Implement Upload Logic**
    - Upload after recording stops
    - Show success/failure notification
    - Retry logic on failure
    - Fallback to local download
 
-3. **Testing**
+3. ✅ **Bug Fix: Filter Extension UI Actions**
+   - Don't record clicks on SaveAction extension UI (#saveaction-recording-indicator)
+   - These elements don't exist during replay
+
+4. ⏳ **Testing**
    - Test with self-hosted platform
    - Test with invalid token
    - Test network failures
@@ -1279,6 +1342,14 @@ docker-compose up -d
 - AWS S3 / DigitalOcean Spaces
 - Signed URLs for downloads
 - Automatic cleanup after 30 days
+
+### Storage Cleanup Policy
+- **Videos:** Auto-delete after 30 days (configurable)
+- **Screenshots:** Auto-delete after 30 days (configurable)
+- **Background job:** Cron task runs daily to cleanup expired files
+- **User quotas:** Track storage per user, enforce limits
+- **Manual cleanup:** API endpoint to delete old runs
+- **Environment variable:** `STORAGE_RETENTION_DAYS=30`
 
 ---
 
@@ -1381,9 +1452,13 @@ jobs:
 ## 🔒 Security Considerations
 
 ### Authentication
-- JWT with short expiry (15 minutes)
-- Refresh tokens (optional)
+- JWT access token with short expiry (15 minutes)
+- Refresh tokens stored in httpOnly cookies (7 days), rotation on use
 - Password hashing with bcrypt (cost factor: 12)
+- Password reset flow via email (1hr token expiry)
+- Email verification on registration (24hr token expiry)
+- Account lockout after 5 failed attempts (15min lockout)
+- CSRF protection for cookie-based auth
 - API token format: `sa_live_<random>`
 
 ### Authorization
