@@ -1,3 +1,0 @@
-node packages/cli/bin/saveaction.js run test8_1763549638010.json --headless false
-
-This giving nice result, but still have few bugs
