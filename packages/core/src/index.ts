@@ -6,6 +6,9 @@
 // Parser
 export { RecordingParser } from './parser/RecordingParser.js';
 
+// Analyzer
+export { RecordingAnalyzer } from './analyzer/RecordingAnalyzer.js';
+
 // Runner
 export { PlaywrightRunner } from './runner/PlaywrightRunner.js';
 export { ElementLocator } from './runner/ElementLocator.js';
@@ -30,3 +33,13 @@ export type {
 } from './types/index.js';
 
 export type { RunResult, RunOptions, Reporter } from './types/runner.js';
+
+export type {
+  RecordingAnalysis,
+  RecordingAnalysisJSON,
+  RecordingMetadata,
+  ViewportInfo,
+  ActionStatistics,
+  TimingAnalysis,
+  NavigationInsights,
+} from './types/analyzer.js';

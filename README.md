@@ -32,11 +32,12 @@
 - 🎯 **Zero Code Testing** - No programming knowledge required, just record and replay
 - 🎭 **Pixel-Perfect Replay** - Matches exact window size, viewport, and device pixel ratio
 - ⚡ **Smart Element Location** - Multi-strategy selector with exponential backoff retry
+- 📊 **Recording Analysis** - Analyze recordings without running (metadata, statistics, timing insights)
 - 🎠 **Carousel Support (Beta)** - Intelligent detection for Swiper, Slick, and Bootstrap carousels
 - 🌊 **Human-Like Execution** - Replicates exact scroll speed, typing delays, and hover duration
 - 🔄 **Intelligent Navigation** - Auto-correction and optimized back/forward navigation
 - 🎨 **Beautiful CLI Output** - Real-time progress with color-coded status and timing
-- 🧪 **Test-First Development** - 81 unit tests with comprehensive coverage
+- 🧪 **Test-First Development** - 148 unit tests with comprehensive coverage
 - 🔧 **TypeScript + Strict Mode** - Type-safe with ES2022 modules
 
 ## 🚀 Quick Start
@@ -68,6 +69,8 @@ SaveAction/
 
 ## 🎮 CLI Commands
 
+### Run Tests
+
 ```bash
 # Run recording with visible browser
 saveaction run test.json --headless false
@@ -83,6 +86,80 @@ saveaction run test.json --video
 
 # Custom timeout (milliseconds)
 saveaction run test.json --timeout 60000
+```
+
+### Analyze Recordings
+
+Get detailed information about a recording without running it:
+
+```bash
+# Display recording analysis in console
+saveaction info test.json
+
+# Output in JSON format
+saveaction info test.json --json
+```
+
+**Sample Output:**
+
+```
+📊 Recording Analysis
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📁 File
+  Name:         test.json
+
+📝 Metadata
+  Test Name:    User Login Flow
+  Recording ID: rec_1768467712498
+  Start URL:    https://example.com
+  Recorded:     1/15/2026, 11:01:52 AM
+  Schema:       v1.0
+
+📱 Viewport
+  Category:     Desktop
+  Dimensions:   1920x1080
+
+📊 Actions
+  Total:        16
+
+  By Type:
+    click          7 █████████████░░░░░░░░░░░░░░░░░ 43.8%
+    input          7 █████████████░░░░░░░░░░░░░░░░░ 43.8%
+    submit         1 ██░░░░░░░░░░░░░░░░░░░░░░░░░░░░ 6.3%
+
+⏱️  Timing
+  Recording:    16.32s
+  Action Span:  15.53s
+  Gaps:         Min: 0ms | Max: 3.22s | Avg: 1.04s
+
+🗺️  Navigation
+  Flow Type:    MPA (Multi-Page Application)
+  Unique Pages: 2
+  Transitions:  1
+```
+
+**JSON Output Example:**
+
+```json
+{
+  "version": "1.0",
+  "file": "test.json",
+  "metadata": {
+    "testName": "User Login Flow",
+    "recordingId": "rec_1768467712498",
+    "schemaVersion": "1.0"
+  },
+  "statistics": {
+    "total": 16,
+    "byType": { "click": 7, "input": 7, "submit": 1 },
+    "percentages": { "click": 43.75, "input": 43.75, "submit": 6.25 }
+  },
+  "navigation": {
+    "flowType": "MPA",
+    "uniquePages": 2
+  }
+}
 ```
 
 ## 📊 Recording Format
@@ -237,12 +314,14 @@ SaveAction is licensed under the **Business Source License 1.1 (BSL 1.1)**, whic
 ### What This Means for You
 
 ✅ **Allowed:**
+
 - Self-host SaveAction for your organization (production use allowed)
 - Use SaveAction for internal/commercial testing
 - Modify and customize the source code
 - Integrate SaveAction into your CI/CD pipelines
 
 ❌ **Not Allowed:**
+
 - Offer SaveAction as a hosted/managed SaaS service to third parties
 - Provide SaveAction testing as your primary commercial offering
 
@@ -252,6 +331,7 @@ SaveAction is licensed under the **Business Source License 1.1 (BSL 1.1)**, whic
 ### Why BSL 1.1?
 
 We chose BSL 1.1 to:
+
 1. Enable free self-hosting and internal use for everyone
 2. Protect our ability to build a sustainable SaaS business
 3. Guarantee an open-source future (Apache 2.0 conversion in 5 years)
