@@ -5,6 +5,32 @@ All notable changes to SaveAction Platform will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- 📊 **`info` Command** - Analyze recordings without execution
+  - Display recording metadata (test name, ID, schema version, start URL)
+  - View action statistics (total count, breakdown by type, breakdown by page)
+  - Analyze timing (recording duration, action span, gaps between actions with min/max/avg/median)
+  - Detect navigation patterns (SPA vs MPA, unique pages, transition count)
+  - Console output with emojis, progress bars, and formatted durations
+  - JSON output format with `--json` flag for programmatic use
+  - Cross-platform support (Windows, Linux, macOS)
+
+- 🔍 **RecordingAnalyzer Class** - Core analysis engine (`@saveaction/core`)
+  - Viewport categorization (Mobile ≤768px, Tablet ≤1024px, Desktop >1024px)
+  - URL normalization (removes trailing slashes, hash fragments, preserves query params)
+  - Action percentage calculations
+  - Comprehensive error handling for invalid/missing fields
+  - 99.14% test coverage with 46 unit tests
+
+### Changed
+
+- Updated test count from 81 to 148 tests (67 new tests for analyzer + info command)
+- Enhanced exports in `@saveaction/core` to include analyzer types
+- Improved CLI help text to show both `run` and `info` commands
+
 ## [0.2.0] - 2025-12-03
 
 ### Added
