@@ -1,4 +1,3 @@
-import path from 'node:path';
 import type { Recording } from '../types/recording.js';
 import type { Action } from '../types/actions.js';
 import type {
@@ -21,8 +20,11 @@ export class RecordingAnalyzer {
    * @returns Analysis results with metadata, statistics, timing, and navigation info
    */
   public analyze(recording: Recording, filePath: string): RecordingAnalysis {
+    // Handle both Windows (\) and Unix (/) path separators for cross-platform compatibility
+    const basename = filePath.split(/[\\/]/).pop() || filePath;
+
     return {
-      file: path.basename(filePath),
+      file: basename,
       metadata: this.extractMetadata(recording),
       viewport: this.analyzeViewport(recording),
       statistics: this.analyzeActions(recording.actions),
