@@ -114,11 +114,11 @@
 - **Labels:** `feature`, `cli`
 - **Description:** Implement `saveaction validate <file>` command. Validate JSON structure without running the test. Show validation errors or success message with recording details.
 
-### ⏳ TODO - Implement `info` Command
+### ✅ DONE - Implement `info` Command
 - **Package:** @saveaction/cli
 - **Priority:** P2
 - **Labels:** `feature`, `cli`
-- **Description:** Implement `saveaction info <file>` command. Display recording details: test name, URL, viewport, action count, action types breakdown, estimated duration.
+- **Description:** Implement `saveaction info <file>` command. Display recording details: test name, URL, viewport, action count, action types breakdown, estimated duration. Supports `--json` flag for JSON output. Completed with RecordingAnalyzer class (99.14% coverage) and 76 new tests.
 
 ### ⏳ TODO - Implement `list` Command
 - **Package:** @saveaction/cli
