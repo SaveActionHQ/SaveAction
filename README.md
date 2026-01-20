@@ -33,6 +33,7 @@
 - 🎭 **Pixel-Perfect Replay** - Matches exact window size, viewport, and device pixel ratio
 - ⚡ **Smart Element Location** - Multi-strategy selector with exponential backoff retry
 - 📊 **Recording Analysis** - Analyze recordings without running (metadata, statistics, timing insights)
+- ✅ **Schema Validation** - Validate recording structure and integrity before running tests
 - 🎠 **Carousel Support (Beta)** - Intelligent detection for Swiper, Slick, and Bootstrap carousels
 - 🌊 **Human-Like Execution** - Replicates exact scroll speed, typing delays, and hover duration
 - 🔄 **Intelligent Navigation** - Auto-correction and optimized back/forward navigation
@@ -99,6 +100,31 @@ saveaction info test.json
 # Output in JSON format
 saveaction info test.json --json
 ```
+
+### Validate Recordings
+
+Validate recording file structure and schema without running the test:
+
+```bash
+# Basic validation
+saveaction validate test.json
+
+# Show detailed field validation
+saveaction validate test.json --verbose
+
+# Output validation result as JSON
+saveaction validate test.json --json
+```
+
+The validate command checks:
+
+- ✅ File existence and extension (.json)
+- ✅ File size limits (warning > 10MB, hard limit at 50MB)
+- ✅ JSON syntax
+- ✅ Schema compliance (Zod validation)
+- ✅ Required fields (id, testName, url, version, actions)
+- ✅ Field types and formats
+- ✅ Semantic validation (action counts, version compatibility)
 
 **Sample Output:**
 

@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- ✅ **`validate` Command** - Validate recording structure without execution
+  - Check file existence and extension (.json)
+  - Enforce file size limits (warning > 10MB, hard limit 50MB)
+  - Validate JSON syntax with detailed error messages
+  - Schema compliance using Zod validation from RecordingParser
+  - Verify required fields (id, testName, url, version, actions)
+  - Check field types and formats
+  - Semantic validation (empty actions, large recordings, version compatibility)
+  - Console output with ✅/❌ emojis and detailed field information
+  - JSON output format with `--json` flag
+  - Verbose mode with `--verbose` flag shows validated fields
+  - User-friendly error messages for Zod, SyntaxError, and general errors
+  - Cross-platform path resolution (Windows, Linux, macOS)
+  - Exit code 0 for valid files, 1 for errors
+  - 89.35% test coverage with 25 unit tests
+
 - 📊 **`info` Command** - Analyze recordings without execution
   - Display recording metadata (test name, ID, schema version, start URL)
   - View action statistics (total count, breakdown by type, breakdown by page)
