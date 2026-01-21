@@ -1,6 +1,7 @@
 import { Command } from 'commander';
 import { runCommand } from './commands/run.js';
 import { info } from './commands/info.js';
+import { validate } from './commands/validate.js';
 
 export async function cli() {
   const program = new Command();
@@ -31,6 +32,14 @@ export async function cli() {
     .option('--json', 'Output in JSON format', false)
     .option('--format <type>', 'Output format: console or json', 'console')
     .action(info);
+
+  // Validate command
+  program
+    .command('validate <file>')
+    .description('Validate recording file structure without running it')
+    .option('--verbose', 'Show detailed validation information', false)
+    .option('--json', 'Output validation result as JSON', false)
+    .action(validate);
 
   await program.parseAsync(process.argv);
 }
