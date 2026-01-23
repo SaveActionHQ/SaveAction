@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** January 18, 2026
+**Last Updated:** January 23, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -15,6 +15,7 @@
 | 🚧 IN PROGRESS | Currently being worked on |
 | ⏳ TODO        | Not started yet           |
 | ❌ BLOCKED     | Blocked by dependency     |
+| ⏭️ SKIPPED     | Deferred (YAGNI)          |
 
 ---
 
@@ -143,19 +144,19 @@
 - **Labels:** `feature`, `cli`
 - **Description:** Implemented `saveaction list [dir]` command. Lists all JSON recording files in a directory. Shows test name, URL, and action count for each recording. Defaults to current directory. Supports `--json` flag for JSON output. Skips invalid JSON files and reports them. Completed with 22 unit tests.
 
-### ⏳ TODO - Implement `init` Command
+### ⏭️ SKIPPED - Implement `init` Command
 
 - **Package:** @saveaction/cli
 - **Priority:** P3
 - **Labels:** `feature`, `cli`
-- **Description:** Implement `saveaction init` command. Create `.saveactionrc.json` config file with default settings (headless, browser, timeout, video, etc.).
+- **Description:** ~~Implement `saveaction init` command. Create `.saveactionrc.json` config file with default settings.~~ **Skipped:** CLI flags are sufficient for most use cases. CI/CD pipelines prefer explicit options in workflow files. Will implement if users request it.
 
-### ⏳ TODO - Configuration File Support
+### ⏭️ SKIPPED - Configuration File Support
 
 - **Package:** @saveaction/cli
 - **Priority:** P2
 - **Labels:** `feature`, `cli`
-- **Description:** Support loading settings from `.saveactionrc.json` or `.saveactionrc.js`. Merge config file settings with CLI arguments (CLI takes precedence).
+- **Description:** ~~Support loading settings from `.saveactionrc.json` or `.saveactionrc.js`.~~ **Skipped:** YAGNI - explicit CLI flags work better for CI/CD. Build only if users request centralized config.
 
 ### ⏳ TODO - JSON Output Format
 
@@ -633,7 +634,7 @@
 | Phase                           | Total  | Done   | In Progress | Todo   |
 | ------------------------------- | ------ | ------ | ----------- | ------ |
 | Phase 1: Core                   | 11     | 11     | 0           | 0      |
-| Phase 2: CLI                    | 9      | 4      | 0           | 5      |
+| Phase 2: CLI                    | 9      | 5      | 0           | 2      |
 | Phase 2.5: CLI Platform (CI/CD) | 5      | 0      | 0           | 5      |
 | Phase 3: API                    | 29     | 0      | 0           | 29     |
 | Phase 4: Web                    | 8      | 0      | 0           | 8      |
@@ -642,7 +643,7 @@
 | Infrastructure                  | 3      | 2      | 0           | 1      |
 | Documentation                   | 4      | 0      | 0           | 4      |
 | Backlog                         | 6      | 0      | 0           | 6      |
-| **TOTAL**                       | **83** | **18** | **0**       | **65** |
+| **TOTAL**                       | **83** | **20** | **0**       | **63** |
 
 ---
 
