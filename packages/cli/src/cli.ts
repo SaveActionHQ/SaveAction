@@ -2,6 +2,7 @@ import { Command } from 'commander';
 import { runCommand } from './commands/run.js';
 import { info } from './commands/info.js';
 import { validate } from './commands/validate.js';
+import { list } from './commands/list.js';
 
 export async function cli() {
   const program = new Command();
@@ -40,6 +41,13 @@ export async function cli() {
     .option('--verbose', 'Show detailed validation information', false)
     .option('--json', 'Output validation result as JSON', false)
     .action(validate);
+
+  // List command
+  program
+    .command('list [dir]')
+    .description('List all recording files in a directory')
+    .option('--json', 'Output in JSON format', false)
+    .action(list);
 
   await program.parseAsync(process.argv);
 }
