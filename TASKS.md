@@ -158,12 +158,12 @@
 - **Labels:** `feature`, `cli`
 - **Description:** ~~Support loading settings from `.saveactionrc.json` or `.saveactionrc.js`.~~ **Skipped:** YAGNI - explicit CLI flags work better for CI/CD. Build only if users request centralized config.
 
-### ⏳ TODO - JSON Output Format
+### ✅ DONE - JSON Output Format
 
 - **Package:** @saveaction/cli
 - **Priority:** P2
 - **Labels:** `feature`, `cli`
-- **Description:** Add `--output json` option to output results as JSON instead of console. Add `--output-file <path>` to save JSON results to file.
+- **Description:** Implemented `--output json` option to output run results as JSON instead of console output. Added `--output-file <path>` to save results to a JSON file. JSON output includes: version, status (passed/failed), recording metadata, execution settings, result details (duration, actions, errors), and timestamps. Uses SilentReporter for clean JSON output. Completed with 19 unit tests.
 
 ---
 
@@ -634,7 +634,7 @@
 | Phase                           | Total  | Done   | In Progress | Todo   |
 | ------------------------------- | ------ | ------ | ----------- | ------ |
 | Phase 1: Core                   | 11     | 11     | 0           | 0      |
-| Phase 2: CLI                    | 9      | 5      | 0           | 2      |
+| Phase 2: CLI                    | 9      | 6      | 0           | 1      |
 | Phase 2.5: CLI Platform (CI/CD) | 5      | 0      | 0           | 5      |
 | Phase 3: API                    | 29     | 0      | 0           | 29     |
 | Phase 4: Web                    | 8      | 0      | 0           | 8      |
@@ -643,7 +643,7 @@
 | Infrastructure                  | 3      | 2      | 0           | 1      |
 | Documentation                   | 4      | 0      | 0           | 4      |
 | Backlog                         | 6      | 0      | 0           | 6      |
-| **TOTAL**                       | **83** | **20** | **0**       | **63** |
+| **TOTAL**                       | **83** | **21** | **0**       | **62** |
 
 ---
 

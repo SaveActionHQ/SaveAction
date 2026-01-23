@@ -24,6 +24,8 @@ export async function cli() {
     .option('--timing-mode <mode>', 'Timing mode: realistic, fast, instant', 'realistic')
     .option('--speed <multiplier>', 'Speed multiplier (0.5 = half speed, 2.0 = double speed)')
     .option('--max-delay <ms>', 'Maximum delay between actions in milliseconds', '30000')
+    .option('--output <format>', 'Output format: console or json', 'console')
+    .option('--output-file <path>', 'Save results to JSON file')
     .action(runCommand);
 
   // Info command
