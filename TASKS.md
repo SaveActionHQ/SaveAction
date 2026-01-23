@@ -136,12 +136,12 @@
 - **Labels:** `feature`, `cli`
 - **Description:** Implement `saveaction info <file>` command. Display recording details: test name, URL, viewport, action count, action types breakdown, estimated duration. Supports `--json` flag for JSON output. Completed with RecordingAnalyzer class (99.14% coverage) and 76 new tests.
 
-### ⏳ TODO - Implement `list` Command
+### ✅ DONE - Implement `list` Command
 
 - **Package:** @saveaction/cli
 - **Priority:** P3
 - **Labels:** `feature`, `cli`
-- **Description:** Implement `saveaction list [dir]` command. List all JSON recording files in directory. Show name, URL, action count for each. Default to current directory.
+- **Description:** Implemented `saveaction list [dir]` command. Lists all JSON recording files in a directory. Shows test name, URL, and action count for each recording. Defaults to current directory. Supports `--json` flag for JSON output. Skips invalid JSON files and reports them. Completed with 22 unit tests.
 
 ### ⏳ TODO - Implement `init` Command
 
@@ -633,7 +633,7 @@
 | Phase                           | Total  | Done   | In Progress | Todo   |
 | ------------------------------- | ------ | ------ | ----------- | ------ |
 | Phase 1: Core                   | 11     | 11     | 0           | 0      |
-| Phase 2: CLI                    | 9      | 3      | 0           | 6      |
+| Phase 2: CLI                    | 9      | 4      | 0           | 5      |
 | Phase 2.5: CLI Platform (CI/CD) | 5      | 0      | 0           | 5      |
 | Phase 3: API                    | 29     | 0      | 0           | 29     |
 | Phase 4: Web                    | 8      | 0      | 0           | 8      |
@@ -642,7 +642,7 @@
 | Infrastructure                  | 3      | 2      | 0           | 1      |
 | Documentation                   | 4      | 0      | 0           | 4      |
 | Backlog                         | 6      | 0      | 0           | 6      |
-| **TOTAL**                       | **83** | **17** | **0**       | **66** |
+| **TOTAL**                       | **83** | **18** | **0**       | **65** |
 
 ---
 
