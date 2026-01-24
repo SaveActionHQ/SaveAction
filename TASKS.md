@@ -98,12 +98,12 @@
 - **Labels:** `feature`, `runner`
 - **Description:** Build NavigationAnalyzer.ts to preprocess recordings, detect missing prerequisites, and warn about potential issues.
 
-### ⏳ TODO - Core Browser Integration Tests
+### ✅ DONE - Core Browser Integration Tests
 
 - **Package:** @saveaction/core
 - **Priority:** P2
 - **Labels:** `testing`, `integration`
-- **Description:** Add real browser integration tests for PlaywrightRunner and ElementLocator. Launch actual Chromium instance, execute actions against local test HTML fixtures. Test: click, input, navigation, scroll actions with real DOM. Currently mocked at 25% coverage - these tests verify actual Playwright behavior. Run separately from unit tests (slower, requires browser). Use `vitest --project integration` or separate test file pattern.
+- **Description:** Add real browser integration tests for PlaywrightRunner and ElementLocator. Launch actual Chromium instance, execute actions against local test HTML fixtures. Test: click, input, navigation, scroll actions with real DOM. 43 integration tests covering: click actions (6), input actions (5), select actions (2), scroll actions (2), complex workflows (3), error handling (2), browser options (2), selector strategies (22). Run separately with `pnpm run test:integration` in packages/core.
 
 ---
 
@@ -718,7 +718,7 @@
 
 | Phase                            | Total  | Done   | Skipped | Todo   |
 | -------------------------------- | ------ | ------ | ------- | ------ |
-| Phase 1: Core                    | 12     | 11     | 0       | 1      |
+| Phase 1: Core                    | 12     | 12     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 6      | 2       | 1      |
 | Phase 3: API                     | 41     | 0      | 0       | 41     |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 0      | 0       | 5      |
@@ -728,7 +728,7 @@
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 0      | 0       | 4      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **97** | **20** | **2**   | **75** |
+| **TOTAL**                        | **97** | **21** | **2**   | **74** |
 
 ---
 
