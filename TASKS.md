@@ -172,39 +172,44 @@
 > These features enable companies to use SaveAction in their CI/CD pipelines,
 > fetching recordings from the self-hosted platform instead of managing JSON files manually.
 
-### ⏳ TODO - API Connection Support
+### ❌ BLOCKED - API Connection Support
 
 - **Package:** @saveaction/cli
 - **Priority:** P1
 - **Labels:** `feature`, `cli`, `ci-cd`
+- **Blocked By:** Phase 3 API (no server to connect to)
 - **Description:** Add `--api-url` and `--api-token` options to connect CLI to SaveAction platform. Support environment variables: `SAVEACTION_API_URL`, `SAVEACTION_API_TOKEN`. Validate connection on startup.
 
-### ⏳ TODO - Fetch Recordings from Platform
+### ❌ BLOCKED - Fetch Recordings from Platform
 
 - **Package:** @saveaction/cli
 - **Priority:** P1
 - **Labels:** `feature`, `cli`, `ci-cd`
+- **Blocked By:** Phase 3 API (requires GET /api/recordings endpoints)
 - **Description:** Add `--from-platform` flag to fetch recordings from API instead of local file. Support `--recording-id <id>` to run specific recording. Support `--tag <tag>` to run all recordings with a tag (e.g., `--tag smoke`).
 
-### ⏳ TODO - Base URL Override
+### ❌ BLOCKED - Base URL Override
 
 - **Package:** @saveaction/cli
 - **Priority:** P1
 - **Labels:** `feature`, `cli`, `ci-cd`
+- **Blocked By:** Phase 3 API (designed for platform integration)
 - **Description:** Add `--base-url <url>` option to override the starting URL in recordings. Essential for testing different environments (staging, production) with same recording. Example: `saveaction run --from-platform --tag smoke --base-url https://staging.myapp.com`
 
-### ⏳ TODO - CI Environment Detection
+### ❌ BLOCKED - CI Environment Detection
 
 - **Package:** @saveaction/cli
 - **Priority:** P2
 - **Labels:** `feature`, `cli`, `ci-cd`
+- **Blocked By:** Phase 3 API (metadata stored in platform database)
 - **Description:** Auto-detect CI environment (GitHub Actions, GitLab CI, Jenkins). Capture metadata: commit SHA, branch name, workflow name, PR number. Include in run results for traceability.
 
-### ⏳ TODO - Report Results to Platform (Future)
+### ❌ BLOCKED - Report Results to Platform (Future)
 
 - **Package:** @saveaction/cli
 - **Priority:** P3
 - **Labels:** `feature`, `cli`, `ci-cd`, `backlog`
+- **Blocked By:** Phase 3 API (requires POST /api/runs/external endpoint)
 - **Description:** Add `--report` flag to send run results back to SaveAction API. Store CI metadata with results. NOT needed for MVP - GitHub Actions provides pass/fail, logs, artifacts. Build when customers request centralized dashboard or flaky test detection.
 
 ---
@@ -631,19 +636,19 @@
 
 ## Summary
 
-| Phase                           | Total  | Done   | In Progress | Todo   |
-| ------------------------------- | ------ | ------ | ----------- | ------ |
-| Phase 1: Core                   | 11     | 11     | 0           | 0      |
-| Phase 2: CLI                    | 9      | 6      | 0           | 1      |
-| Phase 2.5: CLI Platform (CI/CD) | 5      | 0      | 0           | 5      |
-| Phase 3: API                    | 29     | 0      | 0           | 29     |
-| Phase 4: Web                    | 8      | 0      | 0           | 8      |
-| Phase 5: Docker                 | 5      | 0      | 0           | 5      |
-| Phase 6: Extension              | 3      | 1      | 0           | 2      |
-| Infrastructure                  | 3      | 2      | 0           | 1      |
-| Documentation                   | 4      | 0      | 0           | 4      |
-| Backlog                         | 6      | 0      | 0           | 6      |
-| **TOTAL**                       | **83** | **21** | **0**       | **62** |
+| Phase                           | Total  | Done   | Blocked | Skipped | Todo   |
+| ------------------------------- | ------ | ------ | ------- | ------- | ------ |
+| Phase 1: Core                   | 11     | 11     | 0       | 0       | 0      |
+| Phase 2: CLI                    | 9      | 6      | 0       | 2       | 1      |
+| Phase 2.5: CLI Platform (CI/CD) | 5      | 0      | 5       | 0       | 0      |
+| Phase 3: API                    | 29     | 0      | 0       | 0       | 29     |
+| Phase 4: Web                    | 8      | 0      | 0       | 0       | 8      |
+| Phase 5: Docker                 | 5      | 0      | 0       | 0       | 5      |
+| Phase 6: Extension              | 3      | 1      | 0       | 0       | 2      |
+| Infrastructure                  | 3      | 2      | 0       | 0       | 1      |
+| Documentation                   | 4      | 0      | 0       | 0       | 4      |
+| Backlog                         | 6      | 0      | 0       | 0       | 6      |
+| **TOTAL**                       | **83** | **20** | **5**   | **2**   | **56** |
 
 ---
 
