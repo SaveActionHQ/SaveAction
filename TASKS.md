@@ -169,12 +169,33 @@
 
 ## Phase 3: REST API (@saveaction/api)
 
+### ⏳ TODO - Development Environment Setup
+
+- **Package:** @saveaction/api
+- **Priority:** P0
+- **Labels:** `setup`, `dx`
+- **Description:** Create docker-compose.dev.yml with PostgreSQL 16 and Redis 7 for local development. Include volume mounts for data persistence, health checks, and default credentials. Developers run `docker compose -f docker-compose.dev.yml up` then `pnpm dev` for API with hot reload. Add scripts to package.json: `dev:services` (start containers), `dev:api` (start API).
+
 ### ⏳ TODO - Setup API Package
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `setup`
 - **Description:** Initialize Fastify server package. Configure TypeScript, environment variables, CORS, error handling middleware.
+
+### ⏳ TODO - Redis Setup
+
+- **Package:** @saveaction/api
+- **Priority:** P0
+- **Labels:** `setup`, `infrastructure`
+- **Description:** Add Redis for rate limiting, session management, job queues, and caching. Use ioredis client with connection pooling. Required for @fastify/rate-limit in production. Add Redis health check endpoint. Configure in docker-compose.yml.
+
+### ⏳ TODO - BullMQ Job Queue
+
+- **Package:** @saveaction/api
+- **Priority:** P0
+- **Labels:** `feature`, `infrastructure`
+- **Description:** Implement BullMQ for job queues (run execution, scheduled tests, cleanup jobs). Replace node-cron with BullMQ repeatable jobs for schedules. Features: persistent jobs (survive restart), retry with exponential backoff, job prioritization, concurrency control. Queue status exposed via API for Web UI.
 
 ### ⏳ TODO - Database Schema Setup
 
@@ -211,19 +232,19 @@
 - **Labels:** `feature`, `auth`
 - **Description:** Implement PUT /api/auth/password endpoint. Requires current password verification before allowing change. Rate limit to 3 attempts per hour. Invalidate all existing sessions/refresh tokens after password change.
 
-### ⏳ TODO - Email Verification
+### ⏳ TODO - Email Verification (Optional)
 
 - **Package:** @saveaction/api
-- **Priority:** P1
+- **Priority:** P2
 - **Labels:** `feature`, `auth`, `security`
-- **Description:** Implement email verification on registration. Send verification email with JWT token (24hr expiry). POST /api/auth/verify-email validates token. Unverified users can login but have limited access (can't create runs). Resend verification endpoint with rate limiting.
+- **Description:** Optional email verification on registration. Send verification email with JWT token (24hr expiry). POST /api/auth/verify-email validates token. Resend verification endpoint with rate limiting. Note: Often unnecessary for self-hosted deployments where users are trusted internal employees.
 
 ### ⏳ TODO - Account Lockout (Brute Force Protection)
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `security`, `auth`
-- **Description:** Lock account after 5 failed login attempts. Lockout duration: 15 minutes (exponential backoff on repeated lockouts). Track failed attempts in Redis or database. Send email notification on lockout. Include unlock via email link.
+- **Description:** Lock account after 5 failed login attempts. Lockout duration: 15 minutes (exponential backoff on repeated lockouts). Track failed attempts in Redis with TTL for auto-expiry. Auto-unlocks when TTL expires. Log lockout events for monitoring.
 
 ### ⏳ TODO - API Token Management
 
@@ -286,7 +307,7 @@
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `feature`, `api`
-- **Description:** Implement schedule endpoints: POST /api/schedules, GET /api/schedules, PUT /api/schedules/:id, DELETE /api/schedules/:id, POST /api/schedules/:id/toggle. Cron job execution with node-cron.
+- **Description:** Implement schedule endpoints: POST /api/schedules, GET /api/schedules, PUT /api/schedules/:id, DELETE /api/schedules/:id, POST /api/schedules/:id/toggle. Use BullMQ repeatable jobs for cron execution (replaces node-cron). Schedules persist across restarts.
 
 ### ⏳ TODO - Webhooks API
 
@@ -300,14 +321,28 @@
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `api`
-- **Description:** Implement GET /api/health and GET /api/health/db endpoints for monitoring and load balancer health checks.
+- **Description:** Implement GET /api/health with checks for: API server, PostgreSQL connection, Redis connection, BullMQ workers. Return detailed status for each service. Support /api/health/live (liveness) and /api/health/ready (readiness) for Kubernetes.
+
+### ⏳ TODO - OpenAPI Documentation (Swagger)
+
+- **Package:** @saveaction/api
+- **Priority:** P1
+- **Labels:** `docs`, `api`, `dx`
+- **Description:** Add @fastify/swagger and @fastify/swagger-ui for auto-generated API documentation. Generate OpenAPI 3.0 spec from route schemas (Zod → JSON Schema). Expose interactive docs at /api/docs. Include authentication examples and error response schemas.
+
+### ⏳ TODO - Security Headers
+
+- **Package:** @saveaction/api
+- **Priority:** P1
+- **Labels:** `security`
+- **Description:** Add @fastify/helmet for security headers: Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security. Configure CSP for API (strict) and adjust for swagger-ui. Document header configuration for nginx reverse proxy.
 
 ### ⏳ TODO - API Rate Limiting
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `security`
-- **Description:** Implement rate limiting with @fastify/rate-limit. Default: 100 requests/minute per IP. Higher limits for authenticated users.
+- **Description:** Implement rate limiting with @fastify/rate-limit using Redis store (required for multi-instance deployments). Default: 100 requests/minute per IP. Higher limits for authenticated users. Separate limits for auth endpoints (stricter) vs general API.
 
 ### ⏳ TODO - CSRF Protection
 
@@ -335,7 +370,7 @@
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `stability`, `service`
-- **Description:** Limit concurrent runs per server (e.g., max 5). Queue additional runs with status "queued". Process queue when slot available. Prevent server crash from too many simultaneous browser instances.
+- **Description:** Use BullMQ for run queue with concurrency limit (e.g., max 5 concurrent runs). Additional runs queued automatically with status "queued". BullMQ handles job distribution across workers. Prevents server crash from too many simultaneous browser instances.
 
 ### ⏳ TODO - Structured Logging
 
@@ -349,7 +384,7 @@
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `storage`, `devops`
-- **Description:** Define storage strategy for videos and screenshots. Local filesystem with configurable path. Background job to cleanup old files (e.g., delete after 30 days). Optional S3-compatible storage support for scalability. Track storage usage per user.
+- **Description:** Define storage strategy for videos and screenshots. Local filesystem with configurable path (Docker volume in production). Background job to cleanup old files (e.g., delete after 30 days). Optional S3-compatible storage support for scalability.
 
 ### ⏳ TODO - External Run Reports (Future)
 
@@ -357,6 +392,41 @@
 - **Priority:** P3
 - **Labels:** `feature`, `api`, `ci-cd`, `backlog`
 - **Description:** Implement POST /api/runs/external to accept run results from external CLI executions. Store CI metadata (commit, branch, workflow). NOT needed for MVP - build when customers request centralized reporting across multiple repos or flaky test analytics.
+
+### ⏳ TODO - Environment Validation
+
+- **Package:** @saveaction/api
+- **Priority:** P0
+- **Labels:** `setup`, `dx`
+- **Description:** Validate required environment variables on startup using Zod. Required: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, etc. Fail fast with clear error messages if missing or invalid.
+
+### ⏳ TODO - Standardized Error Response Format
+
+- **Package:** @saveaction/api
+- **Priority:** P0
+- **Labels:** `api`, `dx`
+- **Description:** Define consistent error response format across all endpoints: `{ error: { code: string, message: string, details?: object } }`. Implement via Fastify error handler. Include request ID for debugging.
+
+### ⏳ TODO - Graceful Shutdown
+
+- **Package:** @saveaction/api
+- **Priority:** P1
+- **Labels:** `stability`, `devops`
+- **Description:** Handle SIGTERM/SIGINT signals for zero-downtime deployments. Stop accepting new requests, wait for running tests to complete (with timeout), close database connections, then exit cleanly.
+
+### ⏳ TODO - API Integration Tests
+
+- **Package:** @saveaction/api
+- **Priority:** P1
+- **Labels:** `testing`
+- **Description:** Write integration tests for all API routes using Vitest + supertest or Fastify inject(). Test auth flows, CRUD operations, permissions, error cases. Target 80%+ route coverage.
+
+### ⏳ TODO - Real-time Run Progress (SSE)
+
+- **Package:** @saveaction/api
+- **Priority:** P2
+- **Labels:** `feature`, `api`
+- **Description:** Implement Server-Sent Events (SSE) endpoint to stream run progress in real-time. GET /api/runs/:id/progress/stream returns event stream with action start/success/error events during test execution. SSE chosen over WebSocket: simpler, one-direction (server→client), no library needed, firewall-friendly. Required for Phase 4 Web UI live progress display.
 
 ---
 
@@ -472,12 +542,12 @@
 - **Labels:** `devops`
 - **Description:** Create Dockerfile for API and Web packages. Multi-stage builds for optimization. Include Playwright browsers in API image.
 
-### ⏳ TODO - Docker Compose
+### ⏳ TODO - Production Docker Compose
 
 - **Package:** deployment
 - **Priority:** P1
 - **Labels:** `devops`
-- **Description:** Create docker-compose.yml with PostgreSQL, API, Web, and Nginx reverse proxy. Volume mounts for persistence, health checks.
+- **Description:** Create docker-compose.yml for production deployment with: PostgreSQL 16, Redis 7, API server (built from Dockerfile), Web app (built from Dockerfile), Nginx reverse proxy. All services containerized (unlike dev setup). Configure resource limits, restart policies, and production environment variables.
 
 ### ⏳ TODO - Self-Hosting Documentation
 
@@ -636,7 +706,7 @@
 | -------------------------------- | ------ | ------ | ------- | ------ |
 | Phase 1: Core                    | 11     | 11     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 6      | 2       | 1      |
-| Phase 3: API                     | 29     | 0      | 0       | 29     |
+| Phase 3: API                     | 41     | 0      | 0       | 41     |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 0      | 0       | 5      |
 | Phase 4: Web                     | 8      | 0      | 0       | 8      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
@@ -644,7 +714,7 @@
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 0      | 0       | 4      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **83** | **20** | **2**   | **61** |
+| **TOTAL**                        | **95** | **20** | **2**   | **73** |
 
 ---
 
