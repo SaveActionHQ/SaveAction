@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SaveAction Integration Test Page</title>
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+    }
+    h2 {
+      margin-top: 0;
+      color: #333;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: 500;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      background: #0066cc;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #0052a3;
+    }
+    button.secondary {
+      background: #666;
+    }
+    button.danger {
+      background: #cc0000;
+    }
+    .scroll-container {
+      height: 200px;
+      overflow-y: auto;
+      border: 1px solid #ccc;
+      padding: 10px;
+    }
+    .scroll-content {
+      height: 800px;
+      background: linear-gradient(to bottom, #f0f0f0, #ccc);
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 20px;
+    }
+    .result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+      display: none;
+    }
+    .result.success {
+      background: #d4edda;
+      color: #155724;
+      display: block;
+    }
+    .result.error {
+      background: #f8d7da;
+      color: #721c24;
+      display: block;
+    }
+    .checkbox-group label {
+      display: inline-flex;
+      align-items: center;
+      margin-right: 20px;
+    }
+    .checkbox-group input {
+      width: auto;
+      margin-right: 5px;
+    }
+    .hidden {
+      display: none;
+    }
+    #dynamic-content {
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 4px;
+    }
+    .clickable-item {
+      padding: 10px;
+      margin: 5px 0;
+      background: #e9ecef;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .clickable-item:hover {
+      background: #dee2e6;
+    }
+    .clickable-item.selected {
+      background: #007bff;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <h1>SaveAction Integration Test Page</h1>
+  
+  <!-- Click Tests -->
+  <div class="section" id="click-section">
+    <h2>Click Tests</h2>
+    <button id="click-btn" onclick="handleClick()">Click Me</button>
+    <button class="secondary" data-testid="test-btn" onclick="handleTestClick()">Test Button</button>
+    <button class="danger" aria-label="Delete item" onclick="handleDelete()">Delete</button>
+    <div id="click-result" class="result"></div>
+  </div>
+
+  <!-- Input Tests -->
+  <div class="section" id="input-section">
+    <h2>Input Tests</h2>
+    <form id="test-form" onsubmit="handleSubmit(event)">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username" placeholder="Enter username">
+      
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" placeholder="Enter email">
+      
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" placeholder="Enter password">
+      
+      <label for="bio">Bio</label>
+      <textarea id="bio" name="bio" rows="3" placeholder="Tell us about yourself"></textarea>
+      
+      <label for="country">Country</label>
+      <select id="country" name="country">
+        <option value="">Select country</option>
+        <option value="us">United States</option>
+        <option value="uk">United Kingdom</option>
+        <option value="ca">Canada</option>
+        <option value="au">Australia</option>
+      </select>
+      
+      <div class="checkbox-group" style="margin: 15px 0;">
+        <label>
+          <input type="checkbox" id="terms" name="terms" value="agreed">
+          I agree to terms
+        </label>
+        <label>
+          <input type="checkbox" id="newsletter" name="newsletter" value="yes">
+          Subscribe to newsletter
+        </label>
+      </div>
+      
+      <button type="submit">Submit Form</button>
+      <button type="button" onclick="resetForm()">Reset</button>
+    </form>
+    <div id="form-result" class="result"></div>
+  </div>
+
+  <!-- Scroll Tests -->
+  <div class="section" id="scroll-section">
+    <h2>Scroll Tests</h2>
+    <div class="scroll-container" id="scroll-container">
+      <div class="scroll-content">
+        <span id="scroll-bottom">You scrolled to the bottom!</span>
+      </div>
+    </div>
+    <p>Scroll position: <span id="scroll-position">0</span>px</p>
+  </div>
+
+  <!-- Navigation Tests -->
+  <div class="section" id="navigation-section">
+    <h2>Navigation Tests</h2>
+    <a href="?page=about" id="about-link">About Page</a> |
+    <a href="?page=contact" id="contact-link">Contact Page</a> |
+    <a href="#anchor-target" id="anchor-link">Jump to Anchor</a>
+    <div id="current-page" style="margin-top: 10px; font-weight: bold;"></div>
+  </div>
+
+  <!-- Dynamic Content Tests -->
+  <div class="section" id="dynamic-section">
+    <h2>Dynamic Content Tests</h2>
+    <button id="load-content-btn" onclick="loadDynamicContent()">Load Content</button>
+    <button id="toggle-visibility-btn" onclick="toggleVisibility()">Toggle Visibility</button>
+    <div id="dynamic-content" class="hidden">
+      <p>This content was loaded dynamically!</p>
+      <button id="dynamic-btn" onclick="dynamicClick()">Dynamic Button</button>
+    </div>
+    <div id="dynamic-result" class="result"></div>
+  </div>
+
+  <!-- List Selection Tests -->
+  <div class="section" id="list-section">
+    <h2>List Selection Tests</h2>
+    <div id="item-list">
+      <div class="clickable-item" data-id="1" onclick="selectItem(this)">Item 1</div>
+      <div class="clickable-item" data-id="2" onclick="selectItem(this)">Item 2</div>
+      <div class="clickable-item" data-id="3" onclick="selectItem(this)">Item 3</div>
+    </div>
+    <div id="selected-item" style="margin-top: 10px;">Selected: <span>None</span></div>
+  </div>
+
+  <!-- Anchor Target -->
+  <div id="anchor-target" style="margin-top: 500px; padding: 20px; background: #ffc107;">
+    <h3>Anchor Target</h3>
+    <p>You jumped to this anchor!</p>
+  </div>
+
+  <script>
+    // Initialize page state
+    document.addEventListener('DOMContentLoaded', () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const page = urlParams.get('page');
+      const currentPageEl = document.getElementById('current-page');
+      
+      if (page) {
+        currentPageEl.textContent = `Current page: ${page}`;
+      } else {
+        currentPageEl.textContent = 'Current page: home';
+      }
+
+      // Track scroll position
+      const scrollContainer = document.getElementById('scroll-container');
+      scrollContainer.addEventListener('scroll', () => {
+        document.getElementById('scroll-position').textContent = scrollContainer.scrollTop;
+      });
+    });
+
+    // Click handlers
+    function handleClick() {
+      showResult('click-result', 'success', 'Button clicked successfully!');
+    }
+
+    function handleTestClick() {
+      showResult('click-result', 'success', 'Test button clicked!');
+    }
+
+    function handleDelete() {
+      showResult('click-result', 'success', 'Delete action triggered!');
+    }
+
+    // Form handlers
+    function handleSubmit(event) {
+      event.preventDefault();
+      const form = event.target;
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      showResult('form-result', 'success', `Form submitted: ${JSON.stringify(data)}`);
+    }
+
+    function resetForm() {
+      document.getElementById('test-form').reset();
+      document.getElementById('form-result').className = 'result';
+    }
+
+    // Dynamic content handlers
+    function loadDynamicContent() {
+      const content = document.getElementById('dynamic-content');
+      content.classList.remove('hidden');
+      showResult('dynamic-result', 'success', 'Dynamic content loaded!');
+    }
+
+    function toggleVisibility() {
+      const content = document.getElementById('dynamic-content');
+      content.classList.toggle('hidden');
+    }
+
+    function dynamicClick() {
+      showResult('dynamic-result', 'success', 'Dynamic button clicked!');
+    }
+
+    // List selection
+    function selectItem(element) {
+      // Remove selected from all
+      document.querySelectorAll('.clickable-item').forEach(el => {
+        el.classList.remove('selected');
+      });
+      // Add selected to clicked
+      element.classList.add('selected');
+      document.querySelector('#selected-item span').textContent = element.textContent;
+    }
+
+    // Utility function
+    function showResult(elementId, type, message) {
+      const el = document.getElementById(elementId);
+      el.className = `result ${type}`;
+      el.textContent = message;
+    }
+  </script>
+</body>
+</html>
