@@ -1,0 +1,47 @@
+# SaveAction Development Environment
+# Usage: docker compose -f docker-compose.dev.yml up -d
+#
+# This starts PostgreSQL and Redis for local API development.
+# The API server runs locally via `pnpm dev:api` (not containerized in dev).
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: saveaction-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: saveaction
+      POSTGRES_PASSWORD: saveaction_dev
+      POSTGRES_DB: saveaction
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U saveaction -d saveaction"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  redis:
+    image: redis:7-alpine
+    container_name: saveaction-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
+
+volumes:
+  postgres_data:
+    name: saveaction-postgres-data
+  redis_data:
+    name: saveaction-redis-data
