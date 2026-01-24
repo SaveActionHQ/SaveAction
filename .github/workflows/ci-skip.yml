@@ -1,27 +1,28 @@
 name: CI Skip
 
-# This workflow runs for changes that don't need testing (docs, markdown, etc.)
+# This workflow runs ONLY for changes that don't need testing (docs, markdown, etc.)
 # It provides the required status checks so PRs can be merged.
+# Uses paths-ignore so it does NOT run when code files are present.
 
 on:
   push:
     branches: [main]
-    paths:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE*'
-      - '.gitignore'
-      - '.env.example'
-      - 'docker-compose*.yml'
+    paths-ignore:
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - 'turbo.json'
+      - 'tsconfig*.json'
+      - 'eslint.config.js'
+      - 'vitest.config.ts'
   pull_request:
     branches: [main]
-    paths:
-      - '**.md'
-      - 'docs/**'
-      - 'LICENSE*'
-      - '.gitignore'
-      - '.env.example'
-      - 'docker-compose*.yml'
+    paths-ignore:
+      - 'packages/**'
+      - 'pnpm-lock.yaml'
+      - 'turbo.json'
+      - 'tsconfig*.json'
+      - 'eslint.config.js'
+      - 'vitest.config.ts'
 
 jobs:
   # These jobs mirror the names in ci.yml so GitHub gets the required status checks
