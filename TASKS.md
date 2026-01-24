@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** January 23, 2026
+**Last Updated:** January 24, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -176,12 +176,12 @@
 
 ## Phase 3: REST API (@saveaction/api)
 
-### ⏳ TODO - Development Environment Setup
+### ✅ DONE - Development Environment Setup
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `setup`, `dx`
-- **Description:** Create docker-compose.dev.yml with PostgreSQL 16 and Redis 7 for local development. Include volume mounts for data persistence, health checks, and default credentials. Developers run `docker compose -f docker-compose.dev.yml up` then `pnpm dev` for API with hot reload. Add scripts to package.json: `dev:services` (start containers), `dev:api` (start API).
+- **Description:** Create docker-compose.dev.yml with PostgreSQL 16 and Redis 7 for local development. Include volume mounts for data persistence, health checks, and default credentials. Developers run `docker compose -f docker-compose.dev.yml up` then `pnpm dev` for API with hot reload. Add scripts to package.json: `dev:services` (start containers), `dev:api` (start API). Added `.env.example` with environment variable template.
 
 ### ⏳ TODO - Setup API Package
 
@@ -720,7 +720,7 @@
 | -------------------------------- | ------ | ------ | ------- | ------ |
 | Phase 1: Core                    | 12     | 12     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
-| Phase 3: API                     | 41     | 0      | 0       | 41     |
+| Phase 3: API                     | 41     | 1      | 0       | 40     |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 0      | 0       | 5      |
 | Phase 4: Web                     | 9      | 0      | 0       | 9      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
@@ -728,7 +728,7 @@
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 0      | 0       | 4      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **97** | **20** | **2**   | **75** |
+| **TOTAL**                        | **97** | **21** | **2**   | **74** |
 
 ---
 

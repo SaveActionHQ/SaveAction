@@ -1,0 +1,57 @@
+name: CI Skip
+
+# This workflow runs for changes that don't need testing (docs, markdown, etc.)
+# It provides the required status checks so PRs can be merged.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE*'
+      - '.gitignore'
+      - '.env.example'
+      - 'docker-compose*.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - '**.md'
+      - 'docs/**'
+      - 'LICENSE*'
+      - '.gitignore'
+      - '.env.example'
+      - 'docker-compose*.yml'
+
+jobs:
+  # These jobs mirror the names in ci.yml so GitHub gets the required status checks
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipped - no code changes"
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipped - no code changes"
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipped - no code changes"
+
+  test-integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Skipped - no code changes"
+
+  test-coverage:
+    name: Test Coverage
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - run: echo "Skipped - no code changes"
