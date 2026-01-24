@@ -126,7 +126,7 @@ jobs:
         run: pnpm build
 
       - name: Install Playwright browsers
-        run: npx playwright install chromium
+        run: cd packages/core && pnpm exec playwright install chromium --with-deps
 
       - name: Run integration tests
         run: cd packages/core && pnpm run test:integration
