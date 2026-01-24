@@ -98,6 +98,13 @@
 - **Labels:** `feature`, `runner`
 - **Description:** Build NavigationAnalyzer.ts to preprocess recordings, detect missing prerequisites, and warn about potential issues.
 
+### ⏳ TODO - Core Browser Integration Tests
+
+- **Package:** @saveaction/core
+- **Priority:** P2
+- **Labels:** `testing`, `integration`
+- **Description:** Add real browser integration tests for PlaywrightRunner and ElementLocator. Launch actual Chromium instance, execute actions against local test HTML fixtures. Test: click, input, navigation, scroll actions with real DOM. Currently mocked at 25% coverage - these tests verify actual Playwright behavior. Run separately from unit tests (slower, requires browser). Use `vitest --project integration` or separate test file pattern.
+
 ---
 
 ## Phase 2: CLI Tool (@saveaction/cli)
@@ -531,6 +538,13 @@
 - **Labels:** `feature`, `ui`
 - **Description:** Build settings pages: API token management (generate, list, revoke), webhook configuration, user profile.
 
+### ⏳ TODO - Platform E2E Tests
+
+- **Package:** @saveaction/web
+- **Priority:** P2
+- **Labels:** `testing`, `e2e`
+- **Description:** End-to-end tests for the full platform using Playwright Test. Test user flows: login → upload recording → trigger run → view results. Test against real API and Web UI (docker-compose test environment). Cover critical paths: auth flow, recording CRUD, run execution, real-time progress. Run in CI on main branch merges (slower, full stack required).
+
 ---
 
 ## Phase 5: Docker Deployment
@@ -704,17 +718,17 @@
 
 | Phase                            | Total  | Done   | Skipped | Todo   |
 | -------------------------------- | ------ | ------ | ------- | ------ |
-| Phase 1: Core                    | 11     | 11     | 0       | 0      |
+| Phase 1: Core                    | 12     | 11     | 0       | 1      |
 | Phase 2: CLI                     | 9      | 6      | 2       | 1      |
 | Phase 3: API                     | 41     | 0      | 0       | 41     |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 0      | 0       | 5      |
-| Phase 4: Web                     | 8      | 0      | 0       | 8      |
+| Phase 4: Web                     | 9      | 0      | 0       | 9      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 0      | 0       | 4      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **95** | **20** | **2**   | **73** |
+| **TOTAL**                        | **97** | **20** | **2**   | **75** |
 
 ---
 
