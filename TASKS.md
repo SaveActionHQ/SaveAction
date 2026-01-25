@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** January 24, 2026
+**Last Updated:** January 25, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -197,12 +197,12 @@
 - **Labels:** `setup`, `infrastructure`
 - **Description:** Added Redis support using ioredis client with connection pooling. Implemented `RedisClient` wrapper with: connection management, exponential backoff retry strategy, graceful shutdown, health checks, and convenience methods for common operations (get/set/del, hashes, sets, pub/sub). Created Fastify plugin `redisConnectionPlugin` using `fastify-plugin` for global availability. Added comprehensive health check endpoints: `/api/health/detailed` (service status), `/api/health/live` (Kubernetes liveness), `/api/health/ready` (Kubernetes readiness). Redis already configured in docker-compose.dev.yml. Includes 53 new unit tests (114 total API tests).
 
-### ⏳ TODO - BullMQ Job Queue
+### ✅ DONE - BullMQ Job Queue
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `feature`, `infrastructure`
-- **Description:** Implement BullMQ for job queues (run execution, scheduled tests, cleanup jobs). Replace node-cron with BullMQ repeatable jobs for schedules. Features: persistent jobs (survive restart), retry with exponential backoff, job prioritization, concurrency control. Queue status exposed via API for Web UI.
+- **Description:** Implemented BullMQ for job queues with three queue types: `test-runs` (concurrency 5), `cleanup` (concurrency 1), `scheduled-tests` (concurrency 3). Features: `JobQueueManager` class for centralized queue management, persistent jobs that survive restart, retry with exponential backoff (1s→2s→4s for test-runs), job prioritization support, concurrency control per queue. Created `bullmqConnectionPlugin` Fastify plugin with separate Redis connection (no keyPrefix for BullMQ compatibility). Queue status exposed via `/api/queues/status` endpoint and included in `/api/health/detailed`. Supports repeatable jobs for scheduled tasks (cron patterns). Graceful shutdown with configurable timeout. Includes 40 new unit tests (154 total API tests).
 
 ### ⏳ TODO - Database Schema Setup
 
@@ -720,7 +720,7 @@
 | -------------------------------- | ------ | ------ | ------- | ------ |
 | Phase 1: Core                    | 12     | 12     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
-| Phase 3: API                     | 41     | 3      | 0       | 38     |
+| Phase 3: API                     | 41     | 4      | 0       | 37     |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 0      | 0       | 5      |
 | Phase 4: Web                     | 9      | 0      | 0       | 9      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
@@ -728,7 +728,7 @@
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 0      | 0       | 4      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **97** | **23** | **2**   | **72** |
+| **TOTAL**                        | **97** | **24** | **2**   | **71** |
 
 ---
 

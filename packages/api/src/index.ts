@@ -14,6 +14,21 @@ export type { ApiErrorResponse } from './errors/index.js';
 export { RedisClient } from './redis/index.js';
 export type { RedisClientOptions, RedisConnectionState, RedisHealthStatus } from './redis/index.js';
 
+// Queues
+export { JobQueueManager, QUEUE_CONFIGS } from './queues/index.js';
+export type {
+  JobQueueManagerOptions,
+  QueueName,
+  BaseJobData,
+  TestRunJobData,
+  CleanupJobData,
+  ScheduledTestJobData,
+  QueueStatus,
+  QueueHealthStatus,
+  JobProcessor,
+} from './queues/index.js';
+
 // Plugins
 export { redisConnectionPlugin, checkRedisHealth } from './plugins/index.js';
-export type { RedisPluginOptions } from './plugins/index.js';
+export { bullmqConnectionPlugin, checkQueueHealth } from './plugins/index.js';
+export type { RedisPluginOptions, BullMQPluginOptions } from './plugins/index.js';
