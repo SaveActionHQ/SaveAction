@@ -1,7 +1,13 @@
 import Fastify, { FastifyInstance, FastifyServerOptions } from 'fastify';
 import cors from '@fastify/cors';
 import sensible from '@fastify/sensible';
-import { errorHandler, redisConnectionPlugin, checkRedisHealth } from './plugins/index.js';
+import {
+  errorHandler,
+  redisConnectionPlugin,
+  checkRedisHealth,
+  bullmqConnectionPlugin,
+  checkQueueHealth,
+} from './plugins/index.js';
 import type { Env } from './config/index.js';
 
 export interface AppOptions {
@@ -9,6 +15,8 @@ export interface AppOptions {
   logger?: FastifyServerOptions['logger'];
   /** Skip Redis connection (useful for tests that don't need Redis) */
   skipRedis?: boolean;
+  /** Skip BullMQ initialization (useful for tests that don't need queues) */
+  skipQueues?: boolean;
 }
 
 /**
@@ -16,7 +24,7 @@ export interface AppOptions {
  * Registers plugins, middleware, and routes.
  */
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
-  const { env, logger, skipRedis = false } = options;
+  const { env, logger, skipRedis = false, skipQueues = false } = options;
 
   // Create Fastify instance with logging
   const app = Fastify({
@@ -64,6 +72,14 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       maxRetriesPerRequest: 3,
       keyPrefix: 'saveaction:',
     });
+
+    // Register BullMQ (requires Redis, unless skipped)
+    if (!skipQueues) {
+      await app.register(bullmqConnectionPlugin, {
+        prefix: 'saveaction',
+        enableWorkers: true,
+      });
+    }
   }
 
   // Health check endpoint (basic)
@@ -91,6 +107,16 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       };
     } else {
       services.redis = { status: 'not_configured' };
+    }
+
+    // Check BullMQ queues if available
+    if (app.queues) {
+      const queueHealth = await checkQueueHealth(app.queues);
+      services.queues = {
+        status: queueHealth.status,
+      };
+    } else {
+      services.queues = { status: 'not_configured' };
     }
 
     // Determine overall status
@@ -128,6 +154,26 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     }
 
     return { status: 'ready' };
+  });
+
+  // Queue status endpoint
+  app.get('/api/queues/status', async (_request, reply) => {
+    if (!app.queues) {
+      return reply.status(503).send({
+        error: {
+          code: 'QUEUES_NOT_CONFIGURED',
+          message: 'Job queues are not configured',
+        },
+      });
+    }
+
+    const health = await checkQueueHealth(app.queues);
+    return {
+      status: health.status,
+      timestamp: new Date().toISOString(),
+      queues: health.queues,
+      workers: health.workers,
+    };
   });
 
   // Root endpoint
