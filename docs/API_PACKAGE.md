@@ -1,7 +1,7 @@
 # API Package (@saveaction/api)
 
 > **Status:** Phase 3 - Foundation Complete  
-> **Last Updated:** January 24, 2026
+> **Last Updated:** January 25, 2026
 
 ## Overview
 
@@ -17,14 +17,14 @@ The `@saveaction/api` package is a Fastify-based REST API server that will serve
 | Environment config | Zod-validated env vars with type safety |
 | Error handling | Global error handler with standardized JSON responses |
 | CORS | Configurable cross-origin support |
-| Health endpoint | `/api/health` for container orchestration |
+| Health endpoints | `/api/health`, `/api/health/detailed`, `/api/health/live`, `/api/health/ready` |
 | Graceful shutdown | Handles SIGTERM/SIGINT for clean container stops |
-| Unit tests | 61 tests covering all components |
+| Redis integration | ioredis client with connection pooling, health checks |
+| Unit tests | 114 tests covering all components |
 
 ### ⏳ Not Yet Implemented
 
 - Database layer (Drizzle ORM + PostgreSQL)
-- Redis integration (rate limiting, sessions, job queues)
 - Authentication (JWT + refresh tokens)
 - API routes (recordings, runs, users)
 - BullMQ job queue for async test execution
@@ -42,12 +42,18 @@ packages/api/
 │   ├── errors/
 │   │   ├── index.ts          # Exports
 │   │   └── ApiError.ts       # Custom error class + factories
-│   └── plugins/
-│       └── errorHandler.ts   # Global error handler
+│   ├── plugins/
+│   │   ├── index.ts          # Plugin exports
+│   │   ├── errorHandler.ts   # Global error handler
+│   │   └── redis.ts          # Redis connection plugin
+│   └── redis/
+│       ├── index.ts          # Redis exports
+│       └── RedisClient.ts    # Redis client wrapper
 ├── package.json
 ├── tsconfig.json
 └── vitest.config.ts
 ```
+
 
 ## Key Design Decisions
 
@@ -144,6 +150,80 @@ throw Errors.rateLimited(60); // retry after 60 seconds
 throw Errors.internal('Database connection failed');
 ```
 
+## Redis Integration
+
+### RedisClient
+
+A wrapper around `ioredis` that provides:
+
+- **Connection management** with lazy connect
+- **Exponential backoff retry** (max 30 seconds)
+- **Health checks** with latency measurement
+- **Graceful shutdown** (waits for pending commands)
+- **Convenience methods** for common operations
+
+```typescript
+import { RedisClient } from '@saveaction/api';
+
+const client = new RedisClient({
+  url: 'redis://localhost:6379',
+  keyPrefix: 'saveaction:',
+  connectTimeout: 5000,
+  maxRetriesPerRequest: 3,
+});
+
+await client.connect();
+
+// Basic operations
+await client.set('key', 'value', 3600); // with TTL
+const value = await client.get('key');
+await client.del('key');
+
+// Hash operations
+await client.hset('user:1', 'name', 'John');
+await client.hgetall('user:1');
+
+// Health check
+const health = await client.healthCheck();
+// { status: 'healthy', latencyMs: 1, connectionState: 'connected' }
+
+await client.disconnect();
+```
+
+### Fastify Plugin
+
+Redis is available globally via `fastify.redis`:
+
+```typescript
+app.get('/example', async (request, reply) => {
+  const value = await request.server.redis.get('key');
+  return { value };
+});
+```
+
+### Health Check Endpoints
+
+| Endpoint | Purpose |
+|----------|---------|
+| `GET /api/health` | Basic health check |
+| `GET /api/health/detailed` | All service statuses with latency |
+| `GET /api/health/live` | Kubernetes liveness probe |
+| `GET /api/health/ready` | Kubernetes readiness probe |
+
+**Detailed health response:**
+
+```json
+{
+  "status": "ok",
+  "timestamp": "2026-01-25T...",
+  "version": "0.1.0",
+  "services": {
+    "api": { "status": "healthy" },
+    "redis": { "status": "healthy", "latencyMs": 1 }
+  }
+}
+```
+
 ## Running the API
 
 ### Development
@@ -181,6 +261,7 @@ pnpm test:coverage  # With coverage report
 | @fastify/cors | 9.0.1 | CORS middleware |
 | @fastify/sensible | 5.6.0 | Utilities (httpErrors, etc.) |
 | fastify-plugin | 5.1.0 | Plugin encapsulation control |
+| ioredis | 5.9.2 | Redis client |
 | pino | 9.14.0 | Structured logging |
 | pino-pretty | 11.3.0 | Pretty logs in development |
 | zod | 3.25.76 | Schema validation |
@@ -190,11 +271,10 @@ pnpm test:coverage  # With coverage report
 
 Per TASKS.md, the next tasks for Phase 3 are:
 
-1. **Redis Setup** - Rate limiting, sessions, job queues
-2. **BullMQ Job Queue** - Async test execution
-3. **Database Setup** - Drizzle ORM + PostgreSQL schema
-4. **Authentication** - JWT registration, login, refresh tokens
-5. **API Routes** - Recordings CRUD, run execution, etc.
+1. **BullMQ Job Queue** - Async test execution
+2. **Database Setup** - Drizzle ORM + PostgreSQL schema
+3. **Authentication** - JWT registration, login, refresh tokens
+4. **API Routes** - Recordings CRUD, run execution, etc.
 
 ## File Reference
 
@@ -203,6 +283,8 @@ Per TASKS.md, the next tasks for Phase 3 are:
 | [src/config/env.ts](../packages/api/src/config/env.ts) | Environment validation |
 | [src/errors/ApiError.ts](../packages/api/src/errors/ApiError.ts) | Error class and factories |
 | [src/plugins/errorHandler.ts](../packages/api/src/plugins/errorHandler.ts) | Global error handler |
+| [src/plugins/redis.ts](../packages/api/src/plugins/redis.ts) | Redis Fastify plugin |
+| [src/redis/RedisClient.ts](../packages/api/src/redis/RedisClient.ts) | Redis client wrapper |
 | [src/app.ts](../packages/api/src/app.ts) | Fastify app factory |
 | [src/server.ts](../packages/api/src/server.ts) | Server entry point |
 
@@ -211,13 +293,16 @@ Per TASKS.md, the next tasks for Phase 3 are:
 ```
  ✓ src/errors/ApiError.test.ts      (26 tests)
  ✓ src/config/env.test.ts           (14 tests)
+ ✓ src/redis/RedisClient.test.ts    (40 tests)
+ ✓ src/plugins/redis.test.ts        (10 tests)
  ✓ src/plugins/errorHandler.test.ts (13 tests)
- ✓ src/app.test.ts                  (8 tests)
+ ✓ src/app.test.ts                  (11 tests)
 
- Test Files  4 passed (4)
-      Tests  61 passed (61)
+ Test Files  6 passed (6)
+      Tests  114 passed (114)
 ```
 
 ---
 
 _This document should be updated as more API features are implemented._
+
