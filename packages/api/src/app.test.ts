@@ -29,6 +29,7 @@ describe('App', () => {
       env: testEnv,
       logger: false, // Disable logging in tests
       skipRedis: true, // Skip Redis connection in tests
+      skipDatabase: true, // Skip database connection in tests
     });
   });
 

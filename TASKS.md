@@ -204,12 +204,12 @@
 - **Labels:** `feature`, `infrastructure`
 - **Description:** Implemented BullMQ for job queues with three queue types: `test-runs` (concurrency 5), `cleanup` (concurrency 1), `scheduled-tests` (concurrency 3). Features: `JobQueueManager` class for centralized queue management, persistent jobs that survive restart, retry with exponential backoff (1s→2s→4s for test-runs), job prioritization support, concurrency control per queue. Created `bullmqConnectionPlugin` Fastify plugin with separate Redis connection (no keyPrefix for BullMQ compatibility). Queue status exposed via `/api/queues/status` endpoint and included in `/api/health/detailed`. Supports repeatable jobs for scheduled tasks (cron patterns). Graceful shutdown with configurable timeout. Includes 40 new unit tests (154 total API tests).
 
-### ⏳ TODO - Database Schema Setup
+### ✅ DONE - Database Schema Setup
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `database`
-- **Description:** Create PostgreSQL database schema with Drizzle ORM. Tables: users, api_tokens, recordings, runs, run_actions, schedules, webhooks. Write migrations.
+- **Description:** Created PostgreSQL database schema with Drizzle ORM. Tables: users, api_tokens, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries (8 total). Features: UUID primary keys (gen_random_uuid), soft deletes with deleted_at, audit timestamps, PostgreSQL enums (run_status, browser_type, action_status, schedule_status, webhook_event, webhook_status). Indexes: partial indexes for soft delete filtering, GIN indexes on JSONB columns (recordings.data, recordings.tags), case-insensitive email unique constraint. Foreign keys with proper cascade rules. BullMQ integration columns in runs and schedules tables. Auto-migration on server startup via database plugin. Includes 9 unit tests.
 
 ### ⏳ TODO - User Authentication
 

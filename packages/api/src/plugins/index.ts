@@ -3,3 +3,5 @@ export { redisConnectionPlugin, checkRedisHealth } from './redis.js';
 export type { RedisPluginOptions } from './redis.js';
 export { bullmqConnectionPlugin, checkQueueHealth } from './bullmq.js';
 export type { BullMQPluginOptions } from './bullmq.js';
+export { default as databasePlugin, type DatabasePluginOptions } from './database.js';
+export { checkDatabaseHealth } from '../db/index.js';

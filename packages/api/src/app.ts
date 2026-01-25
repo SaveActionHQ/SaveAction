@@ -7,6 +7,8 @@ import {
   checkRedisHealth,
   bullmqConnectionPlugin,
   checkQueueHealth,
+  databasePlugin,
+  checkDatabaseHealth,
 } from './plugins/index.js';
 import type { Env } from './config/index.js';
 
@@ -17,6 +19,10 @@ export interface AppOptions {
   skipRedis?: boolean;
   /** Skip BullMQ initialization (useful for tests that don't need queues) */
   skipQueues?: boolean;
+  /** Skip database connection (useful for tests that don't need database) */
+  skipDatabase?: boolean;
+  /** Skip auto-migrations (useful for tests) */
+  skipMigrations?: boolean;
 }
 
 /**
@@ -24,7 +30,14 @@ export interface AppOptions {
  * Registers plugins, middleware, and routes.
  */
 export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
-  const { env, logger, skipRedis = false, skipQueues = false } = options;
+  const {
+    env,
+    logger,
+    skipRedis = false,
+    skipQueues = false,
+    skipDatabase = false,
+    skipMigrations = false,
+  } = options;
 
   // Create Fastify instance with logging
   const app = Fastify({
@@ -64,6 +77,13 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   // Register custom error handler
   await app.register(errorHandler);
 
+  // Register Database (unless skipped for testing)
+  if (!skipDatabase) {
+    await app.register(databasePlugin, {
+      autoMigrate: !skipMigrations && env.NODE_ENV !== 'test',
+    });
+  }
+
   // Register Redis (unless skipped for testing)
   if (!skipRedis && env.REDIS_URL) {
     await app.register(redisConnectionPlugin, {
@@ -96,6 +116,18 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     const services: Record<string, { status: string; latencyMs?: number; error?: string }> = {
       api: { status: 'healthy' },
     };
+
+    // Check Database if available
+    if (app.db) {
+      const dbHealth = await checkDatabaseHealth();
+      services.database = {
+        status: dbHealth.connected ? 'healthy' : 'unhealthy',
+        latencyMs: dbHealth.latencyMs,
+        error: dbHealth.error,
+      };
+    } else {
+      services.database = { status: 'not_configured' };
+    }
 
     // Check Redis if available
     if (app.redis) {
@@ -143,6 +175,19 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   // Readiness probe (for Kubernetes)
   app.get('/api/health/ready', async (_request, reply) => {
     // Check critical services
+
+    // Check Database if available
+    if (app.db) {
+      const dbHealth = await checkDatabaseHealth();
+      if (!dbHealth.connected) {
+        return reply.status(503).send({
+          status: 'not_ready',
+          reason: 'Database is not healthy',
+        });
+      }
+    }
+
+    // Check Redis if available
     if (app.redis) {
       const redisHealth = await checkRedisHealth(app.redis);
       if (redisHealth.status !== 'healthy') {
