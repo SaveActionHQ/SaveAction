@@ -1,7 +1,17 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { buildApp } from './app.js';
 import type { Env } from './config/index.js';
 import type { FastifyInstance } from 'fastify';
+
+// Mock the Redis plugin to avoid actual connection
+vi.mock('./plugins/redis.js', () => ({
+  redisConnectionPlugin: vi.fn(async () => {}),
+  checkRedisHealth: vi.fn().mockResolvedValue({
+    status: 'healthy',
+    latencyMs: 1,
+    connectionState: 'connected',
+  }),
+}));
 
 describe('App', () => {
   let app: FastifyInstance;
@@ -18,6 +28,7 @@ describe('App', () => {
     app = await buildApp({
       env: testEnv,
       logger: false, // Disable logging in tests
+      skipRedis: true, // Skip Redis connection in tests
     });
   });
 
@@ -54,6 +65,48 @@ describe('App', () => {
       expect(body.status).toBe('ok');
       expect(body.version).toBe('0.1.0');
       expect(body.timestamp).toBeDefined();
+    });
+  });
+
+  describe('GET /api/health/detailed', () => {
+    it('should return detailed health with services', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/health/detailed',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.status).toBe('ok');
+      expect(body.services).toBeDefined();
+      expect(body.services.api).toEqual({ status: 'healthy' });
+      expect(body.services.redis).toEqual({ status: 'not_configured' });
+    });
+  });
+
+  describe('GET /api/health/live', () => {
+    it('should return liveness status', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/health/live',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.status).toBe('ok');
+    });
+  });
+
+  describe('GET /api/health/ready', () => {
+    it('should return readiness status', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/health/ready',
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.body);
+      expect(body.status).toBe('ready');
     });
   });
 
@@ -118,6 +171,7 @@ describe('App', () => {
       const specificOriginApp = await buildApp({
         env: { ...testEnv, CORS_ORIGIN: 'https://app.example.com' },
         logger: false,
+        skipRedis: true,
       });
 
       const response = await specificOriginApp.inject({
@@ -141,6 +195,7 @@ describe('App', () => {
           CORS_ORIGIN: 'https://app1.example.com,https://app2.example.com',
         },
         logger: false,
+        skipRedis: true,
       });
 
       const response = await multiOriginApp.inject({
