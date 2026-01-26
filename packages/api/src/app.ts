@@ -9,7 +9,9 @@ import {
   checkQueueHealth,
   databasePlugin,
   checkDatabaseHealth,
+  jwtPlugin,
 } from './plugins/index.js';
+import authRoutes from './routes/auth.js';
 import type { Env } from './config/index.js';
 
 export interface AppOptions {
@@ -23,6 +25,8 @@ export interface AppOptions {
   skipDatabase?: boolean;
   /** Skip auto-migrations (useful for tests) */
   skipMigrations?: boolean;
+  /** Skip JWT authentication plugin (useful for tests) */
+  skipAuth?: boolean;
 }
 
 /**
@@ -37,6 +41,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     skipQueues = false,
     skipDatabase = false,
     skipMigrations = false,
+    skipAuth = false,
   } = options;
 
   // Create Fastify instance with logging
@@ -82,6 +87,31 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     await app.register(databasePlugin, {
       autoMigrate: !skipMigrations && env.NODE_ENV !== 'test',
     });
+  }
+
+  // Register JWT plugin (unless skipped for testing)
+  if (!skipAuth && env.JWT_SECRET) {
+    await app.register(jwtPlugin, {
+      secret: env.JWT_SECRET,
+      cookieSecret: env.JWT_REFRESH_SECRET || env.JWT_SECRET,
+      accessTokenExpiry: '15m',
+      refreshTokenExpiry: '7d',
+    });
+
+    // Register auth routes (requires both database and JWT)
+    if (!skipDatabase && app.db) {
+      await app.register(authRoutes, {
+        prefix: '/api/auth',
+        db: app.db,
+        jwtSecret: env.JWT_SECRET,
+        jwtRefreshSecret: env.JWT_REFRESH_SECRET || env.JWT_SECRET,
+        accessTokenExpiry: '15m',
+        refreshTokenExpiry: '7d',
+        bcryptRounds: 12,
+        maxLoginAttempts: 5,
+        lockoutDuration: 900,
+      });
+    }
   }
 
   // Register Redis (unless skipped for testing)
