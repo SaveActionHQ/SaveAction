@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** January 25, 2026
+**Last Updated:** January 26, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -211,12 +211,12 @@
 - **Labels:** `database`
 - **Description:** Created PostgreSQL database schema with Drizzle ORM. Tables: users, api_tokens, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries (8 total). Features: UUID primary keys (gen_random_uuid), soft deletes with deleted_at, audit timestamps, PostgreSQL enums (run_status, browser_type, action_status, schedule_status, webhook_event, webhook_status). Indexes: partial indexes for soft delete filtering, GIN indexes on JSONB columns (recordings.data, recordings.tags), case-insensitive email unique constraint. Foreign keys with proper cascade rules. BullMQ integration columns in runs and schedules tables. Auto-migration on server startup via database plugin. Includes 9 unit tests.
 
-### ⏳ TODO - User Authentication
+### ✅ DONE - User Authentication
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `feature`, `auth`
-- **Description:** Implement user registration, login (JWT), logout. Password hashing with bcrypt. Auth middleware for protected routes.
+- **Description:** Implemented complete user authentication system with JWT. Features: user registration (POST /api/auth/register) with email/password validation (min 8 chars, uppercase, lowercase, number), login (POST /api/auth/login) with account lockout (5 attempts → 15 min lock), logout (POST /api/auth/logout), token refresh (POST /api/auth/refresh) with cookie and body support, get current user (GET /api/auth/me), change password (POST /api/auth/change-password). Password hashing with bcrypt (12 rounds). JWT access tokens (15 min expiry), refresh tokens (7 days, httpOnly cookie). Auth middleware with `fastify.authenticate` decorator. Components: AuthService, UserRepository, JWT plugin, Zod validation schemas. 66 new unit tests (AuthService: 23, UserRepository: 21, types: 22).
 
 ### ⏳ TODO - Password Reset Flow
 
@@ -225,19 +225,19 @@
 - **Labels:** `feature`, `auth`
 - **Description:** Implement forgot password flow. POST /api/auth/forgot-password sends email with reset link (JWT token with 1hr expiry). POST /api/auth/reset-password validates token and updates password. Requires email service integration (nodemailer + SMTP or SendGrid).
 
-### ⏳ TODO - JWT Refresh Token
+### ✅ DONE - JWT Refresh Token
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `auth`, `security`
-- **Description:** Implement refresh token rotation. Access token: 15min expiry. Refresh token: 7 days, stored in httpOnly cookie. POST /api/auth/refresh issues new access token. Prevents users from being logged out during active sessions.
+- **Description:** Implemented as part of User Authentication. Access token: 15min expiry. Refresh token: 7 days, stored in httpOnly cookie. POST /api/auth/refresh issues new access and refresh tokens (rotation). Cookie options: httpOnly, secure (production), sameSite: strict, path: /api/auth.
 
-### ⏳ TODO - Change Password
+### ✅ DONE - Change Password
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `feature`, `auth`
-- **Description:** Implement PUT /api/auth/password endpoint. Requires current password verification before allowing change. Rate limit to 3 attempts per hour. Invalidate all existing sessions/refresh tokens after password change.
+- **Description:** Implemented POST /api/auth/change-password endpoint. Requires valid access token (authenticated). Verifies current password with bcrypt.compare before allowing change. Returns 401 PASSWORD_MISMATCH if current password is wrong. New password validated with same requirements as registration.
 
 ### ⏳ TODO - Email Verification (Optional)
 

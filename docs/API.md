@@ -14,7 +14,7 @@ This document covers the SaveAction REST API (`@saveaction/api`). As features ar
 - [Database Schema](#database-schema)
 - [Health Endpoints](#health-endpoints)
 - [Queue Status](#queue-status)
-- [Authentication](#authentication) _(planned)_
+- [Authentication](#authentication)
 - [Recordings API](#recordings-api) _(planned)_
 - [Runs API](#runs-api) _(planned)_
 
@@ -505,7 +505,276 @@ All errors follow a consistent format:
 
 ## Authentication
 
-> 🚧 **Coming Soon** - JWT + API Token authentication
+The SaveAction API uses JWT (JSON Web Tokens) for authentication. Access tokens are short-lived (15 min) and refresh tokens are long-lived (7 days).
+
+### Environment Variables
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `JWT_SECRET` | **Yes** (prod) | - | Secret for signing JWTs (min 32 chars) |
+| `JWT_REFRESH_SECRET` | No | `JWT_SECRET` | Separate secret for refresh tokens |
+
+### Endpoints
+
+#### POST /api/auth/register
+
+Register a new user account.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePass123",
+  "name": "John Doe"
+}
+```
+
+**Password Requirements:**
+- Minimum 8 characters
+- Maximum 128 characters
+- At least one uppercase letter
+- At least one lowercase letter
+- At least one number
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "emailVerifiedAt": null,
+      "isActive": true,
+      "createdAt": "2026-01-26T12:00:00.000Z",
+      "updatedAt": "2026-01-26T12:00:00.000Z"
+    },
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "expiresIn": 900
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 400 | `VALIDATION_ERROR` | Invalid email or password format |
+| 409 | `EMAIL_EXISTS` | Email already registered |
+
+---
+
+#### POST /api/auth/login
+
+Authenticate with email and password.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com",
+  "password": "SecurePass123"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "emailVerifiedAt": null,
+      "isActive": true,
+      "createdAt": "2026-01-26T12:00:00.000Z",
+      "updatedAt": "2026-01-26T12:00:00.000Z"
+    },
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "expiresIn": 900
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 401 | `INVALID_CREDENTIALS` | Wrong email or password |
+| 403 | `USER_INACTIVE` | Account is deactivated |
+| 423 | `USER_LOCKED` | Account temporarily locked (too many failed attempts) |
+
+**Account Lockout:**
+- After 5 failed login attempts, account is locked for 15 minutes
+- Failed attempts reset on successful login
+
+---
+
+#### POST /api/auth/logout
+
+Logout and clear refresh token cookie.
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Logged out successfully"
+  }
+}
+```
+
+---
+
+#### POST /api/auth/refresh
+
+Refresh the access token using a refresh token.
+
+The refresh token can be provided:
+1. Via httpOnly cookie (set automatically on login)
+2. In the request body
+
+**Request Body (optional):**
+```json
+{
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "tokens": {
+      "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "expiresIn": 900
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 400 | `MISSING_TOKEN` | No refresh token provided |
+| 401 | `INVALID_REFRESH_TOKEN` | Token invalid or expired |
+| 403 | `USER_INACTIVE` | Account deactivated |
+| 404 | `USER_NOT_FOUND` | User no longer exists |
+
+---
+
+#### GET /api/auth/me
+
+Get the current authenticated user's info.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "user": {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "email": "user@example.com",
+      "name": "John Doe",
+      "emailVerifiedAt": null,
+      "isActive": true,
+      "createdAt": "2026-01-26T12:00:00.000Z",
+      "updatedAt": "2026-01-26T12:00:00.000Z"
+    }
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 401 | `UNAUTHORIZED` | Missing or invalid token |
+| 404 | `USER_NOT_FOUND` | User no longer exists |
+
+---
+
+#### POST /api/auth/change-password
+
+Change the authenticated user's password.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "currentPassword": "OldPassword123",
+  "newPassword": "NewPassword456"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Password changed successfully"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 400 | `VALIDATION_ERROR` | New password doesn't meet requirements |
+| 401 | `PASSWORD_MISMATCH` | Current password is incorrect |
+| 401 | `UNAUTHORIZED` | Not authenticated |
+
+### Using Access Tokens
+
+Include the access token in the `Authorization` header for protected endpoints:
+
+```http
+GET /api/auth/me
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Token Lifecycle
+
+```
+Registration/Login → Access Token (15 min) + Refresh Token (7 days)
+                              │
+                              ▼
+              Token expires → POST /api/auth/refresh
+                              │
+                              ▼
+                     New Access Token (15 min)
+```
+
+### Security Features
+
+| Feature | Description |
+|---------|-------------|
+| **Password Hashing** | bcrypt with 12 salt rounds |
+| **Account Lockout** | 5 failed attempts → 15 min lockout |
+| **Refresh Token Rotation** | New refresh token on each refresh |
+| **httpOnly Cookies** | Refresh tokens stored in httpOnly cookies |
+| **IP Tracking** | Last login IP stored for audit |
+| **Soft Delete** | Users can be deactivated without data loss |
 
 ---
 
@@ -525,4 +794,5 @@ All errors follow a consistent format:
 
 | Date | Changes |
 |------|---------|
+| 2026-01-26 | Added user authentication (register, login, logout, refresh, me, change-password) |
 | 2026-01-26 | Initial documentation with infrastructure, database schema, health endpoints |

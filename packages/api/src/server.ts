@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { getEnv, validateProductionEnv } from './config/index.js';
 import { buildApp } from './app.js';
 
