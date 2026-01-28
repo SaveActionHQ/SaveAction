@@ -18,6 +18,7 @@ import type {
   JwtPayload,
   AccessTokenPayload,
   RefreshTokenPayload,
+  ResetTokenPayload,
   AuthConfig,
 } from './types.js';
 
@@ -47,7 +48,13 @@ export const AuthErrors = {
   INVALID_TOKEN: new AuthError('Invalid or expired token', 'INVALID_TOKEN', 401),
   TOKEN_EXPIRED: new AuthError('Token has expired', 'TOKEN_EXPIRED', 401),
   INVALID_REFRESH_TOKEN: new AuthError('Invalid refresh token', 'INVALID_REFRESH_TOKEN', 401),
+  INVALID_RESET_TOKEN: new AuthError('Invalid or expired reset token', 'INVALID_RESET_TOKEN', 401),
   PASSWORD_MISMATCH: new AuthError('Current password is incorrect', 'PASSWORD_MISMATCH', 401),
+  EMAIL_SERVICE_UNAVAILABLE: new AuthError(
+    'Email service is unavailable',
+    'EMAIL_SERVICE_UNAVAILABLE',
+    503
+  ),
 } as const;
 
 /**
@@ -360,5 +367,78 @@ export class AuthService {
    */
   async comparePassword(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash);
+  }
+
+  /**
+   * Generate a password reset token
+   * Token expires in 1 hour
+   */
+  async generateResetToken(email: string): Promise<{ token: string; user: SafeUser } | null> {
+    // Find user by email
+    const user = await this.userRepository.findByEmail(email);
+
+    if (!user) {
+      // Don't reveal if user exists - return null silently
+      return null;
+    }
+
+    if (!user.isActive) {
+      // Don't reveal account status
+      return null;
+    }
+
+    // Generate reset token (1 hour expiry)
+    const resetPayload: ResetTokenPayload = {
+      sub: user.id,
+      email: user.email,
+      type: 'reset',
+    };
+
+    const token = this.fastify.jwt.sign(resetPayload, {
+      expiresIn: 3600, // 1 hour in seconds
+    });
+
+    return { token, user };
+  }
+
+  /**
+   * Verify and use a password reset token
+   */
+  async resetPassword(token: string, newPassword: string): Promise<void> {
+    try {
+      // Verify reset token
+      const payload = this.fastify.jwt.verify<ResetTokenPayload>(token);
+
+      if (payload.type !== 'reset') {
+        throw AuthErrors.INVALID_RESET_TOKEN;
+      }
+
+      // Get user
+      const user = await this.userRepository.findById(payload.sub);
+
+      if (!user) {
+        throw AuthErrors.INVALID_RESET_TOKEN;
+      }
+
+      if (!user.isActive) {
+        throw AuthErrors.USER_INACTIVE;
+      }
+
+      // Verify email matches (extra security)
+      if (user.email !== payload.email) {
+        throw AuthErrors.INVALID_RESET_TOKEN;
+      }
+
+      // Hash new password
+      const passwordHash = await bcrypt.hash(newPassword, this.config.bcryptRounds);
+
+      // Update password
+      await this.userRepository.updatePassword(user.id, passwordHash);
+    } catch (error) {
+      if (error instanceof AuthError) {
+        throw error;
+      }
+      throw AuthErrors.INVALID_RESET_TOKEN;
+    }
   }
 }

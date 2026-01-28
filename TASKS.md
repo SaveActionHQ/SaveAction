@@ -218,12 +218,12 @@
 - **Labels:** `feature`, `auth`
 - **Description:** Implemented complete user authentication system with JWT. Features: user registration (POST /api/auth/register) with email/password validation (min 8 chars, uppercase, lowercase, number), login (POST /api/auth/login) with account lockout (5 attempts → 15 min lock), logout (POST /api/auth/logout), token refresh (POST /api/auth/refresh) with cookie and body support, get current user (GET /api/auth/me), change password (POST /api/auth/change-password). Password hashing with bcrypt (12 rounds). JWT access tokens (15 min expiry), refresh tokens (7 days, httpOnly cookie). Auth middleware with `fastify.authenticate` decorator. Components: AuthService, UserRepository, JWT plugin, Zod validation schemas. 66 new unit tests (AuthService: 23, UserRepository: 21, types: 22).
 
-### ⏳ TODO - Password Reset Flow
+### ✅ DONE - Password Reset Flow
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `auth`
-- **Description:** Implement forgot password flow. POST /api/auth/forgot-password sends email with reset link (JWT token with 1hr expiry). POST /api/auth/reset-password validates token and updates password. Requires email service integration (nodemailer + SMTP or SendGrid).
+- **Description:** Implemented forgot password flow with email service integration. POST /api/auth/forgot-password generates JWT reset token (1hr expiry) and sends email via nodemailer/SMTP. Returns generic success to prevent email enumeration. POST /api/auth/reset-password validates token and updates password with bcrypt. EmailService created with HTML email templates, SMTP configuration via environment variables (SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM, APP_BASE_URL). Development mode creates ethereal test accounts. 28 new unit tests (EmailService: 17, AuthService reset methods: 11). API docs updated.
 
 ### ✅ DONE - JWT Refresh Token
 

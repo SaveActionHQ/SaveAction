@@ -38,6 +38,7 @@
     "fastify": "^4.28.1",
     "fastify-plugin": "^5.1.0",
     "ioredis": "^5.9.2",
+    "nodemailer": "^7.0.13",
     "pg": "^8.17.2",
     "pino": "^9.0.0",
     "pino-pretty": "^11.0.0",
@@ -46,6 +47,7 @@
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
     "@types/node": "^20.10.0",
+    "@types/nodemailer": "^7.0.9",
     "@types/pg": "^8.16.0",
     "@vitest/coverage-v8": "^1.0.4",
     "drizzle-kit": "^0.31.8",
