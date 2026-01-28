@@ -64,12 +64,36 @@ export const changePasswordSchema = z.object({
 });
 
 /**
+ * Forgot password request schema
+ */
+export const forgotPasswordSchema = z.object({
+  email: z.string().trim().toLowerCase().email('Invalid email address'),
+});
+
+/**
+ * Reset password request schema
+ */
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Reset token is required'),
+  newPassword: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .max(128, 'Password must be at most 128 characters')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'Password must contain at least one lowercase letter, one uppercase letter, and one number'
+    ),
+});
+
+/**
  * Inferred types from schemas
  */
 export type RegisterRequest = z.infer<typeof registerSchema>;
 export type LoginRequest = z.infer<typeof loginSchema>;
 export type RefreshRequest = z.infer<typeof refreshSchema>;
 export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;
+export type ForgotPasswordRequest = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordRequest = z.infer<typeof resetPasswordSchema>;
 
 /**
  * JWT Payload structure
@@ -77,7 +101,7 @@ export type ChangePasswordRequest = z.infer<typeof changePasswordSchema>;
 export interface JwtPayload {
   sub: string; // User ID
   email: string;
-  type: 'access' | 'refresh';
+  type: 'access' | 'refresh' | 'reset';
   iat?: number;
   exp?: number;
 }
@@ -96,6 +120,13 @@ export interface AccessTokenPayload extends JwtPayload {
 export interface RefreshTokenPayload extends JwtPayload {
   type: 'refresh';
   tokenVersion: number; // For token invalidation
+}
+
+/**
+ * Password reset token payload
+ */
+export interface ResetTokenPayload extends JwtPayload {
+  type: 'reset';
 }
 
 /**

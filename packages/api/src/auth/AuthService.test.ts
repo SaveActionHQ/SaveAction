@@ -358,6 +358,123 @@ describe('AuthService', () => {
       });
     });
   });
+
+  describe('generateResetToken', () => {
+    it('should generate reset token for existing user', async () => {
+      const result = await authService.generateResetToken('test@example.com');
+
+      expect(mockUserRepository.findByEmail).toHaveBeenCalledWith('test@example.com');
+      expect(mockFastify.jwt.sign).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sub: mockUser.id,
+          email: mockUser.email,
+          type: 'reset',
+        }),
+        expect.objectContaining({ expiresIn: 3600 })
+      );
+      expect(result).not.toBeNull();
+      expect(result?.token).toBe('mock-jwt-token');
+      expect(result?.user.id).toBe(mockUser.id);
+    });
+
+    it('should return null for non-existent user', async () => {
+      vi.mocked(mockUserRepository.findByEmail).mockResolvedValue(null);
+
+      const result = await authService.generateResetToken('nonexistent@example.com');
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null for inactive user', async () => {
+      vi.mocked(mockUserRepository.findByEmail).mockResolvedValue({
+        ...mockUser,
+        isActive: false,
+      });
+
+      const result = await authService.generateResetToken('test@example.com');
+
+      expect(result).toBeNull();
+    });
+  });
+
+  describe('resetPassword', () => {
+    beforeEach(() => {
+      vi.mocked(mockFastify.jwt.verify).mockReturnValue({
+        sub: mockUser.id,
+        email: mockUser.email,
+        type: 'reset',
+      } as never);
+    });
+
+    it('should reset password successfully', async () => {
+      await authService.resetPassword('valid-reset-token', 'NewSecurePass123!');
+
+      expect(mockFastify.jwt.verify).toHaveBeenCalledWith('valid-reset-token');
+      expect(mockUserRepository.findById).toHaveBeenCalledWith(mockUser.id);
+      expect(bcrypt.hash).toHaveBeenCalledWith('NewSecurePass123!', 12);
+      expect(mockUserRepository.updatePassword).toHaveBeenCalledWith(
+        mockUser.id,
+        '$2b$12$hashedpassword'
+      );
+    });
+
+    it('should throw INVALID_RESET_TOKEN for wrong token type', async () => {
+      vi.mocked(mockFastify.jwt.verify).mockReturnValue({
+        sub: mockUser.id,
+        email: mockUser.email,
+        type: 'access', // Wrong type
+      } as never);
+
+      await expect(
+        authService.resetPassword('wrong-type-token', 'NewPass123!')
+      ).rejects.toMatchObject({
+        code: 'INVALID_RESET_TOKEN',
+      });
+    });
+
+    it('should throw INVALID_RESET_TOKEN for non-existent user', async () => {
+      vi.mocked(mockUserRepository.findById).mockResolvedValue(null);
+
+      await expect(authService.resetPassword('valid-token', 'NewPass123!')).rejects.toMatchObject({
+        code: 'INVALID_RESET_TOKEN',
+      });
+    });
+
+    it('should throw USER_INACTIVE for inactive user', async () => {
+      vi.mocked(mockUserRepository.findById).mockResolvedValue({
+        ...mockUser,
+        isActive: false,
+      });
+
+      await expect(authService.resetPassword('valid-token', 'NewPass123!')).rejects.toMatchObject({
+        code: 'USER_INACTIVE',
+      });
+    });
+
+    it('should throw INVALID_RESET_TOKEN for email mismatch', async () => {
+      vi.mocked(mockFastify.jwt.verify).mockReturnValue({
+        sub: mockUser.id,
+        email: 'different@example.com', // Different email
+        type: 'reset',
+      } as never);
+
+      await expect(authService.resetPassword('valid-token', 'NewPass123!')).rejects.toMatchObject({
+        code: 'INVALID_RESET_TOKEN',
+      });
+    });
+
+    it('should throw INVALID_RESET_TOKEN for expired token', async () => {
+      vi.mocked(mockFastify.jwt.verify).mockImplementation(() => {
+        throw new Error('Token expired');
+      });
+
+      await expect(authService.resetPassword('expired-token', 'NewPass123!')).rejects.toMatchObject(
+        {
+          code: 'INVALID_RESET_TOKEN',
+        }
+      );
+    });
+  });
 });
 
 describe('AuthError', () => {
@@ -386,6 +503,8 @@ describe('AuthErrors', () => {
     expect(AuthErrors.EMAIL_EXISTS).toBeDefined();
     expect(AuthErrors.INVALID_TOKEN).toBeDefined();
     expect(AuthErrors.INVALID_REFRESH_TOKEN).toBeDefined();
+    expect(AuthErrors.INVALID_RESET_TOKEN).toBeDefined();
     expect(AuthErrors.PASSWORD_MISMATCH).toBeDefined();
+    expect(AuthErrors.EMAIL_SERVICE_UNAVAILABLE).toBeDefined();
   });
 });

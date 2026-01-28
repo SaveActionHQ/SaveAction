@@ -3,7 +3,14 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { registerSchema, loginSchema, refreshSchema, changePasswordSchema } from './types.js';
+import {
+  registerSchema,
+  loginSchema,
+  refreshSchema,
+  changePasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
+} from './types.js';
 
 describe('Authentication Schemas', () => {
   describe('registerSchema', () => {
@@ -289,6 +296,177 @@ describe('Authentication Schemas', () => {
       };
 
       const result = changePasswordSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('forgotPasswordSchema', () => {
+    it('should validate valid email', () => {
+      const validData = {
+        email: 'test@example.com',
+      };
+
+      const result = forgotPasswordSchema.safeParse(validData);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.email).toBe('test@example.com');
+      }
+    });
+
+    it('should normalize email to lowercase', () => {
+      const validData = {
+        email: 'TEST@EXAMPLE.COM',
+      };
+
+      const result = forgotPasswordSchema.safeParse(validData);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.email).toBe('test@example.com');
+      }
+    });
+
+    it('should trim email whitespace', () => {
+      const validData = {
+        email: '  test@example.com  ',
+      };
+
+      const result = forgotPasswordSchema.safeParse(validData);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.email).toBe('test@example.com');
+      }
+    });
+
+    it('should reject invalid email', () => {
+      const invalidData = {
+        email: 'not-an-email',
+      };
+
+      const result = forgotPasswordSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].path).toContain('email');
+      }
+    });
+
+    it('should reject empty email', () => {
+      const invalidData = {
+        email: '',
+      };
+
+      const result = forgotPasswordSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject missing email', () => {
+      const invalidData = {};
+
+      const result = forgotPasswordSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('resetPasswordSchema', () => {
+    it('should validate valid reset data', () => {
+      const validData = {
+        token: 'valid-jwt-token-here',
+        newPassword: 'NewPassword123',
+      };
+
+      const result = resetPasswordSchema.safeParse(validData);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.data.token).toBe('valid-jwt-token-here');
+        expect(result.data.newPassword).toBe('NewPassword123');
+      }
+    });
+
+    it('should reject empty token', () => {
+      const invalidData = {
+        token: '',
+        newPassword: 'NewPassword123',
+      };
+
+      const result = resetPasswordSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].path).toContain('token');
+      }
+    });
+
+    it('should reject missing token', () => {
+      const invalidData = {
+        newPassword: 'NewPassword123',
+      };
+
+      const result = resetPasswordSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject weak password', () => {
+      const invalidData = {
+        token: 'valid-token',
+        newPassword: 'weak', // Too short, missing requirements
+      };
+
+      const result = resetPasswordSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+      if (!result.success) {
+        expect(result.error.issues[0].path).toContain('newPassword');
+      }
+    });
+
+    it('should reject password without uppercase', () => {
+      const invalidData = {
+        token: 'valid-token',
+        newPassword: 'password123', // No uppercase
+      };
+
+      const result = resetPasswordSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject password without lowercase', () => {
+      const invalidData = {
+        token: 'valid-token',
+        newPassword: 'PASSWORD123', // No lowercase
+      };
+
+      const result = resetPasswordSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject password without number', () => {
+      const invalidData = {
+        token: 'valid-token',
+        newPassword: 'PasswordOnly', // No number
+      };
+
+      const result = resetPasswordSchema.safeParse(invalidData);
+
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject password over max length', () => {
+      const invalidData = {
+        token: 'valid-token',
+        newPassword: 'Password1' + 'x'.repeat(120), // Over 128 chars
+      };
+
+      const result = resetPasswordSchema.safeParse(invalidData);
 
       expect(result.success).toBe(false);
     });

@@ -12,6 +12,7 @@ import {
   jwtPlugin,
 } from './plugins/index.js';
 import authRoutes from './routes/auth.js';
+import { EmailService } from './services/EmailService.js';
 import type { Env } from './config/index.js';
 
 export interface AppOptions {
@@ -98,6 +99,38 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       refreshTokenExpiry: '7d',
     });
 
+    // Initialize email service if SMTP is configured
+    let emailService: EmailService | undefined;
+    if (env.SMTP_HOST && env.SMTP_FROM) {
+      emailService = new EmailService({
+        host: env.SMTP_HOST,
+        port: env.SMTP_PORT,
+        secure: env.SMTP_SECURE,
+        user: env.SMTP_USER,
+        pass: env.SMTP_PASS,
+        from: env.SMTP_FROM,
+        fromName: env.SMTP_FROM_NAME,
+      });
+
+      try {
+        await emailService.initialize();
+        app.log.info('Email service initialized');
+      } catch (error) {
+        app.log.warn(
+          { error },
+          'Failed to initialize email service - password reset will be unavailable'
+        );
+        emailService = undefined;
+      }
+
+      // Close email service on app close
+      app.addHook('onClose', async () => {
+        if (emailService) {
+          await emailService.close();
+        }
+      });
+    }
+
     // Register auth routes (requires both database and JWT)
     if (!skipDatabase && app.db) {
       await app.register(authRoutes, {
@@ -110,6 +143,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
         bcryptRounds: 12,
         maxLoginAttempts: 5,
         lockoutDuration: 900,
+        emailService,
+        appBaseUrl: env.APP_BASE_URL,
       });
     }
   }

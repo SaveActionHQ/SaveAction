@@ -744,6 +744,102 @@ Authorization: Bearer <access_token>
 | 401 | `PASSWORD_MISMATCH` | Current password is incorrect |
 | 401 | `UNAUTHORIZED` | Not authenticated |
 
+---
+
+#### POST /api/auth/forgot-password
+
+Request a password reset email. Always returns success to prevent email enumeration.
+
+**Request Body:**
+```json
+{
+  "email": "user@example.com"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "If an account with that email exists, a password reset link has been sent"
+  }
+}
+```
+
+**Notes:**
+- Always returns success, even if email doesn't exist (security measure)
+- Reset token is valid for 1 hour
+- Requires SMTP configuration (see environment variables below)
+- In development, if SMTP is not configured, logs the reset link to console
+
+**SMTP Environment Variables:**
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `SMTP_HOST` | No | - | SMTP server hostname |
+| `SMTP_PORT` | No | `587` | SMTP server port |
+| `SMTP_SECURE` | No | `false` | Use TLS |
+| `SMTP_USER` | No | - | SMTP username |
+| `SMTP_PASS` | No | - | SMTP password |
+| `SMTP_FROM` | No | `noreply@saveaction.dev` | Sender email |
+| `SMTP_FROM_NAME` | No | `SaveAction` | Sender name |
+| `APP_BASE_URL` | No | `http://localhost:3000` | Base URL for reset links |
+
+---
+
+#### POST /api/auth/reset-password
+
+Reset password using the token from the email.
+
+**Request Body:**
+```json
+{
+  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+  "newPassword": "NewSecurePass123"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Password reset successfully"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 400 | `VALIDATION_ERROR` | Password doesn't meet requirements |
+| 400 | `INVALID_RESET_TOKEN` | Token is invalid, expired, or already used |
+| 404 | `USER_NOT_FOUND` | User no longer exists |
+
+**Password Reset Flow:**
+
+```
+User forgot password
+        │
+        ▼
+POST /api/auth/forgot-password (email)
+        │
+        ▼
+Email with reset link sent
+(link contains JWT token valid for 1 hour)
+        │
+        ▼
+User clicks link → Frontend
+        │
+        ▼
+POST /api/auth/reset-password (token + new password)
+        │
+        ▼
+Password updated, can login with new password
+```
+
 ### Using Access Tokens
 
 Include the access token in the `Authorization` header for protected endpoints:
@@ -794,5 +890,6 @@ Registration/Login → Access Token (15 min) + Refresh Token (7 days)
 
 | Date | Changes |
 |------|---------|
+| 2026-01-27 | Added password reset flow (forgot-password, reset-password) |
 | 2026-01-26 | Added user authentication (register, login, logout, refresh, me, change-password) |
 | 2026-01-26 | Initial documentation with infrastructure, database schema, health endpoints |

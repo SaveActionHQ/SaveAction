@@ -12,12 +12,17 @@ import {
   loginSchema,
   refreshSchema,
   changePasswordSchema,
+  forgotPasswordSchema,
+  resetPasswordSchema,
   type RegisterRequest,
   type LoginRequest,
   type RefreshRequest,
   type ChangePasswordRequest,
+  type ForgotPasswordRequest,
+  type ResetPasswordRequest,
 } from '../auth/types.js';
 import type { Database } from '../db/index.js';
+import type { EmailService } from '../services/EmailService.js';
 
 /**
  * Auth routes options
@@ -31,6 +36,10 @@ interface AuthRoutesOptions {
   bcryptRounds?: number;
   maxLoginAttempts?: number;
   lockoutDuration?: number;
+  /** Email service for sending password reset emails */
+  emailService?: EmailService;
+  /** Base URL for password reset links (e.g., https://app.saveaction.dev) */
+  appBaseUrl?: string;
 }
 
 /**
@@ -84,6 +93,8 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, option
     bcryptRounds = 12,
     maxLoginAttempts = 5,
     lockoutDuration = 900,
+    emailService,
+    appBaseUrl = 'http://localhost:3000',
   } = options;
 
   // Create repository and service
@@ -474,6 +485,171 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, option
           success: true,
           data: {
             message: 'Password changed successfully',
+          },
+        });
+      } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+          return reply.status(400).send({
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Invalid request data',
+              details: error,
+            },
+          });
+        }
+        return handleAuthError(error, reply);
+      }
+    }
+  );
+
+  /**
+   * POST /auth/forgot-password - Request password reset email
+   */
+  fastify.post<{ Body: ForgotPasswordRequest }>(
+    '/forgot-password',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['email'],
+          properties: {
+            email: { type: 'string', format: 'email' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        // Validate request body
+        const validatedData = forgotPasswordSchema.parse(request.body);
+
+        // Always return success to prevent email enumeration attacks
+        const successResponse = {
+          success: true,
+          data: {
+            message:
+              'If an account exists with this email, you will receive a password reset link shortly.',
+          },
+        };
+
+        // Check if email service is available
+        if (!emailService || !emailService.isReady()) {
+          // Log warning but still return success to prevent enumeration
+          fastify.log.warn('Password reset requested but email service is not configured');
+          return reply.status(200).send(successResponse);
+        }
+
+        // Generate reset token
+        const result = await authService.generateResetToken(validatedData.email);
+
+        if (!result) {
+          // User not found - still return success to prevent enumeration
+          return reply.status(200).send(successResponse);
+        }
+
+        // Build reset URL
+        const resetUrl = `${appBaseUrl}/reset-password?token=${encodeURIComponent(result.token)}`;
+
+        // Send password reset email
+        const emailResult = await emailService.sendPasswordResetEmail({
+          email: result.user.email,
+          name: result.user.name,
+          resetToken: result.token,
+          resetUrl,
+          expiresInMinutes: 60,
+        });
+
+        if (!emailResult.success) {
+          fastify.log.error({ error: emailResult.error }, 'Failed to send password reset email');
+          // Still return success to prevent enumeration
+        } else {
+          fastify.log.info(
+            { email: validatedData.email, messageId: emailResult.messageId },
+            'Password reset email sent'
+          );
+
+          // In development, log preview URL if available
+          if (emailResult.previewUrl) {
+            fastify.log.info({ previewUrl: emailResult.previewUrl }, 'Email preview URL');
+          }
+        }
+
+        return reply.status(200).send(successResponse);
+      } catch (error) {
+        if (error instanceof Error && error.name === 'ZodError') {
+          return reply.status(400).send({
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'Invalid request data',
+              details: error,
+            },
+          });
+        }
+        return handleAuthError(error, reply);
+      }
+    }
+  );
+
+  /**
+   * POST /auth/reset-password - Reset password with token
+   */
+  fastify.post<{ Body: ResetPasswordRequest }>(
+    '/reset-password',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['token', 'newPassword'],
+          properties: {
+            token: { type: 'string' },
+            newPassword: { type: 'string', minLength: 8 },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  message: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        // Validate request body
+        const validatedData = resetPasswordSchema.parse(request.body);
+
+        // Reset password
+        await authService.resetPassword(validatedData.token, validatedData.newPassword);
+
+        return reply.status(200).send({
+          success: true,
+          data: {
+            message:
+              'Password has been reset successfully. You can now log in with your new password.',
           },
         });
       } catch (error) {
