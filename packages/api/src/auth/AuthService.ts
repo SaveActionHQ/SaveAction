@@ -3,11 +3,13 @@
  *
  * Handles user authentication, registration, and token management.
  * Uses bcrypt for password hashing and JWT for token generation.
+ * Integrates with LockoutService for Redis-based brute force protection.
  */
 
 import bcrypt from 'bcrypt';
 import type { FastifyInstance } from 'fastify';
 import type { UserRepository, SafeUser } from '../repositories/UserRepository.js';
+import type { LockoutService } from '../services/LockoutService.js';
 import type {
   AuthTokens,
   RegisterRequest,
@@ -120,7 +122,8 @@ export class AuthService {
   constructor(
     private readonly fastify: FastifyInstance,
     private readonly userRepository: UserRepository,
-    config?: Partial<AuthConfig>
+    config?: Partial<AuthConfig>,
+    private readonly lockoutService?: LockoutService
   ) {
     this.config = { ...DEFAULT_CONFIG, ...config };
   }
@@ -173,8 +176,13 @@ export class AuthService {
       throw AuthErrors.USER_INACTIVE;
     }
 
-    // Check if account is locked
-    if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
+    // Check if account is locked (Redis-based if available, otherwise DB-based)
+    if (this.lockoutService) {
+      const isLocked = await this.lockoutService.isLocked(user.id);
+      if (isLocked) {
+        throw AuthErrors.USER_LOCKED;
+      }
+    } else if (user.lockedUntil && new Date(user.lockedUntil) > new Date()) {
       throw AuthErrors.USER_LOCKED;
     }
 
@@ -182,19 +190,34 @@ export class AuthService {
     const validPassword = await bcrypt.compare(data.password, user.passwordHash);
 
     if (!validPassword) {
-      // Increment failed attempts
-      const attempts = await this.userRepository.incrementFailedAttempts(user.id);
-
-      // Lock account if max attempts exceeded
-      if (attempts >= this.config.maxLoginAttempts) {
-        await this.userRepository.lockAccount(user.id, this.config.lockoutDuration);
-        throw AuthErrors.USER_LOCKED;
+      // Record failed attempt (Redis-based if available, otherwise DB-based)
+      if (this.lockoutService) {
+        const status = await this.lockoutService.recordFailedAttempt(
+          user.id,
+          user.email,
+          ip || undefined
+        );
+        if (status.isLocked) {
+          throw AuthErrors.USER_LOCKED;
+        }
+      } else {
+        // Fallback to database-based tracking
+        const attempts = await this.userRepository.incrementFailedAttempts(user.id);
+        if (attempts >= this.config.maxLoginAttempts) {
+          await this.userRepository.lockAccount(user.id, this.config.lockoutDuration);
+          throw AuthErrors.USER_LOCKED;
+        }
       }
 
       throw AuthErrors.INVALID_CREDENTIALS;
     }
 
-    // Update last login and reset failed attempts
+    // Successful login - clear lockout state
+    if (this.lockoutService) {
+      await this.lockoutService.onSuccessfulLogin(user.id, user.email, ip || undefined);
+    }
+
+    // Update last login and reset failed attempts (DB)
     await this.userRepository.updateLastLogin(user.id, ip || null);
 
     // Generate tokens
