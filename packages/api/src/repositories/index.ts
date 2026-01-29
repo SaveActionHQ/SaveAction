@@ -12,3 +12,14 @@ export type {
 
 export { ApiTokenRepository } from './ApiTokenRepository.js';
 export type { ApiTokenCreateData, SafeApiToken, ApiTokenWithHash } from './ApiTokenRepository.js';
+
+export { RecordingRepository } from './RecordingRepository.js';
+export type {
+  RecordingCreateData,
+  RecordingUpdateData,
+  RecordingListFilters,
+  PaginationOptions,
+  PaginatedResult,
+  SafeRecording,
+  RecordingSummary,
+} from './RecordingRepository.js';

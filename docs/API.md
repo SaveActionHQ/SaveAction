@@ -1,7 +1,7 @@
 # SaveAction REST API Documentation
 
-> **Status:** Work in Progress  
-> **Last Updated:** January 26, 2026
+> **Status:** Phase 3 - API Development  
+> **Last Updated:** January 30, 2026
 
 This document covers the SaveAction REST API (`@saveaction/api`). As features are implemented, this doc will be updated.
 
@@ -15,7 +15,8 @@ This document covers the SaveAction REST API (`@saveaction/api`). As features ar
 - [Health Endpoints](#health-endpoints)
 - [Queue Status](#queue-status)
 - [Authentication](#authentication)
-- [Recordings API](#recordings-api) _(planned)_
+- [API Tokens](#api-tokens)
+- [Recordings API](#recordings-api)
 - [Runs API](#runs-api) _(planned)_
 
 ---
@@ -878,9 +879,604 @@ Registration/Login → Access Token (15 min) + Refresh Token (7 days)
 
 ---
 
+## API Tokens
+
+API tokens provide programmatic access to the SaveAction API. They are ideal for CI/CD pipelines and automation scripts.
+
+### Token Format
+
+- **Full Token:** `sa_live_<32-character-random-string>`
+- **Display Format:** `sa_live_abc...xyz` (prefix + suffix, full token never shown again)
+- **Storage:** SHA-256 hash stored in database (raw token never stored)
+
+### Available Scopes
+
+| Scope | Description |
+|-------|-------------|
+| `recordings:read` | Read recordings |
+| `recordings:write` | Create, update, delete recordings |
+| `runs:read` | Read test run results |
+| `runs:write` | Execute test runs |
+| `*` | All permissions |
+
+### Endpoints
+
+All API token endpoints require JWT authentication.
+
+---
+
+#### POST /api/tokens
+
+Create a new API token.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request Body:**
+```json
+{
+  "name": "CI/CD Pipeline Token",
+  "scopes": ["recordings:read", "runs:write"],
+  "expiresAt": "2027-01-01T00:00:00.000Z"
+}
+```
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `name` | Yes | string | Token name (1-255 chars) |
+| `scopes` | No | string[] | Permissions (default: all) |
+| `expiresAt` | No | ISO 8601 | Expiration date (null = never) |
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "CI/CD Pipeline Token",
+    "token": "sa_live_abc123def456ghi789jkl012mno345pq",
+    "tokenPrefix": "sa_live_abc",
+    "tokenSuffix": "345pq",
+    "scopes": ["recordings:read", "runs:write"],
+    "expiresAt": "2027-01-01T00:00:00.000Z",
+    "createdAt": "2026-01-30T12:00:00.000Z"
+  }
+}
+```
+
+> ⚠️ **Important:** The full `token` value is only shown once. Store it securely!
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 400 | `VALIDATION_ERROR` | Invalid request data |
+| 401 | `UNAUTHORIZED` | Not authenticated |
+| 409 | `TOKEN_LIMIT_REACHED` | Maximum tokens per user (10) |
+
+---
+
+#### GET /api/tokens
+
+List all tokens for the authenticated user.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `active` | boolean | false | Only return active (non-revoked, non-expired) tokens |
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "tokens": [
+      {
+        "id": "550e8400-e29b-41d4-a716-446655440000",
+        "name": "CI/CD Pipeline Token",
+        "tokenPrefix": "sa_live_abc",
+        "tokenSuffix": "345pq",
+        "scopes": ["recordings:read", "runs:write"],
+        "lastUsedAt": "2026-01-30T10:00:00.000Z",
+        "useCount": 42,
+        "expiresAt": "2027-01-01T00:00:00.000Z",
+        "revokedAt": null,
+        "createdAt": "2026-01-30T12:00:00.000Z"
+      }
+    ],
+    "total": 1
+  }
+}
+```
+
+---
+
+#### GET /api/tokens/:id
+
+Get details of a specific token.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "CI/CD Pipeline Token",
+    "tokenPrefix": "sa_live_abc",
+    "tokenSuffix": "345pq",
+    "scopes": ["recordings:read", "runs:write"],
+    "lastUsedAt": "2026-01-30T10:00:00.000Z",
+    "useCount": 42,
+    "expiresAt": "2027-01-01T00:00:00.000Z",
+    "revokedAt": null,
+    "createdAt": "2026-01-30T12:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 401 | `UNAUTHORIZED` | Not authenticated |
+| 404 | `TOKEN_NOT_FOUND` | Token does not exist or not owned by user |
+
+---
+
+#### POST /api/tokens/:id/revoke
+
+Revoke a token (soft delete - can be viewed but not used).
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Request Body (optional):**
+```json
+{
+  "reason": "Compromised token"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "CI/CD Pipeline Token",
+    "revokedAt": "2026-01-30T14:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 400 | `TOKEN_ALREADY_REVOKED` | Token was already revoked |
+| 404 | `TOKEN_NOT_FOUND` | Token does not exist |
+
+---
+
+#### DELETE /api/tokens/:id
+
+Permanently delete a token.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Token deleted successfully"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 404 | `TOKEN_NOT_FOUND` | Token does not exist |
+
+---
+
 ## Recordings API
 
-> 🚧 **Coming Soon** - CRUD operations for recordings
+Recordings are test scripts captured by the SaveAction browser extension. They contain a sequence of user actions (clicks, inputs, navigation) that can be replayed for automated testing.
+
+### Recording Data Structure
+
+A recording contains:
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `id` | string | Original recording ID from extension (rec_*) |
+| `testName` | string | Name of the test |
+| `url` | string | Starting URL |
+| `startTime` | ISO 8601 | When recording started |
+| `endTime` | ISO 8601 | When recording ended |
+| `viewport` | object | Browser viewport size |
+| `userAgent` | string | Browser user agent |
+| `actions` | array | Array of recorded actions |
+| `version` | string | Recording schema version |
+
+### Endpoints
+
+All recording endpoints require JWT authentication.
+
+---
+
+#### POST /api/recordings
+
+Upload a new recording.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "name": "Login Test",
+  "description": "Tests the login flow",
+  "tags": ["smoke", "auth"],
+  "data": {
+    "id": "rec_1234567890",
+    "testName": "Login Test",
+    "url": "https://example.com/login",
+    "startTime": "2026-01-30T10:00:00.000Z",
+    "endTime": "2026-01-30T10:01:00.000Z",
+    "viewport": { "width": 1920, "height": 1080 },
+    "userAgent": "Mozilla/5.0...",
+    "actions": [
+      { "id": "act_001", "type": "click", "timestamp": 1000, "url": "https://example.com" },
+      { "id": "act_002", "type": "input", "timestamp": 2000, "url": "https://example.com" }
+    ],
+    "version": "1.0.0"
+  }
+}
+```
+
+| Field | Required | Type | Description |
+|-------|----------|------|-------------|
+| `data` | Yes | object | Recording JSON from browser extension |
+| `name` | No | string | Custom name (defaults to data.testName) |
+| `description` | No | string | Description (max 2000 chars) |
+| `tags` | No | string[] | Tags for organization (max 20) |
+
+**Success Response (201):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Login Test",
+    "url": "https://example.com/login",
+    "description": "Tests the login flow",
+    "tags": ["smoke", "auth"],
+    "actionCount": 2,
+    "createdAt": "2026-01-30T12:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 400 | `VALIDATION_ERROR` | Invalid recording data |
+| 400 | `INVALID_DATA` | Recording fails validation |
+| 409 | `DUPLICATE_ORIGINAL_ID` | Recording with this original ID already exists |
+| 413 | `TOO_LARGE` | Recording exceeds 10MB limit |
+
+---
+
+#### GET /api/recordings
+
+List recordings with filtering and pagination.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters:**
+
+| Param | Type | Default | Description |
+|-------|------|---------|-------------|
+| `page` | integer | 1 | Page number (1-based) |
+| `limit` | integer | 20 | Items per page (max 100) |
+| `search` | string | - | Search in name and description |
+| `tags` | string | - | Filter by tags (comma-separated) |
+| `url` | string | - | Filter by starting URL |
+| `sortBy` | string | `updatedAt` | Sort field: `name`, `createdAt`, `updatedAt`, `actionCount` |
+| `sortOrder` | string | `desc` | Sort order: `asc`, `desc` |
+| `includeDeleted` | boolean | false | Include soft-deleted recordings |
+
+**Example:**
+```
+GET /api/recordings?page=1&limit=10&tags=smoke,auth&sortBy=name&sortOrder=asc
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Login Test",
+      "url": "https://example.com/login",
+      "description": "Tests the login flow",
+      "originalId": "rec_1234567890",
+      "tags": ["smoke", "auth"],
+      "actionCount": 2,
+      "estimatedDurationMs": 60000,
+      "schemaVersion": "1.0.0",
+      "dataSizeBytes": 1500,
+      "createdAt": "2026-01-30T12:00:00.000Z",
+      "updatedAt": "2026-01-30T12:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 10,
+    "total": 1,
+    "totalPages": 1,
+    "hasNext": false,
+    "hasPrevious": false
+  }
+}
+```
+
+---
+
+#### GET /api/recordings/tags
+
+Get all tags used by the current user.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": ["smoke", "auth", "checkout", "regression"]
+}
+```
+
+---
+
+#### GET /api/recordings/:id
+
+Get a specific recording with full data.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Login Test",
+    "url": "https://example.com/login",
+    "description": "Tests the login flow",
+    "originalId": "rec_1234567890",
+    "tags": ["smoke", "auth"],
+    "data": {
+      "id": "rec_1234567890",
+      "testName": "Login Test",
+      "url": "https://example.com/login",
+      "actions": [...],
+      "version": "1.0.0"
+    },
+    "actionCount": 2,
+    "estimatedDurationMs": 60000,
+    "schemaVersion": "1.0.0",
+    "dataSizeBytes": 1500,
+    "deletedAt": null,
+    "createdAt": "2026-01-30T12:00:00.000Z",
+    "updatedAt": "2026-01-30T12:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 403 | `NOT_AUTHORIZED` | Recording belongs to another user |
+| 404 | `RECORDING_NOT_FOUND` | Recording does not exist |
+
+---
+
+#### GET /api/recordings/:id/export
+
+Download recording as JSON file (for CLI import).
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Response Headers:**
+```
+Content-Type: application/json
+Content-Disposition: attachment; filename="Login Test.json"
+```
+
+**Response Body:**
+Returns the raw recording JSON data, suitable for use with the SaveAction CLI:
+
+```bash
+# Download and run
+curl -H "Authorization: Bearer $TOKEN" \
+  "http://localhost:3001/api/recordings/550e8400.../export" \
+  -o recording.json
+
+saveaction run recording.json
+```
+
+---
+
+#### PUT /api/recordings/:id
+
+Update a recording's metadata or data.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "name": "Updated Login Test",
+  "description": "Updated description",
+  "tags": ["smoke", "auth", "critical"],
+  "data": { ... }
+}
+```
+
+All fields are optional. Only provided fields are updated.
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Updated Login Test",
+    "url": "https://example.com/login",
+    "description": "Updated description",
+    "tags": ["smoke", "auth", "critical"],
+    "actionCount": 2,
+    "updatedAt": "2026-01-30T14:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 403 | `NOT_AUTHORIZED` | Recording belongs to another user |
+| 404 | `RECORDING_NOT_FOUND` | Recording does not exist |
+| 413 | `TOO_LARGE` | Updated data exceeds 10MB limit |
+
+---
+
+#### DELETE /api/recordings/:id
+
+Soft delete a recording (can be restored).
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Recording deleted successfully"
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 403 | `NOT_AUTHORIZED` | Recording belongs to another user |
+| 404 | `RECORDING_NOT_FOUND` | Recording does not exist |
+
+---
+
+#### POST /api/recordings/:id/restore
+
+Restore a soft-deleted recording.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Login Test",
+    "deletedAt": null,
+    "updatedAt": "2026-01-30T15:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 400 | `NOT_DELETED` | Recording is not deleted |
+| 403 | `NOT_AUTHORIZED` | Recording belongs to another user |
+| 404 | `RECORDING_NOT_FOUND` | Recording does not exist |
+
+---
+
+#### DELETE /api/recordings/:id/permanent
+
+Permanently delete a recording (cannot be undone).
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Recording permanently deleted"
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 403 | `NOT_AUTHORIZED` | Recording belongs to another user |
+| 404 | `RECORDING_NOT_FOUND` | Recording does not exist |
 
 ---
 
@@ -894,6 +1490,8 @@ Registration/Login → Access Token (15 min) + Refresh Token (7 days)
 
 | Date | Changes |
 |------|---------|
+| 2026-01-30 | Added Recordings CRUD API (upload, list, get, update, delete, restore, export) |
+| 2026-01-30 | Added API Tokens management (create, list, get, revoke, delete) |
 | 2026-01-27 | Added password reset flow (forgot-password, reset-password) |
 | 2026-01-26 | Added user authentication (register, login, logout, refresh, me, change-password) |
 | 2026-01-26 | Initial documentation with infrastructure, database schema, health endpoints |

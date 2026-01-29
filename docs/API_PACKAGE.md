@@ -1,11 +1,11 @@
 # API Package (@saveaction/api)
 
-> **Status:** Phase 3 - Foundation Complete  
-> **Last Updated:** January 25, 2026
+> **Status:** Phase 3 - API Development Active  
+> **Last Updated:** January 30, 2026
 
 ## Overview
 
-The `@saveaction/api` package is a Fastify-based REST API server that will serve as the backend for the SaveAction platform. It provides endpoints for managing recordings, executing tests, and user authentication.
+The `@saveaction/api` package is a Fastify-based REST API server that serves as the backend for the SaveAction platform. It provides endpoints for managing recordings, executing tests, and user authentication.
 
 ## Current State
 
@@ -20,14 +20,18 @@ The `@saveaction/api` package is a Fastify-based REST API server that will serve
 | Health endpoints | `/api/health`, `/api/health/detailed`, `/api/health/live`, `/api/health/ready` |
 | Graceful shutdown | Handles SIGTERM/SIGINT for clean container stops |
 | Redis integration | ioredis client with connection pooling, health checks |
-| Unit tests | 114 tests covering all components |
+| Database layer | Drizzle ORM + PostgreSQL with migrations |
+| BullMQ job queues | Test-runs, cleanup, scheduled-tests queues |
+| Authentication | JWT + refresh tokens, password reset, account lockout |
+| API Tokens | Programmatic API access with scopes |
+| Recordings API | Full CRUD with filtering, pagination, soft delete |
+| Unit tests | 506 tests covering all components |
 
 ### ⏳ Not Yet Implemented
 
-- Database layer (Drizzle ORM + PostgreSQL)
-- Authentication (JWT + refresh tokens)
-- API routes (recordings, runs, users)
-- BullMQ job queue for async test execution
+- Runs API (test execution and results)
+- Webhooks API (event notifications)
+- Schedules API (cron-based test runs)
 
 ## Architecture
 
@@ -39,16 +43,36 @@ packages/api/
 │   ├── app.ts                # Fastify app factory
 │   ├── config/
 │   │   └── env.ts            # Environment validation
+│   ├── db/
+│   │   ├── index.ts          # Database connection
+│   │   └── schema/           # Drizzle schema definitions
 │   ├── errors/
-│   │   ├── index.ts          # Exports
 │   │   └── ApiError.ts       # Custom error class + factories
 │   ├── plugins/
-│   │   ├── index.ts          # Plugin exports
 │   │   ├── errorHandler.ts   # Global error handler
-│   │   └── redis.ts          # Redis connection plugin
-│   └── redis/
-│       ├── index.ts          # Redis exports
-│       └── RedisClient.ts    # Redis client wrapper
+│   │   ├── redis.ts          # Redis connection plugin
+│   │   └── bullmq.ts         # BullMQ queue plugin
+│   ├── queues/
+│   │   └── JobQueueManager.ts # Job queue management
+│   ├── redis/
+│   │   └── RedisClient.ts    # Redis client wrapper
+│   ├── repositories/
+│   │   ├── UserRepository.ts
+│   │   ├── ApiTokenRepository.ts
+│   │   └── RecordingRepository.ts
+│   ├── services/
+│   │   ├── ApiTokenService.ts
+│   │   ├── EmailService.ts
+│   │   ├── LockoutService.ts
+│   │   └── RecordingService.ts
+│   ├── auth/
+│   │   ├── AuthService.ts    # JWT authentication
+│   │   └── types.ts          # Auth types
+│   └── routes/
+│       ├── auth.ts           # Authentication routes
+│       ├── tokens.ts         # API token routes
+│       └── recordings.ts     # Recording CRUD routes
+├── drizzle/                  # Database migrations
 ├── package.json
 ├── tsconfig.json
 └── vitest.config.ts
