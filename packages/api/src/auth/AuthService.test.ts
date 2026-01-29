@@ -475,6 +475,140 @@ describe('AuthService', () => {
       );
     });
   });
+
+  describe('login with LockoutService', () => {
+    let mockLockoutService: {
+      isLocked: ReturnType<typeof vi.fn>;
+      recordFailedAttempt: ReturnType<typeof vi.fn>;
+      onSuccessfulLogin: ReturnType<typeof vi.fn>;
+    };
+    let authServiceWithLockout: AuthService;
+
+    beforeEach(() => {
+      mockLockoutService = {
+        isLocked: vi.fn().mockResolvedValue(false),
+        recordFailedAttempt: vi.fn().mockResolvedValue({
+          isLocked: false,
+          failedAttempts: 1,
+          remainingAttempts: 4,
+          lockoutRemaining: 0,
+          lockoutCount: 0,
+        }),
+        onSuccessfulLogin: vi.fn().mockResolvedValue(undefined),
+      };
+
+      authServiceWithLockout = new AuthService(
+        mockFastify,
+        mockUserRepository,
+        {
+          jwtSecret: 'test-secret-key-32-chars-long!!!!',
+          jwtRefreshSecret: 'test-refresh-secret-32-chars!!!!',
+          accessTokenExpiry: '15m',
+          refreshTokenExpiry: '7d',
+          bcryptRounds: 12,
+          maxLoginAttempts: 5,
+          lockoutDuration: 900,
+        },
+        mockLockoutService as never
+      );
+    });
+
+    it('should check Redis lockout before database lockout', async () => {
+      mockLockoutService.isLocked.mockResolvedValue(true);
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+      const loginData = {
+        email: 'test@example.com',
+        password: 'Password123!',
+      };
+
+      await expect(authServiceWithLockout.login(loginData)).rejects.toMatchObject({
+        code: 'USER_LOCKED',
+        statusCode: 423,
+      });
+
+      expect(mockLockoutService.isLocked).toHaveBeenCalledWith(mockUser.id);
+      // Should not check password when locked
+      expect(bcrypt.compare).not.toHaveBeenCalled();
+    });
+
+    it('should record failed attempt in Redis on wrong password', async () => {
+      vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
+
+      const loginData = {
+        email: 'test@example.com',
+        password: 'WrongPassword!',
+      };
+
+      await expect(authServiceWithLockout.login(loginData, '192.168.1.1')).rejects.toMatchObject({
+        code: 'INVALID_CREDENTIALS',
+      });
+
+      expect(mockLockoutService.recordFailedAttempt).toHaveBeenCalledWith(
+        mockUser.id,
+        mockUser.email,
+        '192.168.1.1'
+      );
+      // Should not use database-based lockout
+      expect(mockUserRepository.incrementFailedAttempts).not.toHaveBeenCalled();
+    });
+
+    it('should throw USER_LOCKED when Redis lockout triggered', async () => {
+      vi.mocked(bcrypt.compare).mockResolvedValue(false as never);
+      mockLockoutService.recordFailedAttempt.mockResolvedValue({
+        isLocked: true,
+        failedAttempts: 5,
+        remainingAttempts: 0,
+        lockoutRemaining: 900,
+        lockoutCount: 1,
+      });
+
+      const loginData = {
+        email: 'test@example.com',
+        password: 'WrongPassword!',
+      };
+
+      await expect(authServiceWithLockout.login(loginData)).rejects.toMatchObject({
+        code: 'USER_LOCKED',
+        statusCode: 423,
+      });
+    });
+
+    it('should clear lockout on successful login', async () => {
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+      const loginData = {
+        email: 'test@example.com',
+        password: 'Password123!',
+      };
+
+      await authServiceWithLockout.login(loginData, '192.168.1.1');
+
+      expect(mockLockoutService.onSuccessfulLogin).toHaveBeenCalledWith(
+        mockUser.id,
+        mockUser.email,
+        '192.168.1.1'
+      );
+    });
+
+    it('should work without IP address', async () => {
+      vi.mocked(bcrypt.compare).mockResolvedValue(true as never);
+
+      const loginData = {
+        email: 'test@example.com',
+        password: 'Password123!',
+      };
+
+      await authServiceWithLockout.login(loginData);
+
+      expect(mockLockoutService.isLocked).toHaveBeenCalledWith(mockUser.id);
+      expect(mockLockoutService.onSuccessfulLogin).toHaveBeenCalledWith(
+        mockUser.id,
+        mockUser.email,
+        undefined
+      );
+    });
+  });
 });
 
 describe('AuthError', () => {

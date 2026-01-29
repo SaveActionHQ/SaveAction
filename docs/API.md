@@ -611,9 +611,13 @@ Authenticate with email and password.
 | 403 | `USER_INACTIVE` | Account is deactivated |
 | 423 | `USER_LOCKED` | Account temporarily locked (too many failed attempts) |
 
-**Account Lockout:**
+**Account Lockout (Brute Force Protection):**
 - After 5 failed login attempts, account is locked for 15 minutes
-- Failed attempts reset on successful login
+- **Exponential Backoff:** Repeated lockouts double in duration (15min → 30min → 1hr → 2hr...), capped at 24 hours
+- Failed attempts counter expires after 15 minutes of no attempts (TTL auto-expiry)
+- Lockout state clears on successful login
+- When Redis is available (recommended), lockout state is tracked in Redis for better performance
+- Lockout events are logged for monitoring (`failed_attempt`, `lockout`, `unlock`, `manual_unlock`)
 
 ---
 

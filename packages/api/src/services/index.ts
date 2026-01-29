@@ -11,3 +11,6 @@ export type {
   EmailResult,
   PasswordResetEmailData,
 } from './EmailService.js';
+
+export { LockoutService } from './LockoutService.js';
+export type { LockoutConfig, LockoutStatus, LockoutEvent } from './LockoutService.js';

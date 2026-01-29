@@ -246,12 +246,12 @@
 - **Labels:** `feature`, `auth`, `security`
 - **Description:** Optional email verification on registration. Send verification email with JWT token (24hr expiry). POST /api/auth/verify-email validates token. Resend verification endpoint with rate limiting. Note: Often unnecessary for self-hosted deployments where users are trusted internal employees.
 
-### ⏳ TODO - Account Lockout (Brute Force Protection)
+### ✅ DONE - Account Lockout (Brute Force Protection)
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `security`, `auth`
-- **Description:** Lock account after 5 failed login attempts. Lockout duration: 15 minutes (exponential backoff on repeated lockouts). Track failed attempts in Redis with TTL for auto-expiry. Auto-unlocks when TTL expires. Log lockout events for monitoring.
+- **Description:** Implemented Redis-based account lockout with LockoutService. Lock account after 5 failed login attempts. Lockout duration: 15 minutes (exponential backoff on repeated lockouts - doubles each time, max 24 hours). Track failed attempts in Redis with TTL for auto-expiry. Auto-unlocks when TTL expires. Event system for logging lockout events (failed_attempt, lockout, unlock, manual_unlock). Backward compatible - AuthService uses LockoutService if provided, falls back to DB-based tracking. 32 tests added (27 for LockoutService, 5 for AuthService integration).
 
 ### ⏳ TODO - API Token Management
 
