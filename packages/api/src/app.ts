@@ -13,6 +13,7 @@ import {
 } from './plugins/index.js';
 import authRoutes from './routes/auth.js';
 import apiTokenRoutes from './routes/tokens.js';
+import recordingRoutes from './routes/recordings.js';
 import { EmailService } from './services/EmailService.js';
 import type { Env } from './config/index.js';
 
@@ -153,6 +154,14 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
         prefix: '/api/tokens',
         db: app.db,
         maxTokensPerUser: 10,
+      });
+
+      // Register recording routes (requires both database and JWT)
+      await app.register(recordingRoutes, {
+        prefix: '/api/recordings',
+        db: app.db,
+        maxDataSizeBytes: 10 * 1024 * 1024, // 10MB
+        maxRecordingsPerUser: 0, // Unlimited
       });
     }
   }

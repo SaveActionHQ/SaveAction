@@ -17,3 +17,19 @@ export type { LockoutConfig, LockoutStatus, LockoutEvent } from './LockoutServic
 
 export { ApiTokenService, ApiTokenError, ApiTokenErrors } from './ApiTokenService.js';
 export type { ApiTokenServiceConfig } from './ApiTokenService.js';
+
+export { RecordingService, RecordingError, RecordingErrors } from './RecordingService.js';
+export type {
+  RecordingServiceConfig,
+  CreateRecordingRequest,
+  UpdateRecordingRequest,
+  ListRecordingsQuery,
+  RecordingResponse,
+  RecordingDetailResponse,
+} from './RecordingService.js';
+export {
+  createRecordingSchema,
+  updateRecordingSchema,
+  listRecordingsQuerySchema,
+  recordingDataSchema,
+} from './RecordingService.js';

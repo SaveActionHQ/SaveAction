@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** January 26, 2026
+**Last Updated:** January 30, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -258,21 +258,21 @@
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `auth`
-- **Description:** Implemented API token management with ApiTokenService and ApiTokenRepository. Token format: `sa_live_<64 hex chars>` (SHA-256 hashed for storage). Supports 8 scopes: recordings:read/write, runs:read/execute, schedules:read/write, webhooks:read/write. Features: token creation with configurable expiration, validation with usage tracking, listing (all/active), revocation with reason, scope checking utilities. Limit of 10 active tokens per user. 89 tests added (34 for types, 22 for repository, 33 for service).
+- **Description:** Implemented API token management with ApiTokenService and ApiTokenRepository. Token format: `sa_live_<64 hex chars>` (SHA-256 hashed for storage). Supports 8 scopes: recordings:read/write, runs:read/execute, schedules:read/write, webhooks:read/write. Features: token creation with configurable expiration, validation with usage tracking, listing (all/active), revocation with reason, scope checking utilities. Limit of 10 active tokens per user. 89 tests added (34 for types, 22 for repository, 33 for service). HTTP routes: POST /api/tokens (create), GET /api/tokens (list), GET /api/tokens/:id, POST /api/tokens/:id/revoke, DELETE /api/tokens/:id.
 
-### ⏳ TODO - Recordings CRUD API
+### ✅ DONE - Recordings CRUD API
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `feature`, `api`
-- **Description:** Implement recording endpoints: POST /api/recordings (upload), GET /api/recordings (list), GET /api/recordings/:id, PUT /api/recordings/:id, DELETE /api/recordings/:id.
+- **Description:** Implemented full recording CRUD with RecordingRepository (Drizzle ORM), RecordingService (Zod validation, business logic), and HTTP routes. Endpoints: POST /api/recordings (upload with 10MB limit, duplicate check), GET /api/recordings (list with pagination, search, tag filtering, sorting), GET /api/recordings/tags (user's tags), GET /api/recordings/:id (full data), GET /api/recordings/:id/export (JSON download for CLI), PUT /api/recordings/:id, DELETE /api/recordings/:id (soft delete), POST /api/recordings/:id/restore, DELETE /api/recordings/:id/permanent. 102 new tests (28 repository, 51 service, 23 routes). Total: 506 tests passing.
 
-### ⏳ TODO - Recording Export for CLI
+### ✅ DONE - Recording Export for CLI
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `api`, `ci-cd`
-- **Description:** Implement GET /api/recordings/:id/export endpoint to download recording JSON for CLI execution. Add GET /api/recordings?tag=<tag> to filter recordings by tag. Essential for CI/CD integration.
+- **Description:** Implemented GET /api/recordings/:id/export endpoint to download recording JSON for CLI execution. Added tag filtering to GET /api/recordings?tags=smoke,login. Essential for CI/CD integration.
 
 ### ⏳ TODO - Runs API
 
