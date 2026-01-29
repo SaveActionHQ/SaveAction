@@ -9,3 +9,6 @@ export type {
   UserWithPassword,
   SafeUser,
 } from './UserRepository.js';
+
+export { ApiTokenRepository } from './ApiTokenRepository.js';
+export type { ApiTokenCreateData, SafeApiToken, ApiTokenWithHash } from './ApiTokenRepository.js';
