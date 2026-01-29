@@ -253,12 +253,12 @@
 - **Labels:** `security`, `auth`
 - **Description:** Implemented Redis-based account lockout with LockoutService. Lock account after 5 failed login attempts. Lockout duration: 15 minutes (exponential backoff on repeated lockouts - doubles each time, max 24 hours). Track failed attempts in Redis with TTL for auto-expiry. Auto-unlocks when TTL expires. Event system for logging lockout events (failed_attempt, lockout, unlock, manual_unlock). Backward compatible - AuthService uses LockoutService if provided, falls back to DB-based tracking. 32 tests added (27 for LockoutService, 5 for AuthService integration).
 
-### ⏳ TODO - API Token Management
+### ✅ DONE - API Token Management
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `auth`
-- **Description:** Implement API token generation, listing, revocation. Token format: `sa_live_<random>`. Support scopes for permissions.
+- **Description:** Implemented API token management with ApiTokenService and ApiTokenRepository. Token format: `sa_live_<64 hex chars>` (SHA-256 hashed for storage). Supports 8 scopes: recordings:read/write, runs:read/execute, schedules:read/write, webhooks:read/write. Features: token creation with configurable expiration, validation with usage tracking, listing (all/active), revocation with reason, scope checking utilities. Limit of 10 active tokens per user. 89 tests added (34 for types, 22 for repository, 33 for service).
 
 ### ⏳ TODO - Recordings CRUD API
 

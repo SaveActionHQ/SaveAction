@@ -23,3 +23,25 @@ export {
   type PasswordOptions,
   type AuthConfig,
 } from './types.js';
+
+// API Token types and utilities
+export {
+  API_TOKEN_SCOPES,
+  SCOPE_GROUPS,
+  isValidScope,
+  validateScopes,
+  hasScope,
+  hasAllScopes,
+  hasAnyScope,
+  TOKEN_PREFIX_LIVE,
+  TOKEN_PREFIX_TEST,
+  createTokenSchema,
+  revokeTokenSchema,
+  type ApiTokenScope,
+  type CreateTokenRequest,
+  type RevokeTokenRequest,
+  type ApiTokenResponse,
+  type ApiTokenCreateResponse,
+  type ApiTokenListResponse,
+  type ValidatedApiToken,
+} from './api-token-types.js';

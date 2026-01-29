@@ -12,6 +12,7 @@ import {
   jwtPlugin,
 } from './plugins/index.js';
 import authRoutes from './routes/auth.js';
+import apiTokenRoutes from './routes/tokens.js';
 import { EmailService } from './services/EmailService.js';
 import type { Env } from './config/index.js';
 
@@ -145,6 +146,13 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
         lockoutDuration: 900,
         emailService,
         appBaseUrl: env.APP_BASE_URL,
+      });
+
+      // Register API token routes (requires both database and JWT)
+      await app.register(apiTokenRoutes, {
+        prefix: '/api/tokens',
+        db: app.db,
+        maxTokensPerUser: 10,
       });
     }
   }
