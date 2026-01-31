@@ -51,10 +51,6 @@ export interface CleanupJobData extends BaseJobData {
 export interface ScheduledTestJobData extends BaseJobData {
   /** Schedule ID from database */
   scheduleId: string;
-  /** Recording IDs to execute */
-  recordingIds: string[];
-  /** User who owns the schedule */
-  userId: string;
 }
 
 /**
