@@ -44,7 +44,7 @@ enum ErrorSeverity {
  * Main Playwright test runner with enhanced error recovery and intelligent navigation
  */
 export class PlaywrightRunner {
-  private options: Required<RunOptions>;
+  private options: Required<Omit<RunOptions, 'abortSignal'>>;
   private elementLocator: ElementLocator;
   private navigationHistory: NavigationHistoryManager;
   private navigationAnalyzer: NavigationAnalyzer;
@@ -61,6 +61,9 @@ export class PlaywrightRunner {
   private lastNavigationTimestamp: number = 0;
   private skipNextPageValidation: boolean = false;
 
+  // Cancellation support
+  private abortSignal?: AbortSignal;
+
   constructor(options: RunOptions = {}, reporter?: Reporter) {
     this.options = {
       headless: options.headless ?? true,
@@ -74,10 +77,20 @@ export class PlaywrightRunner {
       maxActionDelay: options.maxActionDelay ?? 30000,
       continueOnError: options.continueOnError ?? false, // Phase 2
     };
+    this.abortSignal = options.abortSignal;
     this.elementLocator = new ElementLocator();
     this.navigationHistory = new NavigationHistoryManager();
     this.navigationAnalyzer = new NavigationAnalyzer();
     this.reporter = reporter;
+  }
+
+  /**
+   * Check if the run has been cancelled
+   */
+  private checkCancellation(): void {
+    if (this.abortSignal?.aborted) {
+      throw new Error('CANCELLED: Run was cancelled by user');
+    }
   }
 
   /**
@@ -349,6 +362,9 @@ export class PlaywrightRunner {
         const action = this.processedRecording!.actions[i];
 
         try {
+          // Check for cancellation before each action
+          this.checkCancellation();
+
           // Apply timing delay before action
           if (enableTiming && i > 0) {
             const elapsedTime = Date.now() - testStartTime;
@@ -562,6 +578,13 @@ export class PlaywrightRunner {
           // Track last action for duplicate detection
           this.lastAction = { action, timestamp: Date.now() };
         } catch (error) {
+          // Check if this is a cancellation
+          if (error instanceof Error && error.message.startsWith('CANCELLED:')) {
+            console.log('\n🛑 Run cancelled by user');
+            result.status = 'cancelled';
+            break;
+          }
+
           // Phase 2: Check if action is optional or modal-lifecycle (modals are always optional)
           const isModalAction = action.type === 'modal-lifecycle';
           if (action.isOptional || action.skipIfNotFound || isModalAction) {

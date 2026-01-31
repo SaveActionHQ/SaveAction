@@ -33,3 +33,13 @@ export {
   listRecordingsQuerySchema,
   recordingDataSchema,
 } from './RecordingService.js';
+
+export { RunnerService, RunError, RunErrors } from './RunnerService.js';
+export type {
+  RunnerServiceOptions,
+  CreateRunRequest,
+  ListRunsQuery,
+  ExecutionResult,
+  ActionExecutionResult,
+} from './RunnerService.js';
+export { createRunSchema, listRunsQuerySchema } from './RunnerService.js';

@@ -23,3 +23,14 @@ export type {
   SafeRecording,
   RecordingSummary,
 } from './RecordingRepository.js';
+
+export { RunRepository } from './RunRepository.js';
+export type {
+  RunCreateData,
+  RunUpdateData,
+  RunListFilters,
+  SafeRun,
+  RunSummary,
+  RunActionCreateData,
+  SafeRunAction,
+} from './RunRepository.js';

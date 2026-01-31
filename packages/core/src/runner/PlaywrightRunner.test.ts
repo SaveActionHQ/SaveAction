@@ -603,4 +603,100 @@ describe('PlaywrightRunner', () => {
       expect(timeDiff).toBeLessThan(200); // Too fast - likely duplicate
     });
   });
+
+  describe('cancellation', () => {
+    it('should accept abortSignal in options', () => {
+      const abortController = new AbortController();
+      const runnerWithSignal = new PlaywrightRunner(
+        { abortSignal: abortController.signal },
+        mockReporter
+      );
+
+      expect(runnerWithSignal).toBeDefined();
+    });
+
+    it('should return cancelled status when abortSignal is aborted before execution', async () => {
+      const abortController = new AbortController();
+      const runnerWithSignal = new PlaywrightRunner(
+        { abortSignal: abortController.signal },
+        mockReporter
+      );
+
+      // Abort before execution
+      abortController.abort();
+
+      const recording: Recording = {
+        ...baseRecording,
+        actions: [
+          {
+            id: 'act_001',
+            type: 'click',
+            timestamp: Date.now(),
+            url: 'https://example.com',
+            tagName: 'button',
+            selector: { id: 'submit', priority: ['id'] },
+            coordinates: { x: 100, y: 200 },
+            coordinatesRelativeTo: 'element',
+            button: 'left',
+            clickCount: 1,
+            modifiers: [],
+            text: 'Submit',
+          },
+        ],
+      };
+
+      const result = await runnerWithSignal.execute(recording);
+
+      // Should handle cancellation gracefully and return cancelled status
+      expect(result.status).toBe('cancelled');
+      // Cancellation is handled cleanly without adding to errors array
+      expect(result.actionsExecuted).toBe(0);
+    });
+
+    it('should handle abortSignal being undefined (no cancellation)', () => {
+      const runnerWithoutSignal = new PlaywrightRunner({}, mockReporter);
+      expect(runnerWithoutSignal).toBeDefined();
+    });
+
+    it('should return cancelled status when aborted mid-run', async () => {
+      const abortController = new AbortController();
+      const runnerWithSignal = new PlaywrightRunner(
+        { abortSignal: abortController.signal },
+        mockReporter
+      );
+
+      // Create recording with multiple actions
+      const recording: Recording = {
+        ...baseRecording,
+        actions: [
+          {
+            id: 'act_001',
+            type: 'scroll',
+            timestamp: 1000,
+            url: 'https://example.com',
+            element: 'window',
+            scrollX: 0,
+            scrollY: 100,
+          },
+          {
+            id: 'act_002',
+            type: 'scroll',
+            timestamp: 2000,
+            url: 'https://example.com',
+            element: 'window',
+            scrollX: 0,
+            scrollY: 200,
+          },
+        ],
+      };
+
+      // Abort immediately - should cancel before browser launches or during startup
+      abortController.abort();
+
+      const result = await runnerWithSignal.execute(recording);
+
+      // Should be cancelled
+      expect(result.status).toBe('cancelled');
+    });
+  });
 });

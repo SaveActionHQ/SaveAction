@@ -4,7 +4,7 @@ import type { Action } from '../types/index.js';
  * Result of a test run
  */
 export interface RunResult {
-  status: 'success' | 'failed' | 'partial';
+  status: 'success' | 'failed' | 'partial' | 'cancelled';
   duration: number; // milliseconds
   actionsTotal: number;
   actionsExecuted: number;
@@ -61,6 +61,9 @@ export interface RunOptions {
 
   // Phase 2: Error handling
   continueOnError?: boolean; // Default: false - continue after non-fatal errors
+
+  // Cancellation support
+  abortSignal?: AbortSignal; // Signal to cancel the run
 }
 
 /**

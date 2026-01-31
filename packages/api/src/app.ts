@@ -14,6 +14,7 @@ import {
 import authRoutes from './routes/auth.js';
 import apiTokenRoutes from './routes/tokens.js';
 import recordingRoutes from './routes/recordings.js';
+import runRoutes from './routes/runs.js';
 import { EmailService } from './services/EmailService.js';
 import type { Env } from './config/index.js';
 
@@ -163,6 +164,8 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
         maxDataSizeBytes: 10 * 1024 * 1024, // 10MB
         maxRecordingsPerUser: 0, // Unlimited
       });
+
+      // Note: Run routes registered after Redis/BullMQ initialization below
     }
   }
 
@@ -176,12 +179,26 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     });
 
     // Register BullMQ (requires Redis, unless skipped)
+    // Note: Workers are NOT registered here - they run in a separate process (worker.ts)
+    // This is intentional for production scalability:
+    // - API server handles HTTP requests only
+    // - Worker process(es) handle test execution
+    // - Workers can scale independently
     if (!skipQueues) {
       await app.register(bullmqConnectionPlugin, {
         prefix: 'saveaction',
-        enableWorkers: true,
+        enableWorkers: false, // Workers run in separate process
       });
     }
+  }
+
+  // Register run routes AFTER BullMQ (requires database, JWT, and optionally queues)
+  if (!skipAuth && !skipDatabase && app.db) {
+    await app.register(runRoutes, {
+      prefix: '/api/runs',
+      db: app.db,
+      jobQueueManager: app.queues, // Now properly initialized if Redis is configured
+    });
   }
 
   // Health check endpoint (basic)
