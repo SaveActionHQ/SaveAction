@@ -293,14 +293,14 @@
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `feature`, `database`
-- **Description:** Recordings table has soft deletes with deleted_at column. DELETE /api/recordings/:id sets deleted_at (soft delete). POST /api/recordings/:id/restore restores soft-deleted recordings. DELETE /api/recordings/:id/permanent performs hard delete. Runs table soft deletes will be implemented with Runs API. Background job for permanent deletion after 30 days is a future enhancement.
+- **Description:** Recordings table has soft deletes with deleted_at column. DELETE /api/v1/recordings/:id sets deleted_at (soft delete). POST /api/v1/recordings/:id/restore restores soft-deleted recordings. DELETE /api/v1/recordings/:id/permanent performs hard delete. Runs table soft deletes will be implemented with Runs API. Background job for permanent deletion after 30 days is a future enhancement.
 
-### ⏭️ SKIPPED - API Versioning
+### ✅ DONE - API Versioning
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `api`, `architecture`
-- **Description:** ~~Use /api/v1/ prefix for all endpoints from the start.~~ **Skipped:** Current API is v1 implicitly. Adding /api/v1/ prefix would require updating all existing routes and documentation. Will implement versioning when v2 breaking changes are needed. YAGNI for now.
+- **Description:** All API endpoints (except health/infrastructure) use `/api/v1/` prefix. Versioned routes: `/api/v1/auth/*`, `/api/v1/tokens/*`, `/api/v1/recordings/*`, `/api/v1/runs/*`. Unversioned routes: `/api/health/*`, `/api/queues/*` (infrastructure). Uses Fastify's nested `register()` with prefix option for clean grouping. Cookie paths updated to `/api/v1/auth`. Documentation updated.
 
 ### ⏳ TODO - Schedules API
 
@@ -706,7 +706,7 @@
 | -------------------------------- | ------ | ------ | ------- | ------ |
 | Phase 1: Core                    | 12     | 12     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
-| Phase 3: API                     | 35     | 22     | 1       | 12     |
+| Phase 3: API                     | 35     | 23     | 0       | 12     |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 0      | 0       | 5      |
 | Phase 4: Web                     | 9      | 0      | 0       | 9      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
@@ -714,7 +714,7 @@
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **91** | **46** | **3**   | **42** |
+| **TOTAL**                        | **91** | **47** | **2**   | **42** |
 
 ### Test Summary
 

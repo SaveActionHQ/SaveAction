@@ -136,34 +136,41 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
     // Register auth routes (requires both database and JWT)
     if (!skipDatabase && app.db) {
-      await app.register(authRoutes, {
-        prefix: '/api/auth',
-        db: app.db,
-        jwtSecret: env.JWT_SECRET,
-        jwtRefreshSecret: env.JWT_REFRESH_SECRET || env.JWT_SECRET,
-        accessTokenExpiry: '15m',
-        refreshTokenExpiry: '7d',
-        bcryptRounds: 12,
-        maxLoginAttempts: 5,
-        lockoutDuration: 900,
-        emailService,
-        appBaseUrl: env.APP_BASE_URL,
-      });
+      // Register all v1 API routes under /api/v1 prefix
+      await app.register(
+        async (v1App) => {
+          // Auth routes
+          await v1App.register(authRoutes, {
+            prefix: '/auth',
+            db: app.db!,
+            jwtSecret: env.JWT_SECRET!,
+            jwtRefreshSecret: env.JWT_REFRESH_SECRET || env.JWT_SECRET!,
+            accessTokenExpiry: '15m',
+            refreshTokenExpiry: '7d',
+            bcryptRounds: 12,
+            maxLoginAttempts: 5,
+            lockoutDuration: 900,
+            emailService,
+            appBaseUrl: env.APP_BASE_URL,
+          });
 
-      // Register API token routes (requires both database and JWT)
-      await app.register(apiTokenRoutes, {
-        prefix: '/api/tokens',
-        db: app.db,
-        maxTokensPerUser: 10,
-      });
+          // API token routes
+          await v1App.register(apiTokenRoutes, {
+            prefix: '/tokens',
+            db: app.db!,
+            maxTokensPerUser: 10,
+          });
 
-      // Register recording routes (requires both database and JWT)
-      await app.register(recordingRoutes, {
-        prefix: '/api/recordings',
-        db: app.db,
-        maxDataSizeBytes: 10 * 1024 * 1024, // 10MB
-        maxRecordingsPerUser: 0, // Unlimited
-      });
+          // Recording routes
+          await v1App.register(recordingRoutes, {
+            prefix: '/recordings',
+            db: app.db!,
+            maxDataSizeBytes: 10 * 1024 * 1024, // 10MB
+            maxRecordingsPerUser: 0, // Unlimited
+          });
+        },
+        { prefix: '/api/v1' }
+      );
 
       // Note: Run routes registered after Redis/BullMQ initialization below
     }
@@ -193,9 +200,10 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   }
 
   // Register run routes AFTER BullMQ (requires database, JWT, and optionally queues)
+  // This is registered under /api/v1 to match the versioned API pattern
   if (!skipAuth && !skipDatabase && app.db) {
     await app.register(runRoutes, {
-      prefix: '/api/runs',
+      prefix: '/api/v1/runs',
       db: app.db,
       jobQueueManager: app.queues, // Now properly initialized if Redis is configured
     });

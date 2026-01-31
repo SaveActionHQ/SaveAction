@@ -1,9 +1,18 @@
 # SaveAction REST API Documentation
 
 > **Status:** Phase 3 - API Development  
-> **Last Updated:** January 30, 2026
+> **Last Updated:** January 31, 2026
 
 This document covers the SaveAction REST API (`@saveaction/api`). As features are implemented, this doc will be updated.
+
+## API Versioning
+
+All API endpoints (except health checks) are versioned under `/api/v1/`:
+
+- **Versioned routes:** `/api/v1/auth/*`, `/api/v1/tokens/*`, `/api/v1/recordings/*`, `/api/v1/runs/*`
+- **Unversioned routes:** `/api/health/*`, `/api/queues/*` (infrastructure endpoints)
+
+This allows future breaking changes to be introduced in `/api/v2/` without affecting existing integrations.
 
 ---
 
@@ -517,7 +526,7 @@ The SaveAction API uses JWT (JSON Web Tokens) for authentication. Access tokens 
 
 ### Endpoints
 
-#### POST /api/auth/register
+#### POST /api/v1/auth/register
 
 Register a new user account.
 
@@ -569,7 +578,7 @@ Register a new user account.
 
 ---
 
-#### POST /api/auth/login
+#### POST /api/v1/auth/login
 
 Authenticate with email and password.
 
@@ -622,7 +631,7 @@ Authenticate with email and password.
 
 ---
 
-#### POST /api/auth/logout
+#### POST /api/v1/auth/logout
 
 Logout and clear refresh token cookie.
 
@@ -638,7 +647,7 @@ Logout and clear refresh token cookie.
 
 ---
 
-#### POST /api/auth/refresh
+#### POST /api/v1/auth/refresh
 
 Refresh the access token using a refresh token.
 
@@ -678,7 +687,7 @@ The refresh token can be provided:
 
 ---
 
-#### GET /api/auth/me
+#### GET /api/v1/auth/me
 
 Get the current authenticated user's info.
 
@@ -714,7 +723,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### POST /api/auth/change-password
+#### POST /api/v1/auth/change-password
 
 Change the authenticated user's password.
 
@@ -751,7 +760,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### POST /api/auth/forgot-password
+#### POST /api/v1/auth/forgot-password
 
 Request a password reset email. Always returns success to prevent email enumeration.
 
@@ -793,7 +802,7 @@ Request a password reset email. Always returns success to prevent email enumerat
 
 ---
 
-#### POST /api/auth/reset-password
+#### POST /api/v1/auth/reset-password
 
 Reset password using the token from the email.
 
@@ -829,7 +838,7 @@ Reset password using the token from the email.
 User forgot password
         │
         ▼
-POST /api/auth/forgot-password (email)
+POST /api/v1/auth/forgot-password (email)
         │
         ▼
 Email with reset link sent
@@ -839,7 +848,7 @@ Email with reset link sent
 User clicks link → Frontend
         │
         ▼
-POST /api/auth/reset-password (token + new password)
+POST /api/v1/auth/reset-password (token + new password)
         │
         ▼
 Password updated, can login with new password
@@ -850,7 +859,7 @@ Password updated, can login with new password
 Include the access token in the `Authorization` header for protected endpoints:
 
 ```http
-GET /api/auth/me
+GET /api/v1/auth/me
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
@@ -860,7 +869,7 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Registration/Login → Access Token (15 min) + Refresh Token (7 days)
                               │
                               ▼
-              Token expires → POST /api/auth/refresh
+              Token expires → POST /api/v1/auth/refresh
                               │
                               ▼
                      New Access Token (15 min)
@@ -905,7 +914,7 @@ All API token endpoints require JWT authentication.
 
 ---
 
-#### POST /api/tokens
+#### POST /api/v1/tokens
 
 Create a new API token.
 
@@ -958,7 +967,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### GET /api/tokens
+#### GET /api/v1/tokens
 
 List all tokens for the authenticated user.
 
@@ -999,7 +1008,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### GET /api/tokens/:id
+#### GET /api/v1/tokens/:id
 
 Get details of a specific token.
 
@@ -1036,7 +1045,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### POST /api/tokens/:id/revoke
+#### POST /api/v1/tokens/:id/revoke
 
 Revoke a token (soft delete - can be viewed but not used).
 
@@ -1073,7 +1082,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### DELETE /api/tokens/:id
+#### DELETE /api/v1/tokens/:id
 
 Permanently delete a token.
 
@@ -1126,7 +1135,7 @@ All recording endpoints require JWT authentication.
 
 ---
 
-#### POST /api/recordings
+#### POST /api/v1/recordings
 
 Upload a new recording.
 
@@ -1193,7 +1202,7 @@ Content-Type: application/json
 
 ---
 
-#### GET /api/recordings
+#### GET /api/v1/recordings
 
 List recordings with filtering and pagination.
 
@@ -1217,7 +1226,7 @@ Authorization: Bearer <access_token>
 
 **Example:**
 ```
-GET /api/recordings?page=1&limit=10&tags=smoke,auth&sortBy=name&sortOrder=asc
+GET /api/v1/recordings?page=1&limit=10&tags=smoke,auth&sortBy=name&sortOrder=asc
 ```
 
 **Success Response (200):**
@@ -1253,7 +1262,7 @@ GET /api/recordings?page=1&limit=10&tags=smoke,auth&sortBy=name&sortOrder=asc
 
 ---
 
-#### GET /api/recordings/tags
+#### GET /api/v1/recordings/tags
 
 Get all tags used by the current user.
 
@@ -1272,7 +1281,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### GET /api/recordings/:id
+#### GET /api/v1/recordings/:id
 
 Get a specific recording with full data.
 
@@ -1319,7 +1328,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### GET /api/recordings/:id/export
+#### GET /api/v1/recordings/:id/export
 
 Download recording as JSON file (for CLI import).
 
@@ -1340,7 +1349,7 @@ Returns the raw recording JSON data, suitable for use with the SaveAction CLI:
 ```bash
 # Download and run
 curl -H "Authorization: Bearer $TOKEN" \
-  "http://localhost:3001/api/recordings/550e8400.../export" \
+  "http://localhost:3001/api/v1/recordings/550e8400.../export" \
   -o recording.json
 
 saveaction run recording.json
@@ -1348,7 +1357,7 @@ saveaction run recording.json
 
 ---
 
-#### PUT /api/recordings/:id
+#### PUT /api/v1/recordings/:id
 
 Update a recording's metadata or data.
 
@@ -1396,7 +1405,7 @@ All fields are optional. Only provided fields are updated.
 
 ---
 
-#### DELETE /api/recordings/:id
+#### DELETE /api/v1/recordings/:id
 
 Soft delete a recording (can be restored).
 
@@ -1422,7 +1431,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### POST /api/recordings/:id/restore
+#### POST /api/v1/recordings/:id/restore
 
 Restore a soft-deleted recording.
 
@@ -1454,7 +1463,7 @@ Authorization: Bearer <access_token>
 
 ---
 
-#### DELETE /api/recordings/:id/permanent
+#### DELETE /api/v1/recordings/:id/permanent
 
 Permanently delete a recording (cannot be undone).
 
