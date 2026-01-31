@@ -67,7 +67,7 @@ export type JobData = TestRunJobData | CleanupJobData | ScheduledTestJobData;
  */
 export interface TestRunJobResult {
   runId: string;
-  status: 'passed' | 'failed' | 'error';
+  status: 'passed' | 'failed' | 'cancelled' | 'error';
   duration: number;
   actionsExecuted: number;
   actionsFailed: number;

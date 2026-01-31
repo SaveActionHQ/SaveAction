@@ -40,6 +40,14 @@ const envSchema = z.object({
 
   // App URLs
   APP_BASE_URL: z.string().url().default('http://localhost:3000'),
+
+  // Worker configuration
+  WORKER_CONCURRENCY: z.coerce.number().min(1).max(10).default(3),
+  WORKER_NAME: z.string().optional(),
+
+  // Storage paths
+  VIDEO_STORAGE_PATH: z.string().default('./storage/videos'),
+  SCREENSHOT_STORAGE_PATH: z.string().default('./storage/screenshots'),
 });
 
 export type Env = z.infer<typeof envSchema>;

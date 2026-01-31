@@ -17,3 +17,6 @@ export type {
 } from './types.js';
 
 export { QUEUE_CONFIGS } from './types.js';
+
+export { createTestRunProcessor } from './testRunProcessor.js';
+export type { TestRunProcessorOptions } from './testRunProcessor.js';

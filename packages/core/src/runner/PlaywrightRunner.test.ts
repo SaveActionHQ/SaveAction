@@ -603,4 +603,55 @@ describe('PlaywrightRunner', () => {
       expect(timeDiff).toBeLessThan(200); // Too fast - likely duplicate
     });
   });
+
+  describe('cancellation', () => {
+    it('should accept abortSignal in options', () => {
+      const abortController = new AbortController();
+      const runnerWithSignal = new PlaywrightRunner(
+        { abortSignal: abortController.signal },
+        mockReporter
+      );
+
+      expect(runnerWithSignal).toBeDefined();
+    });
+
+    it('should handle abortSignal being undefined (no cancellation)', () => {
+      const runnerWithoutSignal = new PlaywrightRunner({}, mockReporter);
+      expect(runnerWithoutSignal).toBeDefined();
+    });
+
+    it('should check cancellation before each action', () => {
+      const abortController = new AbortController();
+      const runnerWithSignal = new PlaywrightRunner(
+        { abortSignal: abortController.signal },
+        mockReporter
+      );
+
+      // Access the private checkCancellation method via any
+      const checkCancellation = (runnerWithSignal as any).checkCancellation.bind(runnerWithSignal);
+
+      // Should not throw when not aborted
+      expect(() => checkCancellation()).not.toThrow();
+
+      // Abort the signal
+      abortController.abort();
+
+      // Should throw when aborted
+      expect(() => checkCancellation()).toThrow('CANCELLED:');
+    });
+
+    it('should throw CANCELLED error when signal is aborted', () => {
+      const abortController = new AbortController();
+      const runnerWithSignal = new PlaywrightRunner(
+        { abortSignal: abortController.signal },
+        mockReporter
+      );
+
+      abortController.abort();
+
+      const checkCancellation = (runnerWithSignal as any).checkCancellation.bind(runnerWithSignal);
+
+      expect(() => checkCancellation()).toThrow('CANCELLED: Run was cancelled by user');
+    });
+  });
 });
