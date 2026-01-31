@@ -302,12 +302,12 @@
 - **Labels:** `api`, `architecture`
 - **Description:** All API endpoints (except health/infrastructure) use `/api/v1/` prefix. Versioned routes: `/api/v1/auth/*`, `/api/v1/tokens/*`, `/api/v1/recordings/*`, `/api/v1/runs/*`. Unversioned routes: `/api/health/*`, `/api/queues/*` (infrastructure). Uses Fastify's nested `register()` with prefix option for clean grouping. Cookie paths updated to `/api/v1/auth`. Documentation updated.
 
-### ⏳ TODO - Schedules API
+### ✅ DONE - Schedules API
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `feature`, `api`
-- **Description:** Implement schedule endpoints: POST /api/schedules, GET /api/schedules, PUT /api/schedules/:id, DELETE /api/schedules/:id, POST /api/schedules/:id/toggle. Use BullMQ repeatable jobs for cron execution (replaces node-cron). Schedules persist across restarts.
+- **Description:** Implemented schedule endpoints: POST /api/v1/schedules, GET /api/v1/schedules, GET /api/v1/schedules/:id, PUT /api/v1/schedules/:id, DELETE /api/v1/schedules/:id (soft delete), POST /api/v1/schedules/:id/toggle (active/paused), POST /api/v1/schedules/:id/restore, DELETE /api/v1/schedules/:id/permanent. Uses BullMQ repeatable jobs for cron execution. Features: cron validation with cron-parser v5, timezone support, run counters, notification settings, soft delete/restore. ScheduleRepository and ScheduleService with 77 unit tests.
 
 ### ⏳ TODO - Webhooks API
 

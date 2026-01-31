@@ -23,7 +23,10 @@ import Redis from 'ioredis';
 import { getEnv, validateProductionEnv } from './config/index.js';
 import { initializeDatabase, closeDatabase } from './db/index.js';
 import { createTestRunProcessor } from './queues/testRunProcessor.js';
-import type { TestRunJobData, TestRunJobResult } from './queues/types.js';
+import { createScheduledTestProcessor } from './queues/scheduledTestProcessor.js';
+import { JobQueueManager } from './queues/JobQueueManager.js';
+import type { TestRunJobData, TestRunJobResult, ScheduledTestJobData } from './queues/types.js';
+import type { ScheduledTestJobResult } from './queues/scheduledTestProcessor.js';
 
 // Worker configuration
 const WORKER_CONCURRENCY = parseInt(process.env.WORKER_CONCURRENCY ?? '3', 10);
@@ -98,7 +101,9 @@ const logger = {
   },
 };
 
-let worker: Worker<TestRunJobData, TestRunJobResult> | null = null;
+let testRunWorker: Worker<TestRunJobData, TestRunJobResult> | null = null;
+let scheduledTestWorker: Worker<ScheduledTestJobData, ScheduledTestJobResult> | null = null;
+let jobQueueManager: JobQueueManager | null = null;
 let redisConnection: Redis | null = null;
 let isShuttingDown = false;
 
@@ -147,16 +152,30 @@ async function start(): Promise<void> {
     setTimeout(() => reject(new Error('Redis connection timeout')), 10000);
   });
 
-  // Create processor function
-  const processor = createTestRunProcessor({
+  // Create JobQueueManager for scheduled-tests processor to queue test-runs
+  logger.info('Creating JobQueueManager...');
+  jobQueueManager = new JobQueueManager({ connection: redisConnection });
+  await jobQueueManager.initialize();
+
+  // Create test-runs processor function
+  const testRunProcessor = createTestRunProcessor({
     db,
     videoStoragePath: env.VIDEO_STORAGE_PATH,
     screenshotStoragePath: env.SCREENSHOT_STORAGE_PATH,
   });
 
-  // Create BullMQ worker
-  logger.info('Creating BullMQ worker...');
-  worker = new Worker<TestRunJobData, TestRunJobResult>('test-runs', processor, {
+  // Create scheduled-tests processor function
+  const scheduledTestProcessor = createScheduledTestProcessor({
+    db,
+    jobQueueManager,
+    logger,
+  });
+
+  // Create BullMQ workers
+  logger.info('Creating BullMQ workers...');
+
+  // Test runs worker (executes actual tests with Playwright)
+  testRunWorker = new Worker<TestRunJobData, TestRunJobResult>('test-runs', testRunProcessor, {
     connection: redisConnection,
     concurrency: WORKER_CONCURRENCY,
     prefix: 'saveaction',
@@ -168,29 +187,46 @@ async function start(): Promise<void> {
     drainDelay: 5,
   });
 
-  // Worker event handlers
-  worker.on('ready', () => {
-    logger.info('Worker is ready and listening for jobs');
+  // Scheduled tests worker (triggers test runs on schedule)
+  scheduledTestWorker = new Worker<ScheduledTestJobData, ScheduledTestJobResult>(
+    'scheduled-tests',
+    scheduledTestProcessor,
+    {
+      connection: redisConnection,
+      concurrency: 3, // Schedule processing is fast, lower concurrency
+      prefix: 'saveaction',
+      stalledInterval: 30000,
+      lockDuration: 60000, // 1 minute is enough for schedule processing
+      drainDelay: 5,
+    }
+  );
+
+  // Test-runs worker event handlers
+  testRunWorker.on('ready', () => {
+    logger.info('Test-runs worker is ready and listening for jobs');
   });
 
-  worker.on('active', (job) => {
-    logger.info('Job started', {
+  testRunWorker.on('active', (job) => {
+    logger.info('Test run job started', {
+      queue: 'test-runs',
       jobId: job.id,
       runId: job.data.runId,
       recordingId: job.data.recordingId,
     });
   });
 
-  worker.on('progress', (job, progress) => {
-    logger.info('Job progress', {
+  testRunWorker.on('progress', (job, progress) => {
+    logger.info('Test run job progress', {
+      queue: 'test-runs',
       jobId: job.id,
       runId: job.data.runId,
       progress,
     });
   });
 
-  worker.on('completed', (job, result) => {
-    logger.info('Job completed', {
+  testRunWorker.on('completed', (job, result) => {
+    logger.info('Test run job completed', {
+      queue: 'test-runs',
       jobId: job.id,
       runId: job.data.runId,
       status: result.status,
@@ -200,24 +236,65 @@ async function start(): Promise<void> {
     });
   });
 
-  worker.on('failed', (job, error) => {
-    logger.error('Job failed', error, {
+  testRunWorker.on('failed', (job, error) => {
+    logger.error('Test run job failed', error, {
+      queue: 'test-runs',
       jobId: job?.id,
       runId: job?.data.runId,
     });
   });
 
-  worker.on('error', (error) => {
-    logger.error('Worker error', error);
+  testRunWorker.on('error', (error) => {
+    logger.error('Test-runs worker error', error);
   });
 
-  worker.on('stalled', (jobId) => {
-    logger.warn('Job stalled', { jobId });
+  testRunWorker.on('stalled', (jobId) => {
+    logger.warn('Test run job stalled', { queue: 'test-runs', jobId });
+  });
+
+  // Scheduled-tests worker event handlers
+  scheduledTestWorker.on('ready', () => {
+    logger.info('Scheduled-tests worker is ready and listening for jobs');
+  });
+
+  scheduledTestWorker.on('active', (job) => {
+    logger.info('Scheduled test job started', {
+      queue: 'scheduled-tests',
+      jobId: job.id,
+      scheduleId: job.data.scheduleId,
+    });
+  });
+
+  scheduledTestWorker.on('completed', (job, result) => {
+    logger.info('Scheduled test job completed', {
+      queue: 'scheduled-tests',
+      jobId: job.id,
+      scheduleId: job.data.scheduleId,
+      status: result.status,
+      runId: result.runId,
+    });
+  });
+
+  scheduledTestWorker.on('failed', (job, error) => {
+    logger.error('Scheduled test job failed', error, {
+      queue: 'scheduled-tests',
+      jobId: job?.id,
+      scheduleId: job?.data.scheduleId,
+    });
+  });
+
+  scheduledTestWorker.on('error', (error) => {
+    logger.error('Scheduled-tests worker error', error);
+  });
+
+  scheduledTestWorker.on('stalled', (jobId) => {
+    logger.warn('Scheduled test job stalled', { queue: 'scheduled-tests', jobId });
   });
 
   logger.info('SaveAction Worker started successfully', {
-    queue: 'test-runs',
-    concurrency: WORKER_CONCURRENCY,
+    queues: ['test-runs', 'scheduled-tests'],
+    testRunsConcurrency: WORKER_CONCURRENCY,
+    scheduledTestsConcurrency: 3,
   });
 }
 
@@ -234,11 +311,24 @@ async function shutdown(signal: string): Promise<void> {
   logger.info(`Received ${signal}, shutting down gracefully...`);
 
   try {
-    // Close worker (waits for active jobs to finish)
-    if (worker) {
-      logger.info('Closing worker (waiting for active jobs)...');
-      await worker.close();
-      logger.info('Worker closed');
+    // Close workers (waits for active jobs to finish)
+    if (testRunWorker) {
+      logger.info('Closing test-runs worker (waiting for active jobs)...');
+      await testRunWorker.close();
+      logger.info('Test-runs worker closed');
+    }
+
+    if (scheduledTestWorker) {
+      logger.info('Closing scheduled-tests worker...');
+      await scheduledTestWorker.close();
+      logger.info('Scheduled-tests worker closed');
+    }
+
+    // Close JobQueueManager
+    if (jobQueueManager) {
+      logger.info('Closing JobQueueManager...');
+      await jobQueueManager.shutdown();
+      logger.info('JobQueueManager closed');
     }
 
     // Close Redis

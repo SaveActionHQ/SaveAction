@@ -43,3 +43,11 @@ export type {
   ActionExecutionResult,
 } from './RunnerService.js';
 export { createRunSchema, listRunsQuerySchema } from './RunnerService.js';
+
+export { ScheduleService, ScheduleError, ScheduleErrors } from './ScheduleService.js';
+export type {
+  ScheduleServiceOptions,
+  CreateScheduleInput,
+  UpdateScheduleInput,
+} from './ScheduleService.js';
+export { createScheduleSchema, updateScheduleSchema } from './ScheduleService.js';

@@ -27,6 +27,7 @@ This allows future breaking changes to be introduced in `/api/v2/` without affec
 - [API Tokens](#api-tokens)
 - [Recordings API](#recordings-api)
 - [Runs API](#runs-api) _(planned)_
+- [Schedules API](#schedules-api)
 
 ---
 
@@ -1492,6 +1493,400 @@ Authorization: Bearer <access_token>
 ## Runs API
 
 > 🚧 **Coming Soon** - Test execution and results
+
+---
+
+## Schedules API
+
+The Schedules API allows you to create and manage scheduled test runs. Schedules use cron expressions to define when tests should run and integrate with BullMQ for reliable job execution.
+
+### Base URL
+
+```
+/api/v1/schedules
+```
+
+---
+
+#### POST /api/v1/schedules
+
+Create a new schedule for a recording.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "recordingId": "550e8400-e29b-41d4-a716-446655440000",
+  "name": "Daily Smoke Tests",
+  "description": "Run smoke tests every morning",
+  "cronExpression": "0 9 * * *",
+  "timezone": "America/New_York",
+  "runConfig": {
+    "browser": "chromium",
+    "headless": true,
+    "timeout": 30000,
+    "retries": 2
+  },
+  "startsAt": "2026-02-01T00:00:00Z",
+  "endsAt": "2026-12-31T23:59:59Z",
+  "notifyOnFailure": true,
+  "notifyOnSuccess": false,
+  "notificationEmails": "alerts@example.com"
+}
+```
+
+**Required Fields:**
+| Field | Type | Description |
+|-------|------|-------------|
+| `recordingId` | UUID | Recording to execute |
+| `name` | string | Schedule name (1-255 chars) |
+| `cronExpression` | string | Cron pattern (e.g., `0 9 * * *`) |
+
+**Optional Fields:**
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `description` | string | null | Schedule description |
+| `timezone` | string | UTC | IANA timezone name |
+| `runConfig` | object | null | Execution configuration |
+| `runConfig.browser` | string | chromium | Browser: chromium, firefox, webkit |
+| `runConfig.headless` | boolean | true | Headless mode |
+| `runConfig.timeout` | number | 30000 | Timeout in ms (1000-600000) |
+| `runConfig.retries` | number | 0 | Retry count (0-5) |
+| `startsAt` | ISO 8601 | null | Schedule start date |
+| `endsAt` | ISO 8601 | null | Schedule end date |
+| `notifyOnFailure` | boolean | true | Email on test failure |
+| `notifyOnSuccess` | boolean | false | Email on test success |
+| `notificationEmails` | string | null | Comma-separated emails |
+
+**Cron Expression Format:**
+```
+┌───────────── minute (0-59)
+│ ┌───────────── hour (0-23)
+│ │ ┌───────────── day of month (1-31)
+│ │ │ ┌───────────── month (1-12)
+│ │ │ │ ┌───────────── day of week (0-7, 0=Sunday)
+│ │ │ │ │
+* * * * *
+```
+
+**Common Cron Examples:**
+| Expression | Description |
+|------------|-------------|
+| `* * * * *` | Every minute |
+| `0 9 * * *` | Daily at 9:00 AM |
+| `0 9 * * 1-5` | Weekdays at 9:00 AM |
+| `0 0 * * 0` | Weekly on Sunday at midnight |
+| `0 0 1 * *` | Monthly on 1st at midnight |
+
+**Success Response (201):**
+```json
+{
+  "schedule": {
+    "id": "sched-550e8400-e29b-41d4-a716-446655440000",
+    "userId": "user-123",
+    "recordingId": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Daily Smoke Tests",
+    "description": "Run smoke tests every morning",
+    "cronExpression": "0 9 * * *",
+    "timezone": "America/New_York",
+    "status": "active",
+    "runConfig": {
+      "browser": "chromium",
+      "headless": true,
+      "timeout": 30000,
+      "retries": 2
+    },
+    "nextRunAt": "2026-02-01T14:00:00.000Z",
+    "totalRuns": 0,
+    "successfulRuns": 0,
+    "failedRuns": 0,
+    "createdAt": "2026-01-31T12:00:00.000Z",
+    "updatedAt": "2026-01-31T12:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 400 | `INVALID_CRON` | Invalid cron expression |
+| 400 | `INVALID_TIMEZONE` | Invalid timezone |
+| 400 | `MAX_SCHEDULES_REACHED` | User has too many schedules |
+| 404 | `RECORDING_NOT_FOUND` | Recording does not exist |
+
+---
+
+#### GET /api/v1/schedules
+
+List schedules for the authenticated user.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Query Parameters:**
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `page` | number | 1 | Page number |
+| `limit` | number | 20 | Items per page (max 100) |
+| `recordingId` | UUID | - | Filter by recording |
+| `status` | string | - | Filter by status: active, paused, disabled |
+| `sortBy` | string | createdAt | Sort field: createdAt, name, nextRunAt, status |
+| `sortOrder` | string | desc | Sort direction: asc, desc |
+| `includeDeleted` | boolean | false | Include soft-deleted schedules |
+
+**Success Response (200):**
+```json
+{
+  "schedules": [
+    {
+      "id": "sched-550e8400-e29b-41d4-a716-446655440000",
+      "recordingId": "550e8400-e29b-41d4-a716-446655440000",
+      "name": "Daily Smoke Tests",
+      "cronExpression": "0 9 * * *",
+      "timezone": "America/New_York",
+      "status": "active",
+      "nextRunAt": "2026-02-01T14:00:00.000Z",
+      "lastRunAt": "2026-01-31T14:00:00.000Z",
+      "lastRunStatus": "passed",
+      "totalRuns": 10,
+      "successfulRuns": 9,
+      "failedRuns": 1,
+      "createdAt": "2026-01-15T12:00:00.000Z"
+    }
+  ],
+  "pagination": {
+    "page": 1,
+    "limit": 20,
+    "total": 5,
+    "totalPages": 1,
+    "hasNext": false,
+    "hasPrevious": false
+  }
+}
+```
+
+---
+
+#### GET /api/v1/schedules/:id
+
+Get a specific schedule by ID.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "schedule": {
+    "id": "sched-550e8400-e29b-41d4-a716-446655440000",
+    "userId": "user-123",
+    "recordingId": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "Daily Smoke Tests",
+    "description": "Run smoke tests every morning",
+    "cronExpression": "0 9 * * *",
+    "timezone": "America/New_York",
+    "status": "active",
+    "startsAt": "2026-02-01T00:00:00.000Z",
+    "endsAt": "2026-12-31T23:59:59.000Z",
+    "bullmqJobKey": "schedule:sched-550e8400",
+    "bullmqJobPattern": "0 9 * * *",
+    "runConfig": {
+      "browser": "chromium",
+      "headless": true,
+      "timeout": 30000,
+      "retries": 2
+    },
+    "maxConcurrent": 1,
+    "maxDailyRuns": null,
+    "runsToday": 1,
+    "runsThisMonth": 15,
+    "lastRunId": "run-123",
+    "lastRunAt": "2026-01-31T14:00:00.000Z",
+    "lastRunStatus": "passed",
+    "nextRunAt": "2026-02-01T14:00:00.000Z",
+    "totalRuns": 15,
+    "successfulRuns": 14,
+    "failedRuns": 1,
+    "notifyOnFailure": true,
+    "notifyOnSuccess": false,
+    "notificationEmails": "alerts@example.com",
+    "deletedAt": null,
+    "createdAt": "2026-01-15T12:00:00.000Z",
+    "updatedAt": "2026-01-31T14:00:00.000Z"
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 403 | `NOT_AUTHORIZED` | Schedule belongs to another user |
+| 404 | `SCHEDULE_NOT_FOUND` | Schedule does not exist |
+
+---
+
+#### PUT /api/v1/schedules/:id
+
+Update a schedule.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+Content-Type: application/json
+```
+
+**Request Body:**
+```json
+{
+  "name": "Updated Schedule Name",
+  "cronExpression": "0 10 * * *",
+  "timezone": "Europe/London"
+}
+```
+
+All fields are optional. Only include fields you want to update.
+
+**Success Response (200):**
+```json
+{
+  "schedule": {
+    "id": "sched-550e8400-e29b-41d4-a716-446655440000",
+    "name": "Updated Schedule Name",
+    "cronExpression": "0 10 * * *",
+    "timezone": "Europe/London",
+    "nextRunAt": "2026-02-01T10:00:00.000Z",
+    ...
+  }
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 400 | `INVALID_CRON` | Invalid cron expression |
+| 400 | `INVALID_TIMEZONE` | Invalid timezone |
+| 403 | `NOT_AUTHORIZED` | Schedule belongs to another user |
+| 404 | `SCHEDULE_NOT_FOUND` | Schedule does not exist |
+
+---
+
+#### POST /api/v1/schedules/:id/toggle
+
+Toggle schedule status between active and paused.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "schedule": {
+    "id": "sched-550e8400-e29b-41d4-a716-446655440000",
+    "status": "paused",
+    ...
+  },
+  "message": "Schedule paused"
+}
+```
+
+When pausing, the BullMQ repeatable job is removed. When activating, a new repeatable job is created.
+
+---
+
+#### DELETE /api/v1/schedules/:id
+
+Soft delete a schedule.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Schedule deleted"
+}
+```
+
+**Error Responses:**
+
+| Code | Error | Description |
+|------|-------|-------------|
+| 403 | `NOT_AUTHORIZED` | Schedule belongs to another user |
+| 404 | `SCHEDULE_NOT_FOUND` | Schedule does not exist |
+
+---
+
+#### POST /api/v1/schedules/:id/restore
+
+Restore a soft-deleted schedule.
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Success Response (200):**
+```json
+{
+  "schedule": {
+    "id": "sched-550e8400-e29b-41d4-a716-446655440000",
+    "status": "paused",
+    "deletedAt": null,
+    ...
+  },
+  "message": "Schedule restored"
+}
+```
+
+**Note:** Restored schedules are set to `paused` status. Use toggle to reactivate.
+
+---
+
+#### DELETE /api/v1/schedules/:id/permanent
+
+Permanently delete a schedule (cannot be undone).
+
+**Headers:**
+```
+Authorization: Bearer <access_token>
+```
+
+**Requirement:** Schedule must be soft-deleted first.
+
+**Success Response (200):**
+```json
+{
+  "success": true,
+  "message": "Schedule permanently deleted"
+}
+```
+
+---
+
+### Schedule Status Values
+
+| Status | Description |
+|--------|-------------|
+| `active` | Schedule is running on cron pattern |
+| `paused` | Schedule is paused, no runs triggered |
+| `disabled` | Schedule was soft-deleted |
 
 ---
 

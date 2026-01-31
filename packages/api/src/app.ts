@@ -15,6 +15,7 @@ import authRoutes from './routes/auth.js';
 import apiTokenRoutes from './routes/tokens.js';
 import recordingRoutes from './routes/recordings.js';
 import runRoutes from './routes/runs.js';
+import scheduleRoutes from './routes/schedules.js';
 import { EmailService } from './services/EmailService.js';
 import type { Env } from './config/index.js';
 
@@ -206,6 +207,14 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       prefix: '/api/v1/runs',
       db: app.db,
       jobQueueManager: app.queues, // Now properly initialized if Redis is configured
+    });
+
+    // Register schedule routes (requires database, JWT, and optionally queues)
+    await app.register(scheduleRoutes, {
+      prefix: '/api/v1/schedules',
+      db: app.db,
+      jobQueueManager: app.queues,
+      maxSchedulesPerUser: 50,
     });
   }
 
