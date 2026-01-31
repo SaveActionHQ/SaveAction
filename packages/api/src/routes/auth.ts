@@ -173,7 +173,7 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, option
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
-          path: '/api/auth',
+          path: '/api/v1/auth',
           maxAge: 7 * 24 * 60 * 60, // 7 days
         });
 
@@ -260,7 +260,7 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, option
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
-          path: '/api/auth',
+          path: '/api/v1/auth',
           maxAge: 7 * 24 * 60 * 60, // 7 days
         });
 
@@ -290,7 +290,7 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, option
   fastify.post('/logout', async (_request, reply) => {
     // Clear refresh token cookie
     reply.clearCookie('refreshToken', {
-      path: '/api/auth',
+      path: '/api/v1/auth',
     });
 
     return reply.status(200).send({
@@ -364,7 +364,7 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, option
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
           sameSite: 'strict',
-          path: '/api/auth',
+          path: '/api/v1/auth',
           maxAge: 7 * 24 * 60 * 60, // 7 days
         });
 

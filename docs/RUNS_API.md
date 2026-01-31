@@ -33,7 +33,7 @@ The Runs API enables test execution via REST endpoints with a production-scale w
 
 ### Create Run
 ```http
-POST /api/runs
+POST /api/v1/runs
 Authorization: Bearer <token>
 Content-Type: application/json
 
@@ -70,7 +70,7 @@ Content-Type: application/json
 
 ### List Runs
 ```http
-GET /api/runs?page=1&limit=20&status=passed&recordingId=uuid
+GET /api/v1/runs?page=1&limit=20&status=passed&recordingId=uuid
 Authorization: Bearer <token>
 ```
 
@@ -86,7 +86,7 @@ Authorization: Bearer <token>
 
 ### Get Run Details
 ```http
-GET /api/runs/:id
+GET /api/v1/runs/:id
 Authorization: Bearer <token>
 ```
 
@@ -99,7 +99,7 @@ Authorization: Bearer <token>
 
 ### Get Run Actions
 ```http
-GET /api/runs/:id/actions
+GET /api/v1/runs/:id/actions
 Authorization: Bearer <token>
 ```
 
@@ -107,7 +107,7 @@ Returns detailed results for each action executed.
 
 ### Cancel Run
 ```http
-POST /api/runs/:id/cancel
+POST /api/v1/runs/:id/cancel
 Authorization: Bearer <token>
 ```
 
@@ -115,13 +115,13 @@ Cancels a queued or running test. Kills browser process, saves partial results.
 
 ### Delete Run (Soft Delete)
 ```http
-DELETE /api/runs/:id
+DELETE /api/v1/runs/:id
 Authorization: Bearer <token>
 ```
 
 ### Retry Run
 ```http
-POST /api/runs/:id/retry
+POST /api/v1/runs/:id/retry
 Authorization: Bearer <token>
 ```
 
@@ -305,7 +305,7 @@ Set `LOG_LEVEL=debug` for verbose output during development.
 ## Future Enhancements
 
 ### Run Cancellation (In Progress)
-- POST /api/runs/:id/cancel endpoint exists
+- POST /api/v1/runs/:id/cancel endpoint exists
 - Browser process killing needs testing
 - Partial result saving
 
@@ -314,7 +314,7 @@ Set `LOG_LEVEL=debug` for verbose output during development.
 - Web UI integration
 
 ### Video Streaming
-- GET /api/runs/:id/video endpoint
+- GET /api/v1/runs/:id/video endpoint
 - Stream video without full download
 
 ### Cleanup Jobs
