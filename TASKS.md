@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** January 30, 2026
+**Last Updated:** January 31, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -274,40 +274,33 @@
 - **Labels:** `feature`, `api`, `ci-cd`
 - **Description:** Implemented GET /api/recordings/:id/export endpoint to download recording JSON for CLI execution. Added tag filtering to GET /api/recordings?tags=smoke,login. Essential for CI/CD integration.
 
-### ⏳ TODO - Runs API
+### ⏳ TODO - Runs API & Runner Service
 
 - **Package:** @saveaction/api
 - **Priority:** P0
-- **Labels:** `feature`, `api`
-- **Description:** Implement run endpoints: POST /api/runs (execute), GET /api/runs (list), GET /api/runs/:id (details), GET /api/runs/:id/actions, GET /api/runs/:id/video, DELETE /api/runs/:id.
+- **Labels:** `feature`, `api`, `service`
+- **Description:** Implement complete run execution system. **Components:** 1) RunRepository - database CRUD for runs and run_actions tables, 2) RunnerService - integrates @saveaction/core PlaywrightRunner, executes tests, saves results to DB, stores videos/screenshots, 3) HTTP Routes - POST /api/runs (queue execution via BullMQ), GET /api/runs (list with pagination), GET /api/runs/:id (details), GET /api/runs/:id/actions (action results), GET /api/runs/:id/video (stream video), DELETE /api/runs/:id (soft delete). **BullMQ Integration:** POST /api/runs creates "queued" status, adds job to test-runs queue, RunnerService worker processes jobs. Includes run timeout (10 min default), browser cleanup on crash/cancel.
 
 ### ⏳ TODO - Run Cancellation
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `api`
-- **Description:** Implement POST /api/runs/:id/cancel to stop running tests. Kill browser process, update status to "cancelled", save partial results. Essential when users trigger wrong test or test gets stuck.
+- **Description:** Implement POST /api/runs/:id/cancel to stop running tests. Kill browser process via Playwright context.close(), update status to "cancelled", save partial results (actions executed so far). BullMQ job cancellation. Essential when users trigger wrong test or test gets stuck. **Depends on:** Runs API & Runner Service.
 
-### ⏳ TODO - Soft Deletes
+### ✅ DONE - Soft Deletes (Recordings)
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `feature`, `database`
-- **Description:** Add deleted_at column to recordings and runs tables. DELETE endpoints set deleted_at instead of hard delete. Add trash/restore functionality. Background job permanently deletes after 30 days. Allows users to recover accidentally deleted items.
+- **Description:** Recordings table has soft deletes with deleted_at column. DELETE /api/recordings/:id sets deleted_at (soft delete). POST /api/recordings/:id/restore restores soft-deleted recordings. DELETE /api/recordings/:id/permanent performs hard delete. Runs table soft deletes will be implemented with Runs API. Background job for permanent deletion after 30 days is a future enhancement.
 
-### ⏳ TODO - API Versioning
+### ⏭️ SKIPPED - API Versioning
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `api`, `architecture`
-- **Description:** Use /api/v1/ prefix for all endpoints from the start. Allows future breaking changes without affecting existing integrations. Document versioning policy in API docs.
-
-### ⏳ TODO - Runner Service
-
-- **Package:** @saveaction/api
-- **Priority:** P0
-- **Labels:** `feature`, `service`
-- **Description:** Build RunnerService that integrates @saveaction/core. Execute tests, save results to database, store videos/screenshots, handle errors gracefully.
+- **Description:** ~~Use /api/v1/ prefix for all endpoints from the start.~~ **Skipped:** Current API is v1 implicitly. Adding /api/v1/ prefix would require updating all existing routes and documentation. Will implement versioning when v2 breaking changes are needed. YAGNI for now.
 
 ### ⏳ TODO - Schedules API
 
@@ -323,12 +316,12 @@
 - **Labels:** `feature`, `api`
 - **Description:** Implement webhook endpoints and delivery. Events: run.completed, run.failed, recording.uploaded. HMAC signature verification.
 
-### ⏳ TODO - Health Check Endpoints
+### ✅ DONE - Health Check Endpoints
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `api`
-- **Description:** Implement GET /api/health with checks for: API server, PostgreSQL connection, Redis connection, BullMQ workers. Return detailed status for each service. Support /api/health/live (liveness) and /api/health/ready (readiness) for Kubernetes.
+- **Description:** Implemented comprehensive health check endpoints. GET /api/health (basic), GET /api/health/detailed (API, PostgreSQL, Redis, BullMQ status with latency), GET /api/health/live (Kubernetes liveness probe), GET /api/health/ready (Kubernetes readiness probe - checks DB and Redis). Queue status at GET /api/queues/status. Implemented as part of Redis Setup and BullMQ Job Queue tasks.
 
 ### ⏳ TODO - OpenAPI Documentation (Swagger)
 
@@ -358,33 +351,26 @@
 - **Labels:** `security`
 - **Description:** Implement CSRF protection for cookie-based authentication (refresh tokens). Use @fastify/csrf-protection or double-submit cookie pattern. Exempt API token authentication (Bearer tokens are CSRF-immune). Required because refresh tokens use httpOnly cookies.
 
-### ⏳ TODO - Input Sanitization & Validation
+### ✅ DONE - Input Sanitization & Validation
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `security`
-- **Description:** Sanitize all recording JSON before storing/executing. Validate recording name, tags, URL fields against XSS/injection. Whitelist allowed action types. Limit file upload size (e.g., 10MB max). Reject malformed recordings.
+- **Description:** Implemented Zod validation in RecordingService for all recording uploads. Validates: recording structure (id, testName, url, viewport, actions array), 10MB size limit (TOO_LARGE error), duplicate originalId detection (DUPLICATE_ORIGINAL_ID error), URL format, action structure. Tags validated as string arrays. Name limited to 255 chars. All malformed recordings rejected with VALIDATION_FAILED error. Implemented as part of Recordings CRUD API.
 
-### ⏳ TODO - Run Timeout & Cleanup
-
-- **Package:** @saveaction/api
-- **Priority:** P1
-- **Labels:** `stability`, `service`
-- **Description:** Implement run timeout (kill after 10 minutes). Background job to mark orphaned "running" runs as "failed" on API restart. Cleanup orphaned video files. Ensure browser processes are killed on timeout/crash.
-
-### ⏳ TODO - Concurrent Run Limit & Queue
+### ⏳ TODO - Run Timeout, Cleanup & Concurrency
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `stability`, `service`
-- **Description:** Use BullMQ for run queue with concurrency limit (e.g., max 5 concurrent runs). Additional runs queued automatically with status "queued". BullMQ handles job distribution across workers. Prevents server crash from too many simultaneous browser instances.
+- **Description:** **Included in Runs API & Runner Service:** Run timeout (10 min, configurable), BullMQ concurrency (5 concurrent runs via test-runs queue), browser process cleanup on timeout/crash. **Additional hardening (this task):** Background cleanup job for orphaned runs - on API restart, mark "running" runs older than timeout as "failed". Cleanup orphaned video files (videos without matching run record). Scheduled via BullMQ cleanup queue. **Depends on:** Runs API & Runner Service.
 
-### ⏳ TODO - Structured Logging
+### ✅ DONE - Structured Logging (Basic)
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `observability`, `devops`
-- **Description:** Implement structured JSON logging with pino. Add request ID tracing for debugging. Log level configuration (debug/info/warn/error). Include user ID, recording ID, run ID in log context.
+- **Description:** Fastify uses pino by default. Configured: JSON structured logging in production, pino-pretty in development, LOG_LEVEL environment variable (debug/info/warn/error), request ID tracing via genReqId (crypto.randomUUID), request logging with URL and method in errorHandler. **Future enhancement:** Add user ID, recording ID, run ID to log context for better debugging.
 
 ### ⏳ TODO - Video/Screenshot Storage & Cleanup
 
@@ -400,26 +386,26 @@
 - **Labels:** `feature`, `api`, `ci-cd`, `backlog`
 - **Description:** Implement POST /api/runs/external to accept run results from external CLI executions. Store CI metadata (commit, branch, workflow). NOT needed for MVP - build when customers request centralized reporting across multiple repos or flaky test analytics.
 
-### ⏳ TODO - Environment Validation
+### ✅ DONE - Environment Validation
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `setup`, `dx`
-- **Description:** Validate required environment variables on startup using Zod. Required: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, etc. Fail fast with clear error messages if missing or invalid.
+- **Description:** Implemented Zod validation in config/env.ts. parseEnv() validates all environment variables with descriptive errors. validateProductionEnv() checks required production vars (DATABASE_URL, REDIS_URL, JWT_SECRET, JWT_REFRESH_SECRET). Fails fast on startup with clear error messages. Implemented as part of Setup API Package task.
 
-### ⏳ TODO - Standardized Error Response Format
+### ✅ DONE - Standardized Error Response Format
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `api`, `dx`
-- **Description:** Define consistent error response format across all endpoints: `{ error: { code: string, message: string, details?: object } }`. Implement via Fastify error handler. Include request ID for debugging.
+- **Description:** Implemented ApiError class with consistent format: `{ error: { code, message, details?, requestId? } }`. Global error handler (errorHandler plugin) converts all errors (ApiError, ZodError, Fastify validation, 404s) to standard format. Errors factory with common errors (badRequest, unauthorized, notFound, etc.). Request ID included via Fastify genReqId. Implemented as part of Setup API Package task.
 
-### ⏳ TODO - Graceful Shutdown
+### ✅ DONE - Graceful Shutdown
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `stability`, `devops`
-- **Description:** Handle SIGTERM/SIGINT signals for zero-downtime deployments. Stop accepting new requests, wait for running tests to complete (with timeout), close database connections, then exit cleanly.
+- **Description:** Implemented SIGTERM/SIGINT signal handlers in server.ts. Calls app.close() which triggers Fastify's onClose hooks. Redis client disconnects gracefully. JobQueueManager.shutdown() closes all queues and workers with configurable timeout (default 30s). Database connections closed via Drizzle. Logs shutdown progress. Implemented across server.ts, RedisClient, and JobQueueManager.
 
 ### ⏳ TODO - API Integration Tests
 
@@ -638,19 +624,19 @@
 
 ## Documentation
 
-### ⏳ TODO - CLI Documentation
+### ✅ DONE - CLI Documentation
 
 - **Package:** docs
 - **Priority:** P1
 - **Labels:** `docs`
-- **Description:** Write CLI.md with all commands, options, examples, and configuration file reference.
+- **Description:** CLI documentation spread across multiple files: README.md (quick start, all commands with examples), docs/INFO_COMMAND.md (384 lines - detailed info command docs), docs/VALIDATE_COMMAND.md (344 lines - validation docs), docs/JSON_OUTPUT.md (267 lines - JSON output format). Covers all commands, options, and examples.
 
-### ⏳ TODO - API Documentation
+### ✅ DONE - API Documentation
 
 - **Package:** docs
 - **Priority:** P1
 - **Labels:** `docs`
-- **Description:** Write API.md with OpenAPI/Swagger spec, authentication guide, all endpoints, code examples (curl, JavaScript, Python).
+- **Description:** Comprehensive API documentation in docs/API.md (1201 lines). Covers: getting started, environment variables, infrastructure (tech stack, architecture), database schema (all 8 tables), health endpoints, queue status, authentication (register, login, logout, refresh, change password, forgot/reset password), API tokens (CRUD, scopes, validation), Recordings API (all endpoints with examples). docs/API_PACKAGE.md (259 lines) provides package overview. OpenAPI/Swagger auto-generation is separate task.
 
 ### ⏳ TODO - Architecture Documentation
 
@@ -720,15 +706,15 @@
 | -------------------------------- | ------ | ------ | ------- | ------ |
 | Phase 1: Core                    | 12     | 12     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
-| Phase 3: API                     | 41     | 4      | 0       | 37     |
+| Phase 3: API                     | 35     | 20     | 1       | 14     |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 0      | 0       | 5      |
 | Phase 4: Web                     | 9      | 0      | 0       | 9      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
-| Documentation                    | 4      | 0      | 0       | 4      |
+| Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **97** | **24** | **2**   | **71** |
+| **TOTAL**                        | **91** | **44** | **3**   | **44** |
 
 ---
 
