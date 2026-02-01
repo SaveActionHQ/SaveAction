@@ -440,26 +440,32 @@
 > fetching recordings from the self-hosted platform instead of managing JSON files manually.
 > **Requires Phase 3 API to be completed first.**
 
-### ⏳ TODO - API Connection Support
+### ✅ DONE - API Connection Support
 
 - **Package:** @saveaction/cli
 - **Priority:** P1
 - **Labels:** `feature`, `cli`, `ci-cd`
+- **Completed:** 2026-02-01
 - **Description:** Add `--api-url` and `--api-token` options to connect CLI to SaveAction platform. Support environment variables: `SAVEACTION_API_URL`, `SAVEACTION_API_TOKEN`. Validate connection on startup.
+- **Implementation:** Created PlatformClient service class with testConnection(), fetchRecording(), listRecordings(), fetchRecordingsByTags() methods. Environment variable fallback for API URL and token. 29 unit tests for PlatformClient.
 
-### ⏳ TODO - Fetch Recordings from Platform
-
-- **Package:** @saveaction/cli
-- **Priority:** P1
-- **Labels:** `feature`, `cli`, `ci-cd`
-- **Description:** Add `--from-platform` flag to fetch recordings from API instead of local file. Support `--recording-id <id>` to run specific recording. Support `--tag <tag>` to run all recordings with a tag (e.g., `--tag smoke`).
-
-### ⏳ TODO - Base URL Override
+### ✅ DONE - Fetch Recordings from Platform
 
 - **Package:** @saveaction/cli
 - **Priority:** P1
 - **Labels:** `feature`, `cli`, `ci-cd`
-- **Description:** Add `--base-url <url>` option to override the starting URL in recordings. Essential for testing different environments (staging, production) with same recording. Example: `saveaction run --from-platform --tag smoke --base-url https://staging.myapp.com`
+- **Completed:** 2026-02-01
+- **Description:** Add `--recording-id <id>` to run specific recording from platform. Support `--tag <tag>` to run all recordings with a tag (e.g., `--tag smoke`). Multiple tags supported with comma separation.
+- **Implementation:** Updated run command to support `--recording-id` and `--tag` options. Fetches from GET /api/v1/recordings/:id/export and GET /api/v1/recordings?tags=. Supports running multiple recordings sequentially when using --tag. File argument now optional when using platform options.
+
+### ✅ DONE - Base URL Override
+
+- **Package:** @saveaction/cli
+- **Priority:** P1
+- **Labels:** `feature`, `cli`, `ci-cd`
+- **Completed:** 2026-02-01
+- **Description:** Add `--base-url <url>` option to override the starting URL in recordings. Essential for testing different environments (staging, production) with same recording. Example: `saveaction run --tag smoke --base-url https://staging.myapp.com`
+- **Implementation:** Replaces base URL in recording.url and all action URLs while preserving paths and query strings. Works with both local files and platform recordings.
 
 ### ⏳ TODO - CI Environment Detection
 
@@ -718,23 +724,23 @@
 | Phase 1: Core                    | 12     | 12     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
 | Phase 3: API                     | 32     | 28     | 0       | 4      |
-| Phase 3.5: CLI Platform (CI/CD)  | 5      | 0      | 0       | 5      |
+| Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
 | Phase 4: Web                     | 9      | 0      | 0       | 9      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **88** | **52** | **2**   | **34** |
+| **TOTAL**                        | **88** | **55** | **2**   | **31** |
 
 ### Test Summary
 
 | Package | Tests |
 |---------|-------|
 | @saveaction/core | 140 |
-| @saveaction/cli | 90 (3 skipped) |
+| @saveaction/cli | 131 (3 skipped) |
 | @saveaction/api | 792 |
-| **TOTAL** | **1,022 tests** |
+| **TOTAL** | **1,063 tests** |
 
 ---
 
