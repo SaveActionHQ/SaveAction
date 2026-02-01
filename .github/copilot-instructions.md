@@ -4,9 +4,9 @@
 
 SaveAction is an open-source test automation platform that replays browser interactions recorded by a Chrome extension. The platform uses Playwright for reliable cross-browser test execution with intelligent element location and retry logic.
 
-**Architecture**: Monorepo with pnpm workspaces and Turborepo
-**Primary Language**: TypeScript with ES modules
-**Target**: CLI-first approach (free tier), with future API/DB and Web UI
+**Architecture**: Monorepo with pnpm workspaces and Turborepo  
+**Primary Language**: TypeScript with ES modules  
+**Current Phase**: Phase 3 Complete (API + Database + Worker)
 
 ## Project Structure
 
@@ -14,89 +14,99 @@ SaveAction is an open-source test automation platform that replays browser inter
 SaveAction/
 ├── .github/
 │   ├── workflows/
-│   │   └── ci.yml          # GitHub Actions CI pipeline
-│   └── copilot-instructions.md
-├── .husky/                 # Git hooks
-│   ├── pre-commit          # Runs lint-staged
-│   ├── commit-msg          # Validates conventional commits
-│   └── pre-push            # Runs build + tests
+│   │   └── ci.yml              # GitHub Actions CI pipeline
+│   ├── instructions/           # Context-specific Copilot instructions
+│   │   ├── api.instructions.md
+│   │   ├── cli.instructions.md
+│   │   ├── es-modules.instructions.md
+│   │   ├── playwright-runner.instructions.md
+│   │   ├── testing.instructions.md
+│   │   └── types.instructions.md
+│   └── copilot-instructions.md # This file (global instructions)
+├── .husky/                     # Git hooks
+│   ├── pre-commit              # Runs lint-staged
+│   ├── commit-msg              # Validates conventional commits
+│   └── pre-push                # Runs build + tests
 ├── packages/
-│   ├── core/           # Core engine (@saveaction/core)
-│   │   ├── src/
-│   │   │   ├── types/      # TypeScript interfaces and type guards
-│   │   │   ├── parser/     # JSON recording parser with Zod validation
-│   │   │   ├── runner/     # Playwright runner and element locator
-│   │   │   └── reporter/   # Console reporter for CLI output
-│   │   └── package.json
-│   └── cli/            # CLI tool (@saveaction/cli)
-│       ├── src/
-│       │   └── commands/   # CLI commands (run, etc.)
-│       ├── bin/
-│       │   └── saveaction.js  # Entry point
-│       └── package.json
-├── eslint.config.js    # ESLint flat config
-├── turbo.json          # Turborepo build pipeline
-├── pnpm-workspace.yaml # pnpm workspace config
-└── tsconfig.base.json  # Shared TypeScript config
+│   ├── core/                   # @saveaction/core - Playwright engine
+│   │   └── src/
+│   │       ├── types/          # TypeScript interfaces
+│   │       ├── parser/         # JSON recording parser (Zod)
+│   │       ├── runner/         # Playwright runner + element locator
+│   │       ├── reporter/       # Console reporter
+│   │       └── analyzer/       # Recording analyzer
+│   ├── cli/                    # @saveaction/cli - Command line tool
+│   │   └── src/
+│   │       └── commands/       # run, validate, info, list
+│   └── api/                    # @saveaction/api - REST API + Worker
+│       └── src/
+│           ├── routes/         # Fastify route handlers
+│           ├── services/       # Business logic layer
+│           ├── repositories/   # Database access layer
+│           ├── db/schema/      # Drizzle ORM table definitions
+│           ├── queues/         # BullMQ job processors
+│           ├── auth/           # JWT authentication
+│           └── plugins/        # Fastify plugins
+├── docker/                     # Docker configurations
+├── docs/                       # Technical documentation
+├── eslint.config.js            # ESLint flat config
+├── turbo.json                  # Turborepo build pipeline
+├── pnpm-workspace.yaml         # pnpm workspace config
+└── tsconfig.base.json          # Shared TypeScript config
 ```
 
 ## Core Technologies
 
-- **Runtime**: Node.js with ES modules (`"type": "module"`)
-- **Package Manager**: pnpm (monorepo with workspaces)
-- **Build System**: Turborepo 1.11.0 for caching and parallel builds
-- **Automation**: Playwright 1.40.0 (chromium/firefox/webkit)
-- **Validation**: Zod 3.22.4 for runtime schema validation
-- **Testing**: Vitest 1.0.4 with v8 coverage
-- **Linting**: ESLint 9.x with typescript-eslint (flat config)
-- **Git Hooks**: Husky 9.x with lint-staged
-- **CI/CD**: GitHub Actions
-- **CLI Framework**: Commander.js 11.1.0
-- **TypeScript**: 5.3.3, strict mode, ES2022 target, ESNext modules
+| Category | Technology | Version |
+|----------|-----------|---------|
+| Runtime | Node.js (ES modules) | 18+ |
+| Package Manager | pnpm (workspaces) | 8.x |
+| Build System | Turborepo | 1.11.0 |
+| Browser Automation | Playwright | 1.40.0 |
+| Validation | Zod | 3.22.4 |
+| Testing | Vitest | 1.0.4 |
+| API Framework | Fastify | 4.x |
+| Database | PostgreSQL + Drizzle ORM | 16 / 0.45.x |
+| Queue | Redis + BullMQ | 7 / 5.x |
+| CLI Framework | Commander.js | 11.1.0 |
+| TypeScript | - | 5.3.3 |
 
 ## Development Guidelines
 
+### CRITICAL: ES Module Imports
+
+**Always use `.js` extensions in TypeScript import paths:**
+
+```typescript
+// ✅ Correct
+import { RecordingParser } from './parser/RecordingParser.js';
+import type { Recording } from '../types/index.js';
+
+// ❌ Wrong - will fail at runtime
+import { RecordingParser } from './parser/RecordingParser';
+```
+
 ### TypeScript Configuration
 
-1. **ES Module Imports**: Always use `.js` extensions in import paths
-   ```typescript
-   // ✅ Correct
-   import { RecordingParser } from './parser/RecordingParser.js';
-   
-   // ❌ Wrong
-   import { RecordingParser } from './parser/RecordingParser';
-   ```
-
-2. **Strict Mode**: All code must pass TypeScript strict checks
-   - No implicit any
-   - Strict null checks enabled
-   - Unused locals/parameters checked
-
-3. **Type Exports**: Use explicit type imports for type-only imports
-   ```typescript
-   import type { Recording, Action } from '../types/index.js';
-   ```
+- **Strict Mode**: All code must pass TypeScript strict checks
+- **No Implicit Any**: Every variable must have explicit or inferred type
+- **Strict Null Checks**: Handle null/undefined explicitly
+- **Type-Only Imports**: Use `import type` for type-only imports
 
 ### Code Organization
 
-1. **Types First**: Define interfaces in `types/` directory before implementation
+1. **Types First**: Define interfaces before implementation
 2. **Single Responsibility**: Each class/module has one clear purpose
 3. **Dependency Injection**: Use constructor injection for testability
-4. **No Overengineering**: Keep solutions simple and focused
+4. **Service-Repository Pattern**: (API) Routes → Services → Repositories → Database
 
 ### Testing Standards
 
-- **Framework**: Vitest with v8 coverage provider
-- **Target**: 90%+ coverage for critical components (parser, locator, reporter)
-- **Style**: Test behavior, not implementation details
-- **Naming**: Descriptive test names that explain what's being tested
-- **Mocking**: Use vi.fn() for mocks, avoid heavy mocking of Playwright
-
-**Test Files**:
-- Place `.test.ts` files next to source files
-- Use `describe()` blocks to group related tests
-- Use `beforeEach()`/`afterEach()` for setup/teardown
-- Mock console.log/console.error when testing reporters
+- **Framework**: Vitest with v8 coverage
+- **Total Tests**: 1,019+ (140 core + 90 CLI + 792 API)
+- **Coverage Target**: 90%+ for critical components
+- **Test Files**: Place `.test.ts` next to source files
+- **Integration Tests**: `tests/integration/*.integration.ts`
 
 ### Build and Run Commands
 
@@ -104,226 +114,234 @@ SaveAction/
 # Install dependencies
 pnpm install
 
-# Build all packages (uses Turborepo cache)
+# Start database services (PostgreSQL + Redis)
+pnpm dev:services
+
+# Build all packages
 pnpm build
 
-# Run tests
+# Run all tests
 pnpm test
+
+# Run specific package tests
+cd packages/api && pnpm test
+cd packages/core && pnpm test:integration
 
 # Run linting
 pnpm lint
 
-# Run tests with coverage
-pnpm exec vitest run --coverage
+# Start API development
+cd packages/api && pnpm dev
 
-# Run CLI (after build)
+# Run CLI
 node packages/cli/bin/saveaction.js run <recording.json> [options]
-
-# CLI options:
-# --headless false    # Show browser
-# --browser firefox   # Use Firefox instead of Chromium
-# --timeout 60000     # Custom timeout
-# --video ./videos    # Record video
 ```
 
-## Key Components
+## Package Overview
 
-### 1. RecordingParser (`packages/core/src/parser/`)
+### @saveaction/core (Playwright Engine)
 
-**Purpose**: Parse and validate JSON recordings from browser extension
+**Purpose**: Parse and execute browser recordings
 
-**Key Methods**:
-- `parseFile(filePath: string)`: Read and parse recording from disk
-- `parseString(json: string)`: Parse recording from JSON string
-- `validate(data: unknown)`: Private Zod validation (tested through public methods)
-
-**Testing**: 100% coverage, all validation paths tested
-
-### 2. ElementLocator (`packages/core/src/runner/`)
-
-**Purpose**: Find elements using multi-strategy fallback with retry logic
+| Component | File | Purpose |
+|-----------|------|---------|
+| Parser | `RecordingParser.ts` | Parse JSON with Zod validation |
+| Runner | `PlaywrightRunner.ts` | Execute actions with Playwright |
+| Locator | `ElementLocator.ts` | Multi-strategy element finding |
+| Reporter | `ConsoleReporter.ts` | Pretty CLI output |
 
 **Key Features**:
-- **Selector Priority**: id → dataTestId → ariaLabel → name → css → xpath → position
-- **Exponential Backoff**: 3 retries with 500ms → 1000ms → 2000ms delays
-- **Element Stability**: Waits for element to be attached before returning
-- **Special Fallbacks**: Hardcoded fallbacks for known selectors (e.g., search-submit-text)
+- Selector priority: id → dataTestId → ariaLabel → name → css → xpath
+- Exponential backoff retry (500ms → 1000ms → 2000ms)
+- 300ms animation delays after clicks/inputs
+- URL change detection for navigation handling
 
-**Key Methods**:
-- `findElement(page: Page, selector: SelectorStrategy)`: Main entry with retry loop
-- `getLocator(page: Page, type: string, value: any)`: Map selector type to Playwright locator
+### @saveaction/cli (Command Line)
 
-**Testing**: 87.15% coverage
+**Purpose**: Run tests from command line
 
-### 3. PlaywrightRunner (`packages/core/src/runner/`)
+| Command | Description |
+|---------|-------------|
+| `run <file>` | Execute a recording |
+| `validate <file>` | Validate without execution |
+| `info <file>` | Show recording details |
+| `list [dir]` | List recordings |
 
-**Purpose**: Execute recorded actions using Playwright
+**Options**: `--headless`, `--browser`, `--timeout`, `--video`, `--timing-mode`
 
-**Key Features**:
-- **Browser Lifecycle**: Launch → Context → Page → Actions → Close
-- **Action Types**: click, input, scroll, navigation, select, keypress, submit
-- **Navigation Detection**: URL change detection prevents false failures
-- **Animation Delays**: 300ms delays after clicks/inputs for JS animations
-- **Error Handling**: Graceful handling of navigation, closed browser, timeouts
+### @saveaction/api (REST API + Worker)
 
-**Key Methods**:
-- `execute(recording: Recording, options?: RunOptions)`: Main entry point
-- `executeAction(page: Page, action: Action)`: Route to specific handlers
-- `executeClick()`, `executeInput()`, `executeScroll()`: Action executors
+**Purpose**: Enterprise API for managing recordings and runs
 
-**Testing**: 25.2% coverage (behavior tests, not full integration)
+**Architecture**:
+- **API Server**: Fastify HTTP server with JWT auth
+- **Worker Process**: BullMQ job processor for test execution
+- **Database**: PostgreSQL with Drizzle ORM (8 tables)
+- **Cache/Queue**: Redis with BullMQ
 
-### 4. ConsoleReporter (`packages/core/src/reporter/`)
+**Database Tables**:
+| Table | Purpose |
+|-------|---------|
+| `users` | User accounts |
+| `api_tokens` | API authentication |
+| `recordings` | Test recording storage |
+| `runs` | Test execution history |
+| `run_actions` | Per-action results |
+| `schedules` | Cron-scheduled runs |
+| `webhooks` | Event notifications |
+| `webhook_deliveries` | Delivery log |
 
-**Purpose**: Pretty console output for CLI
-
-**Reporter Hooks**:
-- `onStart(recording)`: Show test name and action count
-- `onActionStart(action, index)`: Show action being executed
-- `onActionSuccess(action, index, duration)`: Show success with timing
-- `onActionError(action, index, error)`: Show error message
-- `onComplete(result)`: Show final summary with stats
-
-**Testing**: 100% coverage
+**API Routes**:
+- `/api/v1/auth/*` - Authentication
+- `/api/v1/tokens/*` - API tokens
+- `/api/v1/recordings/*` - Recording CRUD
+- `/api/v1/runs/*` - Test runs
+- `/api/v1/schedules/*` - Scheduled tests
+- `/api/health/*` - Health checks
 
 ## Recording Format
 
-Recordings are JSON files produced by the SaveAction Chrome extension with this structure:
-
 ```typescript
 interface Recording {
-  id: string;                    // rec_<timestamp>
-  testName: string;              // User-provided test name
-  url: string;                   // Starting URL
-  startTime: string;             // ISO 8601
-  endTime?: string;
-  viewport: { width, height };
+  id: string;           // rec_<timestamp>
+  testName: string;     // User-provided name
+  url: string;          // Starting URL
+  startTime: string;    // ISO 8601
+  viewport: { width: number; height: number };
   userAgent: string;
-  actions: Action[];             // Array of recorded actions
-  version: string;               // Schema version
+  actions: Action[];    // Recorded actions
+  version: string;      // Schema version
 }
 
 interface Action {
-  id: string;                    // act_001, act_002, etc.
-  type: 'click' | 'input' | 'scroll' | 'navigation' | 'select' | 'keypress' | 'submit';
+  id: string;           // act_001, act_002, etc.
+  type: 'click' | 'input' | 'scroll' | 'navigation' | 'select' | 'keypress' | 'submit' | 'hover';
   timestamp: number;
   url: string;
-  selector: SelectorStrategy;    // Multi-strategy selector
+  selector: SelectorStrategy;
   // ... type-specific fields
 }
 ```
 
 ## Common Patterns
 
-### Adding New Action Types
+### Adding New Action Types (Core)
 
 1. Define interface in `packages/core/src/types/actions.ts`
-2. Add type guard function (e.g., `isScrollAction()`)
+2. Add type guard function (e.g., `isNewAction()`)
 3. Update `Action` union type
 4. Implement executor in `PlaywrightRunner.executeAction()`
-5. Add tests in `PlaywrightRunner.test.ts`
+5. Add tests
 
-### Adding New Selector Types
+### Adding New API Endpoints
 
-1. Update `SelectorStrategy` in `packages/core/src/types/selectors.ts`
-2. Update `SelectorType` union
-3. Implement in `ElementLocator.getLocator()`
-4. Add to priority array in recordings
-5. Add tests in `ElementLocator.test.ts`
+1. Create route in `packages/api/src/routes/`
+2. Create service in `packages/api/src/services/`
+3. Create repository if new table needed
+4. Add Zod schemas for validation
+5. Register route in `app.ts`
+6. Add unit + integration tests
 
-### Debugging Test Failures
+### Adding CLI Commands
 
-1. **Element Not Found**: Check selector priority and specificity
-2. **Navigation Issues**: Look for URL changes, use navigation detection
-3. **Timing Issues**: Ensure proper delays after clicks/inputs (300ms)
-4. **Strict Mode Violations**: Multiple elements matched, need more specific selector
-
-## Known Issues and Solutions
-
-### Issue: Element Hiding After Click
-**Cause**: Missing back navigation in recording
-**Solution**: Ensure browser extension captures all navigation actions
-
-### Issue: Autocomplete Blocking Submit
-**Cause**: Dropdown animation not complete
-**Solution**: 300ms delay after input actions
-
-### Issue: Form Auto-Submit
-**Cause**: Page navigating while trying to click submit
-**Solution**: URL change detection treats navigation as success
-
-### Issue: ES Module Resolution
-**Cause**: Missing `.js` extensions in imports
-**Solution**: Always add `.js` to relative imports in TypeScript
+1. Create file in `packages/cli/src/commands/`
+2. Export async function `(params, options)`
+3. Register in `cli.ts` with Commander.js
+4. Add tests
 
 ## Git Workflow
 
-- **main** branch: Stable, working code
-- **Commit Messages**: Use conventional commits (enforced by husky commit-msg hook)
-- **Testing**: All tests must pass before committing
-- **Build**: Code must build without errors
-
 ### Commit Message Format
-
-Commit messages are validated by the `commit-msg` hook and must follow the Conventional Commits format:
 
 ```
 <type>(<scope>): <subject>
 ```
 
-**Allowed types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
+**Types**: `feat`, `fix`, `docs`, `style`, `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`
 
 **Examples**:
 ```bash
-feat: add recording pause functionality
-fix(runner): resolve element location issue
-docs: update README with new features
-test(parser): add validation edge cases
+feat(api): add recording search endpoint
+fix(core): handle navigation timeout
+test(cli): add validate command tests
 ```
 
 ### Git Hooks (Husky)
 
-| Hook | Action | Description |
-|------|--------|-------------|
-| `pre-commit` | `lint-staged` | Runs ESLint + Prettier on staged files |
-| `commit-msg` | Validates format | Ensures conventional commit format |
-| `pre-push` | `build + test` | Prevents pushing broken code |
+| Hook | Action |
+|------|--------|
+| `pre-commit` | lint-staged (ESLint + Prettier) |
+| `commit-msg` | Conventional commit validation |
+| `pre-push` | Build + test |
 
 ### CI Pipeline (GitHub Actions)
 
-The CI runs on every PR and push to `main`:
-
 | Job | Description |
 |-----|-------------|
-| `lint` | Runs ESLint with 0 warnings tolerance |
-| `typecheck` | Builds all packages (TypeScript strict mode) |
-| `test` | Runs all unit tests |
-| `test-coverage` | Uploads coverage to Codecov (main branch only) |
+| `lint` | ESLint with 0 warnings |
+| `typecheck` | TypeScript build |
+| `test` | All unit tests |
+| `test-integration` | Browser integration tests |
+| `test-coverage` | Coverage reports (main only) |
 
-## Future Phases
+## Context-Specific Instructions
 
-### Phase 3: API + Database (Planned)
-- REST API with Express/Fastify
-- PostgreSQL for recording storage
-- Authentication and user management
+The `.github/instructions/` folder contains context-specific rules that are automatically applied based on file paths:
 
-### Phase 4: Web UI (Planned)
-- React/Next.js dashboard
-- Recording manager
-- Test results viewer
-- Scheduled runs
+| File | Applies To |
+|------|-----------|
+| `api.instructions.md` | `packages/api/**/*.ts` |
+| `cli.instructions.md` | `packages/cli/**/*.ts` |
+| `es-modules.instructions.md` | `packages/**/*.ts` |
+| `playwright-runner.instructions.md` | `packages/core/src/runner/**/*.ts` |
+| `testing.instructions.md` | `**/*.test.ts`, `tests/**/*.ts` |
+| `types.instructions.md` | `packages/core/src/types/**/*.ts` |
 
-## Contact and Resources
+## Known Issues and Solutions
 
-- **Test Recordings**: `test8_1763549638010.json` (13 actions, 100% pass rate)
-- **Example Run**: `node packages/cli/bin/saveaction.js run test8_1763549638010.json --headless false`
-- **Playwright Docs**: https://playwright.dev/
-- **Zod Docs**: https://zod.dev/
+| Issue | Cause | Solution |
+|-------|-------|----------|
+| Element not found | Selector specificity | Check priority order, add fallbacks |
+| Navigation timeout | Page navigating during action | URL change detection |
+| Animation blocking | JS animations not complete | 300ms delay after actions |
+| ES module error | Missing `.js` extension | Always add `.js` to imports |
+| Strict mode error | Multiple elements matched | More specific selector |
+
+## Project Status
+
+### Completed ✅
+- Core Playwright runner with all action types
+- Multi-strategy element locator with retry
+- CLI with run, validate, info, list commands
+- REST API with Fastify
+- PostgreSQL + Drizzle ORM (8 tables)
+- Redis + BullMQ job queues
+- JWT + API token authentication
+- Recording/Run/Schedule management
+- Worker process for test execution
+- 1,019+ unit tests
+- Integration tests (API + browser)
+- CI/CD pipeline
+
+### Planned 📋
+- Phase 4: Web UI (React/Next.js)
+- Webhook notifications
+- Run comparison/history
+- Team/organization support
+
+## Resources
+
+- **Playwright**: https://playwright.dev/
+- **Fastify**: https://fastify.dev/
+- **Drizzle ORM**: https://orm.drizzle.team/
+- **BullMQ**: https://docs.bullmq.io/
+- **Zod**: https://zod.dev/
 
 ## Important Notes
 
-- Never remove `.js` extensions from imports (ES module requirement)
-- Always run tests after making changes
-- Keep retry logic exponential (don't change backoff strategy)
-- Preserve 300ms delays for animation stability
-- Test with real recordings, not just unit tests
+- **Never remove `.js` extensions** from imports (ES module requirement)
+- **Keep 300ms delays** for animation stability in runner
+- **Use `beforeEach` for test data** - `afterEach` truncates tables (API)
+- **Run build before CLI** - TypeScript must compile first
+- **Worker is separate process** - scales independently from API
+- **Soft delete by default** - recordings/runs use `deletedAt` column

@@ -1,5 +1,5 @@
 ---
-applyTo: "packages/core/src/**/*.test.ts"
+applyTo: "packages/**/src/**/*.test.ts,packages/**/tests/**/*.ts"
 ---
 
 # Testing Guidelines
@@ -38,8 +38,10 @@ describe('ComponentName', () => {
 ## Coverage Target
 
 - Critical components (parser, reporter): 100%
-- Core logic (locator): 90%+
-- Integration (runner): 25%+ (behavior tests)
+- Core logic (locator, services): 90%+
+- Integration (runner, routes): 25%+ (behavior tests)
+- API services: 90%+
+- API repositories: 90%+
 
 ## Mocking
 
@@ -60,18 +62,82 @@ const mockPage: Page = {
 } as unknown as Page;
 ```
 
+### Database Mocking (API)
+```typescript
+const mockDb = {
+  select: vi.fn().mockReturnValue({
+    from: vi.fn().mockReturnValue({
+      where: vi.fn().mockResolvedValue([mockData]),
+    }),
+  }),
+  insert: vi.fn().mockReturnValue({
+    values: vi.fn().mockReturnValue({
+      returning: vi.fn().mockResolvedValue([mockData]),
+    }),
+  }),
+};
+```
+
+### Fastify App Mocking (API)
+```typescript
+const app = Fastify();
+app.decorate('jwt', {});
+app.decorateRequest('jwtVerify', async function () {
+  (this as any).user = { sub: 'user-123' };
+});
+```
+
+## API Integration Tests
+
+Integration tests use real PostgreSQL and Redis:
+
+```typescript
+import { createTestApp, createUser, createRecording } from './helpers/index.js';
+
+describe('Feature Integration', () => {
+  let testApp: TestApp;
+  
+  beforeAll(async () => {
+    testApp = await createTestApp();
+  });
+  
+  afterAll(async () => {
+    await testApp.close();
+  });
+  
+  // Use beforeEach for user creation (tables truncated after each test)
+  beforeEach(async () => {
+    const user = await createUser({ email: 'test@example.com' });
+  });
+});
+```
+
+**Important**: Use `beforeEach` (not `beforeAll`) for test data since `afterEach` truncates tables.
+
 ## Assertions
 
 - Use specific matchers: `toBe()`, `toEqual()`, `toContain()`, `toThrow()`
 - For async: Always use `await expect(...).rejects.toThrow()`
 - Check behavior, not implementation details
+- For HTTP responses: Check `statusCode` and parsed `payload`
 
-## Test Coverage Command
+## Test Commands
 
 ```bash
+# Unit tests
+pnpm test
+
+# With coverage
 pnpm exec vitest run --coverage
+
+# API integration tests
+cd packages/api && pnpm test:integration
+
+# Core browser integration tests
+cd packages/core && pnpm test:integration
 ```
 
 ## File Naming
 
-Place test files next to source: `ComponentName.test.ts` alongside `ComponentName.ts`
+- Unit tests: `ComponentName.test.ts` alongside `ComponentName.ts`
+- Integration tests: `feature.integration.ts` in `tests/integration/`
