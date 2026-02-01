@@ -368,12 +368,12 @@
 - **Labels:** `security`
 - **Description:** Implemented Zod validation in RecordingService for all recording uploads. Validates: recording structure (id, testName, url, viewport, actions array), 10MB size limit (TOO_LARGE error), duplicate originalId detection (DUPLICATE_ORIGINAL_ID error), URL format, action structure. Tags validated as string arrays. Name limited to 255 chars. All malformed recordings rejected with VALIDATION_FAILED error. Implemented as part of Recordings CRUD API.
 
-### ⏳ TODO - Run Timeout, Cleanup & Concurrency
+### ✅ DONE - Run Timeout, Cleanup & Concurrency
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `stability`, `service`
-- **Description:** **Included in Runs API & Runner Service:** Run timeout (10 min, configurable), BullMQ concurrency (5 concurrent runs via test-runs queue), browser process cleanup on timeout/crash. **Additional hardening (this task):** Background cleanup job for orphaned runs - on API restart, mark "running" runs older than timeout as "failed". Cleanup orphaned video files (videos without matching run record). Scheduled via BullMQ cleanup queue. **Depends on:** Runs API & Runner Service.
+- **Description:** Implemented cleanup infrastructure for orphaned runs and video files. Created `cleanupProcessor.ts` BullMQ processor that handles three cleanup types: orphaned-runs (marks timed-out runs as failed), old-videos (deletes videos older than retention period), and expired-tokens (no-op since JWT tokens are stateless). Added startup cleanup hook in `worker.ts` that immediately cleans orphaned runs on worker restart. Scheduled recurring cleanup jobs: orphaned-runs cleanup hourly (cron: `0 * * * *`), old-videos cleanup daily at 3 AM (cron: `0 3 * * *`). Video cleanup respects retention period (default 30 days), skips active runs, handles both .webm and .mp4 formats. Default run timeout is 10 minutes. Cleanup worker runs with concurrency 1 to avoid conflicts. Added 17 unit tests covering all cleanup scenarios. **Branch:** feat/cleanup-jobs
 
 ### ✅ DONE - Structured Logging (Basic)
 
