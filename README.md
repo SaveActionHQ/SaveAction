@@ -89,6 +89,35 @@ saveaction run test.json --video
 saveaction run test.json --timeout 60000
 ```
 
+### Run from Platform (CI/CD Integration)
+
+Fetch and run recordings directly from the SaveAction Platform API:
+
+```bash
+# Run a single recording by ID
+saveaction run --recording-id rec_abc123 \
+  --api-url https://api.saveaction.io \
+  --api-token $SAVEACTION_API_TOKEN
+
+# Run all recordings with a tag (e.g., smoke tests)
+saveaction run --tag smoke \
+  --api-url https://api.saveaction.io \
+  --api-token $SAVEACTION_API_TOKEN
+
+# Override base URL for different environments
+saveaction run --recording-id rec_abc123 \
+  --api-url https://api.saveaction.io \
+  --api-token $SAVEACTION_API_TOKEN \
+  --base-url https://staging.myapp.com
+
+# Using environment variables (recommended for CI/CD)
+export SAVEACTION_API_URL=https://api.saveaction.io
+export SAVEACTION_API_TOKEN=your-token
+saveaction run --tag smoke --base-url https://staging.myapp.com
+```
+
+See [CLI Platform Integration](docs/CLI_PLATFORM_INTEGRATION.md) for detailed documentation.
+
 ### Analyze Recordings
 
 Get detailed information about a recording without running it:
