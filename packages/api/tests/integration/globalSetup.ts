@@ -6,6 +6,9 @@
  */
 
 import { sql } from 'drizzle-orm';
+import { migrate } from 'drizzle-orm/node-postgres/migrator';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { getTestDb, closeTestDb, getTestConfig } from './helpers/database.js';
 
 export default async function globalSetup() {
@@ -34,6 +37,13 @@ export default async function globalSetup() {
     await db.execute(sql`SELECT 1`);
     console.log('✅ PostgreSQL connection successful');
 
+    // Run migrations to ensure tables exist
+    console.log('🔄 Running database migrations...');
+    const __dirname = path.dirname(fileURLToPath(import.meta.url));
+    const migrationsFolder = path.resolve(__dirname, '../../drizzle');
+    await migrate(db, { migrationsFolder });
+    console.log('✅ Migrations completed');
+
     // Clean up test database before running tests
     console.log('🧹 Cleaning up test database...');
     await db.execute(sql`TRUNCATE TABLE users, api_tokens, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries CASCADE`);
@@ -41,7 +51,7 @@ export default async function globalSetup() {
 
     await closeTestDb();
   } catch (error) {
-    console.error('❌ Failed to connect to test database:', error);
+    console.error('❌ Failed to setup test database:', error);
     throw error;
   }
 
