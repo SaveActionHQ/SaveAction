@@ -1,7 +1,7 @@
 /**
  * Tests for Cleanup Processor
  *
- * Tests cleanup job processing for orphaned runs and old videos.
+ * Tests cleanup job processing for orphaned runs, old videos, and old screenshots.
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -332,6 +332,202 @@ describe('cleanupProcessor', () => {
           db: mockDb,
           logger: mockLogger,
           videoStoragePath: '/path/to/videos',
+        });
+
+        const result = await processor(mockJob);
+
+        expect(result.itemsDeleted).toBe(0);
+        expect(result.errors.length).toBe(1);
+        expect(result.errors[0]).toContain('Permission denied');
+      });
+    });
+
+    describe('old-screenshots cleanup', () => {
+      beforeEach(() => {
+        mockJob.data.cleanupType = 'old-screenshots';
+      });
+
+      it('should skip if screenshot storage path does not exist', async () => {
+        (fs.access as any).mockRejectedValue(new Error('ENOENT'));
+
+        const processor = createCleanupProcessor({
+          db: mockDb,
+          logger: mockLogger,
+          screenshotStoragePath: '/path/to/screenshots',
+        });
+
+        const result = await processor(mockJob);
+
+        expect(result).toEqual({
+          cleanupType: 'old-screenshots',
+          itemsProcessed: 0,
+          itemsDeleted: 0,
+          errors: [],
+        });
+        expect(mockLogger.info).toHaveBeenCalledWith(
+          'Screenshot storage path does not exist, skipping cleanup',
+          expect.any(Object)
+        );
+      });
+
+      it('should delete old screenshot files (png)', async () => {
+        (fs.access as any).mockResolvedValue(undefined);
+        (fs.readdir as any).mockResolvedValue([
+          { name: 'run-123-1.png', isFile: () => true },
+          { name: 'run-456-2.png', isFile: () => true },
+        ]);
+        // Make files old (31 days old)
+        (fs.stat as any).mockResolvedValue({
+          mtimeMs: Date.now() - 31 * 24 * 60 * 60 * 1000,
+        });
+        (fs.unlink as any).mockResolvedValue(undefined);
+
+        const processor = createCleanupProcessor({
+          db: mockDb,
+          logger: mockLogger,
+          screenshotStoragePath: '/path/to/screenshots',
+          screenshotRetentionDays: 30,
+        });
+
+        const result = await processor(mockJob);
+
+        expect(fs.unlink).toHaveBeenCalledTimes(2);
+        expect(result.itemsProcessed).toBe(2);
+        expect(result.itemsDeleted).toBe(2);
+      });
+
+      it('should delete old screenshot files (jpg and jpeg)', async () => {
+        (fs.access as any).mockResolvedValue(undefined);
+        (fs.readdir as any).mockResolvedValue([
+          { name: 'run-123.jpg', isFile: () => true },
+          { name: 'run-456.jpeg', isFile: () => true },
+        ]);
+        (fs.stat as any).mockResolvedValue({
+          mtimeMs: Date.now() - 31 * 24 * 60 * 60 * 1000,
+        });
+        (fs.unlink as any).mockResolvedValue(undefined);
+
+        const processor = createCleanupProcessor({
+          db: mockDb,
+          logger: mockLogger,
+          screenshotStoragePath: '/path/to/screenshots',
+          screenshotRetentionDays: 30,
+        });
+
+        const result = await processor(mockJob);
+
+        expect(fs.unlink).toHaveBeenCalledTimes(2);
+        expect(result.itemsProcessed).toBe(2);
+        expect(result.itemsDeleted).toBe(2);
+      });
+
+      it('should not delete recent screenshot files', async () => {
+        (fs.access as any).mockResolvedValue(undefined);
+        (fs.readdir as any).mockResolvedValue([{ name: 'run-123.png', isFile: () => true }]);
+        // Make file recent (1 day old)
+        (fs.stat as any).mockResolvedValue({
+          mtimeMs: Date.now() - 1 * 24 * 60 * 60 * 1000,
+        });
+
+        const processor = createCleanupProcessor({
+          db: mockDb,
+          logger: mockLogger,
+          screenshotStoragePath: '/path/to/screenshots',
+          screenshotRetentionDays: 30,
+        });
+
+        const result = await processor(mockJob);
+
+        expect(fs.unlink).not.toHaveBeenCalled();
+        expect(result.itemsDeleted).toBe(0);
+      });
+
+      it('should skip non-screenshot files', async () => {
+        (fs.access as any).mockResolvedValue(undefined);
+        (fs.readdir as any).mockResolvedValue([
+          { name: 'readme.txt', isFile: () => true },
+          { name: 'thumbnails', isFile: () => false }, // directory
+          { name: 'run-123.png', isFile: () => true },
+        ]);
+        (fs.stat as any).mockResolvedValue({
+          mtimeMs: Date.now() - 31 * 24 * 60 * 60 * 1000,
+        });
+        (fs.unlink as any).mockResolvedValue(undefined);
+
+        const processor = createCleanupProcessor({
+          db: mockDb,
+          logger: mockLogger,
+          screenshotStoragePath: '/path/to/screenshots',
+        });
+
+        const result = await processor(mockJob);
+
+        // Only the .png file should be processed
+        expect(result.itemsProcessed).toBe(1);
+        expect(fs.unlink).toHaveBeenCalledTimes(1);
+      });
+
+      it('should not delete screenshot if run is still active', async () => {
+        (fs.access as any).mockResolvedValue(undefined);
+        (fs.readdir as any).mockResolvedValue([
+          { name: 'run-active-123-1.png', isFile: () => true },
+        ]);
+        (fs.stat as any).mockResolvedValue({
+          mtimeMs: Date.now() - 31 * 24 * 60 * 60 * 1000,
+        });
+        // Run is still active
+        mockRunRepository.findById.mockResolvedValue({
+          id: 'active-123',
+          status: 'running',
+        });
+
+        const processor = createCleanupProcessor({
+          db: mockDb,
+          logger: mockLogger,
+          screenshotStoragePath: '/path/to/screenshots',
+        });
+
+        const result = await processor(mockJob);
+
+        expect(fs.unlink).not.toHaveBeenCalled();
+        expect(result.itemsDeleted).toBe(0);
+      });
+
+      it('should use maxAgeDays from job data if provided', async () => {
+        mockJob.data.maxAgeDays = 7;
+        (fs.access as any).mockResolvedValue(undefined);
+        (fs.readdir as any).mockResolvedValue([{ name: 'run-123.png', isFile: () => true }]);
+        // File is 10 days old (older than 7 days)
+        (fs.stat as any).mockResolvedValue({
+          mtimeMs: Date.now() - 10 * 24 * 60 * 60 * 1000,
+        });
+        (fs.unlink as any).mockResolvedValue(undefined);
+
+        const processor = createCleanupProcessor({
+          db: mockDb,
+          logger: mockLogger,
+          screenshotStoragePath: '/path/to/screenshots',
+          screenshotRetentionDays: 30, // Default is 30, but job specifies 7
+        });
+
+        const result = await processor(mockJob);
+
+        expect(fs.unlink).toHaveBeenCalled();
+        expect(result.itemsDeleted).toBe(1);
+      });
+
+      it('should handle file deletion errors', async () => {
+        (fs.access as any).mockResolvedValue(undefined);
+        (fs.readdir as any).mockResolvedValue([{ name: 'run-123.png', isFile: () => true }]);
+        (fs.stat as any).mockResolvedValue({
+          mtimeMs: Date.now() - 31 * 24 * 60 * 60 * 1000,
+        });
+        (fs.unlink as any).mockRejectedValue(new Error('Permission denied'));
+
+        const processor = createCleanupProcessor({
+          db: mockDb,
+          logger: mockLogger,
+          screenshotStoragePath: '/path/to/screenshots',
         });
 
         const result = await processor(mockJob);

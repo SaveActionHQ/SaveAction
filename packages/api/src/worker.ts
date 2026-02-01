@@ -184,8 +184,10 @@ async function start(): Promise<void> {
     db,
     logger,
     videoStoragePath: env.VIDEO_STORAGE_PATH,
+    screenshotStoragePath: env.SCREENSHOT_STORAGE_PATH,
     runTimeoutMs: 10 * 60 * 1000, // 10 minutes
     videoRetentionDays: 30,
+    screenshotRetentionDays: 30,
   });
 
   // Run startup cleanup (mark orphaned runs as failed)
@@ -230,6 +232,20 @@ async function start(): Promise<void> {
     { jobId: 'cleanup-old-videos-daily' }
   );
   logger.info('Scheduled old-videos cleanup job (daily at 3 AM)');
+
+  // Schedule old screenshots cleanup daily at 3:30 AM
+  await jobQueueManager.addRepeatableJob(
+    'cleanup',
+    'old-screenshots-cleanup',
+    {
+      cleanupType: 'old-screenshots',
+      maxAgeDays: 30,
+      createdAt: new Date().toISOString(),
+    },
+    '30 3 * * *', // Daily at 3:30 AM
+    { jobId: 'cleanup-old-screenshots-daily' }
+  );
+  logger.info('Scheduled old-screenshots cleanup job (daily at 3:30 AM)');
 
   // Create BullMQ workers
   logger.info('Creating BullMQ workers...');
