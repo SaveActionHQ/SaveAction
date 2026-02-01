@@ -6,3 +6,5 @@ export type { BullMQPluginOptions } from './bullmq.js';
 export { default as databasePlugin, type DatabasePluginOptions } from './database.js';
 export { checkDatabaseHealth } from '../db/index.js';
 export { default as jwtPlugin, jwtPlugin as jwtPluginNamed } from './jwt.js';
+export { swaggerPlugin } from './swagger.js';
+export type { SwaggerPluginOptions } from './swagger.js';

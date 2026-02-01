@@ -10,6 +10,7 @@ import {
   databasePlugin,
   checkDatabaseHealth,
   jwtPlugin,
+  swaggerPlugin,
 } from './plugins/index.js';
 import authRoutes from './routes/auth.js';
 import apiTokenRoutes from './routes/tokens.js';
@@ -32,6 +33,8 @@ export interface AppOptions {
   skipMigrations?: boolean;
   /** Skip JWT authentication plugin (useful for tests) */
   skipAuth?: boolean;
+  /** Skip Swagger/OpenAPI documentation (useful for tests) */
+  skipSwagger?: boolean;
 }
 
 /**
@@ -47,6 +50,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     skipDatabase = false,
     skipMigrations = false,
     skipAuth = false,
+    skipSwagger = false,
   } = options;
 
   // Create Fastify instance with logging
@@ -83,6 +87,15 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     exposedHeaders: ['X-Request-ID'],
     maxAge: 86400, // 24 hours
   });
+
+  // Register Swagger/OpenAPI documentation (unless skipped for testing)
+  if (!skipSwagger) {
+    await app.register(swaggerPlugin, {
+      baseUrl: env.APP_BASE_URL || `http://localhost:${env.API_PORT}`,
+      enableUi: true,
+      uiPrefix: '/api/docs',
+    });
+  }
 
   // Register custom error handler
   await app.register(errorHandler);
@@ -219,132 +232,277 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
   }
 
   // Health check endpoint (basic)
-  app.get('/api/health', async () => {
-    return {
-      status: 'ok',
-      timestamp: new Date().toISOString(),
-      version: '0.1.0',
-    };
-  });
+  app.get(
+    '/api/health',
+    {
+      schema: {
+        tags: ['Health'],
+        summary: 'Basic health check',
+        description: 'Returns basic API health status',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              status: { type: 'string', example: 'ok' },
+              timestamp: { type: 'string', format: 'date-time' },
+              version: { type: 'string', example: '0.1.0' },
+            },
+          },
+        },
+      },
+    },
+    async () => {
+      return {
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        version: '0.1.0',
+      };
+    }
+  );
 
   // Detailed health check endpoint with service status
-  app.get('/api/health/detailed', async (_request, reply) => {
-    const services: Record<string, { status: string; latencyMs?: number; error?: string }> = {
-      api: { status: 'healthy' },
-    };
-
-    // Check Database if available
-    if (app.db) {
-      const dbHealth = await checkDatabaseHealth();
-      services.database = {
-        status: dbHealth.connected ? 'healthy' : 'unhealthy',
-        latencyMs: dbHealth.latencyMs,
-        error: dbHealth.error,
-      };
-    } else {
-      services.database = { status: 'not_configured' };
-    }
-
-    // Check Redis if available
-    if (app.redis) {
-      const redisHealth = await checkRedisHealth(app.redis);
-      services.redis = {
-        status: redisHealth.status,
-        latencyMs: redisHealth.latencyMs,
-        error: redisHealth.error,
-      };
-    } else {
-      services.redis = { status: 'not_configured' };
-    }
-
-    // Check BullMQ queues if available
-    if (app.queues) {
-      const queueHealth = await checkQueueHealth(app.queues);
-      services.queues = {
-        status: queueHealth.status,
-      };
-    } else {
-      services.queues = { status: 'not_configured' };
-    }
-
-    // Determine overall status
-    const allHealthy = Object.values(services).every(
-      (s) => s.status === 'healthy' || s.status === 'not_configured'
-    );
-
-    const status = allHealthy ? 'ok' : 'degraded';
-    const httpStatus = allHealthy ? 200 : 503;
-
-    return reply.status(httpStatus).send({
-      status,
-      timestamp: new Date().toISOString(),
-      version: '0.1.0',
-      services,
-    });
-  });
-
-  // Liveness probe (for Kubernetes)
-  app.get('/api/health/live', async () => {
-    return { status: 'ok' };
-  });
-
-  // Readiness probe (for Kubernetes)
-  app.get('/api/health/ready', async (_request, reply) => {
-    // Check critical services
-
-    // Check Database if available
-    if (app.db) {
-      const dbHealth = await checkDatabaseHealth();
-      if (!dbHealth.connected) {
-        return reply.status(503).send({
-          status: 'not_ready',
-          reason: 'Database is not healthy',
-        });
-      }
-    }
-
-    // Check Redis if available
-    if (app.redis) {
-      const redisHealth = await checkRedisHealth(app.redis);
-      if (redisHealth.status !== 'healthy') {
-        return reply.status(503).send({
-          status: 'not_ready',
-          reason: 'Redis is not healthy',
-        });
-      }
-    }
-
-    return { status: 'ready' };
-  });
-
-  // Queue status endpoint
-  app.get('/api/queues/status', async (_request, reply) => {
-    if (!app.queues) {
-      return reply.status(503).send({
-        error: {
-          code: 'QUEUES_NOT_CONFIGURED',
-          message: 'Job queues are not configured',
+  app.get(
+    '/api/health/detailed',
+    {
+      schema: {
+        tags: ['Health'],
+        summary: 'Detailed health check',
+        description: 'Returns health status of all services including database, Redis, and queues',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              status: { type: 'string', enum: ['ok', 'degraded'] },
+              timestamp: { type: 'string', format: 'date-time' },
+              version: { type: 'string' },
+              services: {
+                type: 'object',
+                additionalProperties: {
+                  type: 'object',
+                  properties: {
+                    status: { type: 'string' },
+                    latencyMs: { type: 'number' },
+                    error: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+          503: {
+            type: 'object',
+            properties: {
+              status: { type: 'string', example: 'degraded' },
+              timestamp: { type: 'string', format: 'date-time' },
+              version: { type: 'string' },
+              services: { type: 'object' },
+            },
+          },
         },
+      },
+    },
+    async (_request, reply) => {
+      const services: Record<string, { status: string; latencyMs?: number; error?: string }> = {
+        api: { status: 'healthy' },
+      };
+
+      // Check Database if available
+      if (app.db) {
+        const dbHealth = await checkDatabaseHealth();
+        services.database = {
+          status: dbHealth.connected ? 'healthy' : 'unhealthy',
+          latencyMs: dbHealth.latencyMs,
+          error: dbHealth.error,
+        };
+      } else {
+        services.database = { status: 'not_configured' };
+      }
+
+      // Check Redis if available
+      if (app.redis) {
+        const redisHealth = await checkRedisHealth(app.redis);
+        services.redis = {
+          status: redisHealth.status,
+          latencyMs: redisHealth.latencyMs,
+          error: redisHealth.error,
+        };
+      } else {
+        services.redis = { status: 'not_configured' };
+      }
+
+      // Check BullMQ queues if available
+      if (app.queues) {
+        const queueHealth = await checkQueueHealth(app.queues);
+        services.queues = {
+          status: queueHealth.status,
+        };
+      } else {
+        services.queues = { status: 'not_configured' };
+      }
+
+      // Determine overall status
+      const allHealthy = Object.values(services).every(
+        (s) => s.status === 'healthy' || s.status === 'not_configured'
+      );
+
+      const status = allHealthy ? 'ok' : 'degraded';
+      const httpStatus = allHealthy ? 200 : 503;
+
+      return reply.status(httpStatus).send({
+        status,
+        timestamp: new Date().toISOString(),
+        version: '0.1.0',
+        services,
       });
     }
+  );
 
-    const health = await checkQueueHealth(app.queues);
-    return {
-      status: health.status,
-      timestamp: new Date().toISOString(),
-      queues: health.queues,
-      workers: health.workers,
-    };
-  });
+  // Liveness probe (for Kubernetes)
+  app.get(
+    '/api/health/live',
+    {
+      schema: {
+        tags: ['Health'],
+        summary: 'Liveness probe',
+        description: 'Kubernetes liveness probe - returns ok if the process is alive',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              status: { type: 'string', example: 'ok' },
+            },
+          },
+        },
+      },
+    },
+    async () => {
+      return { status: 'ok' };
+    }
+  );
+
+  // Readiness probe (for Kubernetes)
+  app.get(
+    '/api/health/ready',
+    {
+      schema: {
+        tags: ['Health'],
+        summary: 'Readiness probe',
+        description:
+          'Kubernetes readiness probe - returns ready if all critical services are healthy',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              status: { type: 'string', example: 'ready' },
+            },
+          },
+          503: {
+            type: 'object',
+            properties: {
+              status: { type: 'string', example: 'not_ready' },
+              reason: { type: 'string' },
+            },
+          },
+        },
+      },
+    },
+    async (_request, reply) => {
+      // Check critical services
+
+      // Check Database if available
+      if (app.db) {
+        const dbHealth = await checkDatabaseHealth();
+        if (!dbHealth.connected) {
+          return reply.status(503).send({
+            status: 'not_ready',
+            reason: 'Database is not healthy',
+          });
+        }
+      }
+
+      // Check Redis if available
+      if (app.redis) {
+        const redisHealth = await checkRedisHealth(app.redis);
+        if (redisHealth.status !== 'healthy') {
+          return reply.status(503).send({
+            status: 'not_ready',
+            reason: 'Redis is not healthy',
+          });
+        }
+      }
+
+      return { status: 'ready' };
+    }
+  );
+
+  // Queue status endpoint
+  app.get(
+    '/api/queues/status',
+    {
+      schema: {
+        tags: ['Health'],
+        summary: 'Queue status',
+        description: 'Returns the status of all job queues',
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              status: { type: 'string' },
+              timestamp: { type: 'string', format: 'date-time' },
+              queues: { type: 'object' },
+              workers: { type: 'object' },
+            },
+          },
+          503: {
+            type: 'object',
+            properties: {
+              error: {
+                type: 'object',
+                properties: {
+                  code: { type: 'string' },
+                  message: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (_request, reply) => {
+      if (!app.queues) {
+        return reply.status(503).send({
+          error: {
+            code: 'QUEUES_NOT_CONFIGURED',
+            message: 'Job queues are not configured',
+          },
+        });
+      }
+
+      const health = await checkQueueHealth(app.queues);
+      return {
+        status: health.status,
+        timestamp: new Date().toISOString(),
+        queues: health.queues,
+        workers: health.workers,
+      };
+    }
+  );
 
   // Root endpoint
-  app.get('/', async () => {
-    return {
-      name: 'SaveAction API',
-      version: '0.1.0',
-      docs: '/api/docs',
-    };
-  });
+  app.get(
+    '/',
+    {
+      schema: {
+        hide: true, // Hide from swagger - it's just a redirect hint
+      },
+    },
+    async () => {
+      return {
+        name: 'SaveAction API',
+        version: '0.1.0',
+        docs: '/api/docs',
+      };
+    }
+  );
 
   return app;
 }

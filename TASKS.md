@@ -323,12 +323,22 @@
 - **Labels:** `feature`, `api`
 - **Description:** Implemented comprehensive health check endpoints. GET /api/health (basic), GET /api/health/detailed (API, PostgreSQL, Redis, BullMQ status with latency), GET /api/health/live (Kubernetes liveness probe), GET /api/health/ready (Kubernetes readiness probe - checks DB and Redis). Queue status at GET /api/queues/status. Implemented as part of Redis Setup and BullMQ Job Queue tasks.
 
-### ⏳ TODO - OpenAPI Documentation (Swagger)
+### ✅ DONE - OpenAPI Documentation (Swagger)
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `docs`, `api`, `dx`
+- **Completed:** 2026-02-01
 - **Description:** Add @fastify/swagger and @fastify/swagger-ui for auto-generated API documentation. Generate OpenAPI 3.0 spec from route schemas (Zod → JSON Schema). Expose interactive docs at /api/docs. Include authentication examples and error response schemas.
+- **Implementation:**
+  - Installed @fastify/swagger@8 and @fastify/swagger-ui@4 (Fastify 4.x compatible)
+  - Created swagger plugin with OpenAPI 3.0.3 spec at `packages/api/src/plugins/swagger.ts`
+  - Swagger UI available at `/api/docs`, JSON spec at `/api/docs/json`
+  - Configured security schemes: bearerAuth (JWT), apiToken (sa_live_* tokens)
+  - Added component schemas: Error, User, Recording, Run, Schedule, Pagination
+  - Auto-tags routes based on path (e.g., /api/recordings → "Recordings")
+  - Added schema tags to health check endpoints for better organization
+  - Tests: skipSwagger option prevents swagger registration during tests
 
 ### ⏳ TODO - Security Headers
 
