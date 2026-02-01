@@ -54,18 +54,26 @@ export interface ApiError {
   };
 }
 
-export interface Recording {
+// Recording as returned from list endpoint (without full data)
+export interface RecordingListItem {
   id: string;
-  userId: string;
   name: string;
   description?: string;
   originalId: string;
   url: string;
   actionCount: number;
   tags: string[];
-  data: RecordingData;
+  estimatedDurationMs?: number;
+  schemaVersion?: string;
+  dataSizeBytes?: number;
   createdAt: string;
   updatedAt: string;
+}
+
+// Full recording with data (returned from get single recording)
+export interface Recording extends RecordingListItem {
+  userId: string;
+  data: RecordingData;
 }
 
 export interface RecordingData {
@@ -120,6 +128,8 @@ export interface PaginatedResponse<T> {
     limit: number;
     total: number;
     totalPages: number;
+    hasNext?: boolean;
+    hasPrevious?: boolean;
   };
 }
 
@@ -236,14 +246,24 @@ class ApiClient {
       return {} as T;
     }
 
-    const result = (await response.json()) as ApiResponse<T>;
+    const result = await response.json();
 
     // Handle wrapped API response { success: true/false, data/error }
     if (typeof result === 'object' && result !== null && 'success' in result) {
       if (result.success === false) {
         throw new ApiClientError(result.error);
       }
-      return result.data;
+
+      // Check if this is a paginated response (has pagination at top level)
+      if ('pagination' in result && Array.isArray(result.data)) {
+        // Return as PaginatedResponse structure
+        return {
+          data: result.data,
+          pagination: result.pagination,
+        } as T;
+      }
+
+      return result.data as T;
     }
 
     // Return raw result if not wrapped (for backwards compatibility)
@@ -384,7 +404,7 @@ class ApiClient {
     tags?: string[];
     sortBy?: 'createdAt' | 'updatedAt' | 'name';
     sortOrder?: 'asc' | 'desc';
-  }): Promise<PaginatedResponse<Recording>> {
+  }): Promise<PaginatedResponse<RecordingListItem>> {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', params.page.toString());
     if (params?.limit) searchParams.set('limit', params.limit.toString());
@@ -394,7 +414,7 @@ class ApiClient {
     if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
 
     const query = searchParams.toString();
-    return this.request<PaginatedResponse<Recording>>(
+    return this.request<PaginatedResponse<RecordingListItem>>(
       `/api/v1/recordings${query ? `?${query}` : ''}`
     );
   }

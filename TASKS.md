@@ -514,19 +514,23 @@
 - **Description:** Build dashboard layout with sidebar navigation, header, and responsive design. Navigation: Recordings, Runs, Schedules, Settings.
 - **Implementation:** Created dashboard layout with collapsible sidebar, header with user menu and logout. Mobile-responsive with slide-out navigation. User info displayed from auth context. Loading skeleton during auth check. Theme toggle in header.
 
-### ⏳ TODO - Recording Upload UI
+### ✅ DONE - Recording Upload UI
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
+- **Completed:** 2026-02-01
 - **Description:** Build drag-and-drop upload component with react-dropzone. Validate JSON client-side, show preview before upload, tag management.
+- **Implementation:** Created RecordingUpload component with react-dropzone for drag-and-drop file uploads. Client-side JSON validation with Zod schema (structure, required fields, action types). Preview displays test name, URL, viewport, action count before upload. Tag management with add/remove functionality. Toast notifications for success/error feedback. Integrated into recordings page as modal dialog.
 
-### ⏳ TODO - Recordings List Page
+### ✅ DONE - Recordings List Page
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
+- **Completed:** 2026-02-01
 - **Description:** Build recordings list with paginated table. Search by name, filter by tags, sort by date. Quick actions: run, delete, duplicate.
+- **Implementation:** Created RecordingsList component with paginated data table. Features: search by name, tag filtering dropdown, sortable columns (name, created date). Quick actions: Run (queues BullMQ job with toast feedback), Delete (confirmation dialog, soft delete), Duplicate (copies recording with '(Copy)' suffix). Created reusable components: DataTable, Pagination, EmptyState, ConfirmDialog. Added ToastProvider for app-wide notifications. Proper error handling with ApiClientError.
 
 ### ⏳ TODO - Run Execution UI
 
@@ -733,13 +737,13 @@
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
 | Phase 3: API                     | 32     | 28     | 0       | 4      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
-| Phase 4: Web                     | 9      | 3      | 0       | 6      |
+| Phase 4: Web                     | 9      | 5      | 0       | 4      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **88** | **58** | **2**   | **28** |
+| **TOTAL**                        | **88** | **60** | **2**   | **26** |
 
 ### Test Summary
 

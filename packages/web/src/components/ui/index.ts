@@ -18,3 +18,13 @@ export { Avatar, AvatarImage, AvatarFallback } from './avatar';
 export { Skeleton, SkeletonCard, SkeletonTable } from './skeleton';
 
 export { ThemeToggle, ThemeToggleDropdown } from './theme-toggle';
+
+export {
+  Dialog,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogContent,
+  DialogFooter,
+  ConfirmDialog,
+} from './dialog';
