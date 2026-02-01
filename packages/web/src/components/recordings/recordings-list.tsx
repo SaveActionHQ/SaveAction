@@ -18,6 +18,7 @@ import {
 import { Pagination } from '@/components/shared/pagination';
 import { EmptyState } from '@/components/shared/empty-state';
 import { useToast } from '@/components/providers/toast-provider';
+import { RunExecutionDialog } from '@/components/runs/run-execution-dialog';
 import { api, type RecordingListItem, type PaginatedResponse, ApiClientError } from '@/lib/api';
 import { formatDate, formatRelativeTime } from '@/lib/utils';
 
@@ -158,8 +159,8 @@ export function RecordingsList({
   const [deleteRecording, setDeleteRecording] = useState<RecordingListItem | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
 
-  // Run creation state
-  const [runningRecordingId, setRunningRecordingId] = useState<string | null>(null);
+  // Run execution dialog state
+  const [runRecording, setRunRecording] = useState<RecordingListItem | null>(null);
 
   // Duplicate state
   const [duplicatingRecordingId, setDuplicatingRecordingId] = useState<string | null>(null);
@@ -233,25 +234,13 @@ export function RecordingsList({
     }
   };
 
-  const handleRun = async (recording: RecordingListItem) => {
-    setRunningRecordingId(recording.id);
-    try {
-      const run = await api.createRun({
-        recordingId: recording.id,
-        browser: 'chromium',
-        headless: true,
-      });
-      success('Run started', `Test run for "${recording.name}" has been queued.`);
-      onRefresh?.();
-    } catch (err) {
-      const errorMessage = err instanceof ApiClientError 
-        ? err.message 
-        : 'Failed to start run. Please try again.';
-      setError(errorMessage);
-      toastError('Run failed', errorMessage);
-    } finally {
-      setRunningRecordingId(null);
-    }
+  const handleRun = (recording: RecordingListItem) => {
+    setRunRecording(recording);
+  };
+
+  const handleRunComplete = () => {
+    setRunRecording(null);
+    onRefresh?.();
   };
 
   const handleDuplicate = async (recording: RecordingListItem) => {
@@ -422,33 +411,9 @@ export function RecordingsList({
                         variant="ghost"
                         size="icon-sm"
                         onClick={() => handleRun(recording)}
-                        disabled={runningRecordingId === recording.id}
                         title="Run test"
                       >
-                        {runningRecordingId === recording.id ? (
-                          <svg
-                            className="animate-spin h-4 w-4"
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                            />
-                          </svg>
-                        ) : (
-                          <PlayIcon className="h-4 w-4" />
-                        )}
+                        <PlayIcon className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -522,6 +487,21 @@ export function RecordingsList({
         variant="destructive"
         isLoading={isDeleting}
       />
+
+      {/* Run Execution Dialog */}
+      {runRecording && (
+        <RunExecutionDialog
+          recording={{
+            id: runRecording.id,
+            name: runRecording.name,
+            url: runRecording.url,
+            actionCount: runRecording.actionCount,
+          }}
+          open={!!runRecording}
+          onClose={() => setRunRecording(null)}
+          onComplete={handleRunComplete}
+        />
+      )}
     </div>
   );
 }

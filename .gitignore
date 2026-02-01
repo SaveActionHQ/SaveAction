@@ -40,3 +40,8 @@ Thumbs.db
 # Playwright
 playwright-report/
 test-results/
+
+# Storage (videos, screenshots)
+storage/
+videos/
+screenshots/

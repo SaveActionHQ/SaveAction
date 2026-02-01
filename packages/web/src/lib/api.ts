@@ -91,17 +91,44 @@ export interface Run {
   id: string;
   userId: string;
   recordingId: string;
+  recordingName?: string;
   status: 'queued' | 'running' | 'passed' | 'failed' | 'cancelled';
   browser: 'chromium' | 'firefox' | 'webkit';
   headless: boolean;
+  videoEnabled: boolean;
   videoPath?: string;
   duration?: number;
+  durationMs?: number;
+  actionsTotal?: number;
   actionsExecuted?: number;
   actionsFailed?: number;
+  actionsSkipped?: number;
   errorMessage?: string;
+  errorActionId?: string;
+  triggeredBy?: string;
   startedAt?: string;
   completedAt?: string;
   createdAt: string;
+}
+
+export interface RunAction {
+  id: string;
+  actionId: string;
+  actionType: string;
+  actionIndex: number;
+  status: 'pending' | 'running' | 'success' | 'failed' | 'skipped';
+  durationMs?: number;
+  startedAt?: string;
+  completedAt?: string;
+  selectorUsed?: string;
+  selectorValue?: string;
+  retryCount?: number;
+  errorMessage?: string;
+  screenshotPath?: string;
+  elementFound?: boolean;
+  elementTagName?: string;
+  pageUrl?: string;
+  pageTitle?: string;
 }
 
 export interface Schedule {
@@ -512,7 +539,7 @@ class ApiClient {
     recordingId: string;
     browser?: 'chromium' | 'firefox' | 'webkit';
     headless?: boolean;
-    recordVideo?: boolean;
+    videoEnabled?: boolean;
   }): Promise<Run> {
     return this.request<Run>('/api/v1/runs', {
       method: 'POST',
@@ -545,6 +572,14 @@ class ApiClient {
     return this.request<void>(`/api/v1/runs/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  /**
+   * Get action results for a run
+   */
+  async getRunActions(id: string): Promise<RunAction[]> {
+    const response = await this.request<RunAction[]>(`/api/v1/runs/${id}/actions`);
+    return response;
   }
 
   // =====================
