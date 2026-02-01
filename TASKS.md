@@ -487,26 +487,32 @@
 
 ## Phase 4: Web Dashboard (@saveaction/web)
 
-### ⏳ TODO - Setup Next.js App
+### ✅ DONE - Setup Next.js App
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `setup`
+- **Completed:** 2026-02-01
 - **Description:** Initialize Next.js 15 with App Router. Setup Tailwind CSS, install shadcn/ui components, configure environment variables.
+- **Implementation:** Initialized Next.js 16.1.6 with App Router, TypeScript, Tailwind CSS v4, brand color #5D5FEF. Created UI components (Button, Input, Label, Card, Badge, Avatar, Skeleton, ThemeToggle). Created layout components (Logo, Sidebar, Header, MobileNav). Setup light/dark theme with next-themes (GitHub-inspired dark mode). Environment variables configured via .env.local.
 
-### ⏳ TODO - Auth Pages
+### ✅ DONE - Auth Pages
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
+- **Completed:** 2026-02-01
 - **Description:** Build login and register pages. JWT handling, protected routes, auth context/hooks.
+- **Implementation:** Created login and register pages with form validation, password strength indicator. Built AuthProvider context with JWT token management, automatic token refresh, protected route handling. Created API client service (lib/api.ts) with type-safe methods for all endpoints. Auth state persists in localStorage with httpOnly refresh token cookie support.
 
-### ⏳ TODO - Dashboard Layout
+### ✅ DONE - Dashboard Layout
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
+- **Completed:** 2026-02-01
 - **Description:** Build dashboard layout with sidebar navigation, header, and responsive design. Navigation: Recordings, Runs, Schedules, Settings.
+- **Implementation:** Created dashboard layout with collapsible sidebar, header with user menu and logout. Mobile-responsive with slide-out navigation. User info displayed from auth context. Loading skeleton during auth check. Theme toggle in header.
 
 ### ⏳ TODO - Recording Upload UI
 
@@ -727,13 +733,13 @@
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
 | Phase 3: API                     | 32     | 28     | 0       | 4      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
-| Phase 4: Web                     | 9      | 0      | 0       | 9      |
+| Phase 4: Web                     | 9      | 3      | 0       | 6      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **88** | **55** | **2**   | **31** |
+| **TOTAL**                        | **88** | **58** | **2**   | **28** |
 
 ### Test Summary
 
