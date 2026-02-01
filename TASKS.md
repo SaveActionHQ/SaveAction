@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** January 31, 2026
+**Last Updated:** February 1, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -340,26 +340,26 @@
   - Added schema tags to health check endpoints for better organization
   - Tests: skipSwagger option prevents swagger registration during tests
 
-### ⏳ TODO - Security Headers
+### ✅ DONE - Security Headers
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `security`
-- **Description:** Add @fastify/helmet for security headers: Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security. Configure CSP for API (strict) and adjust for swagger-ui. Document header configuration for nginx reverse proxy.
+- **Description:** Implemented @fastify/helmet@11.1.1 for comprehensive security headers. Features: Content-Security-Policy (strict default-src 'none' for API, relaxed for Swagger UI with script-src/style-src/img-src), X-Frame-Options: DENY, X-Content-Type-Options: nosniff, X-XSS-Protection: 0 (modern recommendation), Referrer-Policy: strict-origin-when-cross-origin, Cross-Origin-Opener-Policy: same-origin, Cross-Origin-Resource-Policy: same-origin. HSTS enabled only in production. Created helmet.ts plugin with options for isProduction, enableHsts, swaggerPrefix. Integrated in app.ts with skipHelmet test option.
 
-### ⏳ TODO - API Rate Limiting
-
-- **Package:** @saveaction/api
-- **Priority:** P1
-- **Labels:** `security`
-- **Description:** Implement rate limiting with @fastify/rate-limit using Redis store (required for multi-instance deployments). Default: 100 requests/minute per IP. Higher limits for authenticated users. Separate limits for auth endpoints (stricter) vs general API.
-
-### ⏳ TODO - CSRF Protection
+### ✅ DONE - API Rate Limiting
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `security`
-- **Description:** Implement CSRF protection for cookie-based authentication (refresh tokens). Use @fastify/csrf-protection or double-submit cookie pattern. Exempt API token authentication (Bearer tokens are CSRF-immune). Required because refresh tokens use httpOnly cookies.
+- **Description:** Implemented @fastify/rate-limit@9.1.0 with Redis store for distributed deployments. Rate limits: 100 req/min (unauthenticated global), 200 req/min (authenticated users), 20 req/min (auth endpoints - anti-brute-force). Headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset. Excludes health check and documentation endpoints. Falls back to in-memory store when Redis unavailable. Created rateLimit.ts plugin with configurable limits per tier. Integrated in app.ts after Redis connection with skipRateLimit test option.
+
+### ✅ DONE - CSRF Protection
+
+- **Package:** @saveaction/api
+- **Priority:** P1
+- **Labels:** `security`
+- **Description:** Implemented @fastify/csrf-protection@6.4.1 with double-submit cookie pattern. Protects cookie-based auth routes: /api/v1/auth/refresh, /api/v1/auth/logout, /api/v1/auth/change-password. GET /api/v1/auth/csrf endpoint returns token and sets _csrf cookie. Client must include token in X-CSRF-Token header for protected requests. API tokens (Bearer sa_live_*, sa_test_*) are exempt - they're CSRF-immune. Cookie settings: path=/api, httpOnly=false (for JS access), sameSite=strict, secure=true in production. Created csrf.ts plugin. Integrated in app.ts with skipCsrf test option.
 
 ### ✅ DONE - Input Sanitization & Validation
 

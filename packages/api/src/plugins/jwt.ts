@@ -1,12 +1,12 @@
 /**
  * JWT Plugin for Fastify
  *
- * Configures @fastify/jwt and @fastify/cookie for authentication.
+ * Configures @fastify/jwt for authentication.
+ * Note: @fastify/cookie should be registered BEFORE this plugin.
  */
 
 import fp from 'fastify-plugin';
 import jwt from '@fastify/jwt';
-import cookie from '@fastify/cookie';
 import type { FastifyPluginAsync, FastifyRequest, FastifyReply } from 'fastify';
 import type { JwtPayload } from '../auth/types.js';
 
@@ -45,15 +45,10 @@ declare module '@fastify/jwt' {
  * JWT plugin implementation
  */
 const jwtPlugin: FastifyPluginAsync<JwtPluginOptions> = async (fastify, options) => {
-  const { secret, cookieSecret = secret } = options;
-
-  // Register cookie plugin for refresh token handling
-  await fastify.register(cookie, {
-    secret: cookieSecret,
-    parseOptions: {},
-  });
+  const { secret } = options;
 
   // Register JWT plugin
+  // Note: @fastify/cookie must be registered before this plugin
   await fastify.register(jwt, {
     secret,
     sign: {
