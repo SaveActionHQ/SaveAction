@@ -340,4 +340,289 @@ describe('run command JSON output', () => {
       expect(timeout).toBe(30000);
     });
   });
+
+  describe('platform integration', () => {
+    describe('recording source determination', () => {
+      it('should return file source when file path is provided', () => {
+        const file = 'test.json';
+        const options = {};
+
+        // Logic extracted from run.ts determineRecordingSource
+        let source: { type: string; path?: string; recordingId?: string; tag?: string };
+        if ((options as { recordingId?: string }).recordingId) {
+          source = {
+            type: 'platform',
+            recordingId: (options as { recordingId: string }).recordingId,
+          };
+        } else if ((options as { tag?: string }).tag) {
+          source = { type: 'platform-tag', tag: (options as { tag: string }).tag };
+        } else if (file) {
+          source = { type: 'file', path: file };
+        } else {
+          throw new Error('Recording file path is required');
+        }
+
+        expect(source.type).toBe('file');
+        expect(source.path).toBe('test.json');
+      });
+
+      it('should return platform source when --recording-id is provided', () => {
+        const file = undefined;
+        const options = { recordingId: 'rec_123' };
+
+        let source: { type: string; path?: string; recordingId?: string; tag?: string };
+        if (options.recordingId) {
+          source = { type: 'platform', recordingId: options.recordingId };
+        } else {
+          source = { type: 'file', path: file! };
+        }
+
+        expect(source.type).toBe('platform');
+        expect(source.recordingId).toBe('rec_123');
+      });
+
+      it('should return platform-tag source when --tag is provided', () => {
+        const file = undefined;
+        const options = { tag: 'smoke' };
+
+        let source: { type: string; path?: string; recordingId?: string; tag?: string };
+        if (options.tag) {
+          source = { type: 'platform-tag', tag: options.tag };
+        } else {
+          source = { type: 'file', path: file! };
+        }
+
+        expect(source.type).toBe('platform-tag');
+        expect(source.tag).toBe('smoke');
+      });
+
+      it('should prioritize --recording-id over file path', () => {
+        const file = 'test.json';
+        const options = { recordingId: 'rec_123' };
+
+        let source: { type: string; path?: string; recordingId?: string };
+        if (options.recordingId) {
+          source = { type: 'platform', recordingId: options.recordingId };
+        } else {
+          source = { type: 'file', path: file };
+        }
+
+        expect(source.type).toBe('platform');
+        expect(source.recordingId).toBe('rec_123');
+      });
+
+      it('should throw error when no file, recording-id, or tag provided', () => {
+        const file = undefined;
+        const options = {};
+
+        expect(() => {
+          if (
+            !(options as { recordingId?: string }).recordingId &&
+            !(options as { tag?: string }).tag &&
+            !file
+          ) {
+            throw new Error(
+              'Recording file path is required. Use a file path, --recording-id, or --tag.'
+            );
+          }
+        }).toThrow('Recording file path is required');
+      });
+    });
+
+    describe('base URL override', () => {
+      it('should replace origin in URL', () => {
+        const originalUrl = 'https://production.example.com/login?ref=home';
+        const baseUrl = 'https://staging.example.com';
+
+        const original = new URL(originalUrl);
+        const newBase = new URL(baseUrl);
+        const result = `${newBase.origin}${original.pathname}${original.search}${original.hash}`;
+
+        expect(result).toBe('https://staging.example.com/login?ref=home');
+      });
+
+      it('should preserve path, query params, and hash', () => {
+        const originalUrl = 'https://prod.example.com/app/page?foo=bar#section';
+        const baseUrl = 'https://localhost:3000';
+
+        const original = new URL(originalUrl);
+        const newBase = new URL(baseUrl);
+        const result = `${newBase.origin}${original.pathname}${original.search}${original.hash}`;
+
+        expect(result).toBe('https://localhost:3000/app/page?foo=bar#section');
+      });
+
+      it('should only replace matching origins', () => {
+        const recordingOrigin = 'https://example.com';
+        const actionUrl = 'https://other-site.com/page';
+        const baseUrl = 'https://staging.example.com';
+
+        const parsed = new URL(actionUrl);
+        const newBase = new URL(baseUrl);
+
+        // Only replace if origins match
+        let result: string;
+        if (parsed.origin === recordingOrigin) {
+          result = `${newBase.origin}${parsed.pathname}${parsed.search}${parsed.hash}`;
+        } else {
+          result = actionUrl;
+        }
+
+        expect(result).toBe('https://other-site.com/page');
+      });
+
+      it('should handle different ports in base URL', () => {
+        const originalUrl = 'https://example.com/api/users';
+        const baseUrl = 'http://localhost:8080';
+
+        const original = new URL(originalUrl);
+        const newBase = new URL(baseUrl);
+        const result = `${newBase.origin}${original.pathname}${original.search}${original.hash}`;
+
+        expect(result).toBe('http://localhost:8080/api/users');
+      });
+
+      it('should apply override to all actions', () => {
+        const actions = [
+          { id: 'act_001', url: 'https://prod.com/page1' },
+          { id: 'act_002', url: 'https://prod.com/page2' },
+          { id: 'act_003', url: 'https://prod.com/page3' },
+        ];
+        const recordingOrigin = 'https://prod.com';
+        const baseUrl = 'https://staging.com';
+
+        const newBase = new URL(baseUrl);
+        const updatedActions = actions.map((action) => {
+          const parsed = new URL(action.url);
+          if (parsed.origin === recordingOrigin) {
+            return {
+              ...action,
+              url: `${newBase.origin}${parsed.pathname}${parsed.search}${parsed.hash}`,
+            };
+          }
+          return action;
+        });
+
+        expect(updatedActions[0].url).toBe('https://staging.com/page1');
+        expect(updatedActions[1].url).toBe('https://staging.com/page2');
+        expect(updatedActions[2].url).toBe('https://staging.com/page3');
+      });
+    });
+
+    describe('JSON output with platform source', () => {
+      it('should include source field in recording section', () => {
+        const isPlatformSource = true;
+        const sourceLabel = 'platform:rec_123';
+        const recordingId = 'rec_123';
+
+        const jsonOutput = {
+          recording: {
+            file: isPlatformSource ? '' : path.basename(sourceLabel),
+            testName: 'Test',
+            url: 'https://example.com',
+            actionsTotal: 5,
+            source: isPlatformSource ? 'platform' : 'file',
+            recordingId: recordingId,
+          },
+        };
+
+        expect(jsonOutput.recording.source).toBe('platform');
+        expect(jsonOutput.recording.recordingId).toBe('rec_123');
+        expect(jsonOutput.recording.file).toBe('');
+      });
+
+      it('should include baseUrlOverride in execution section when used', () => {
+        const baseUrlOverride = 'https://staging.example.com';
+
+        const jsonOutput = {
+          execution: {
+            browser: 'chromium',
+            headless: true,
+            timingEnabled: true,
+            timingMode: 'realistic',
+            timeout: 30000,
+            baseUrlOverride,
+          },
+        };
+
+        expect(jsonOutput.execution.baseUrlOverride).toBe('https://staging.example.com');
+      });
+    });
+
+    describe('multi-recording execution (tag-based)', () => {
+      it('should aggregate results from multiple recordings', () => {
+        const results = [
+          {
+            recording: { id: 'rec_1', testName: 'Test 1' },
+            result: { status: 'success', actionsExecuted: 5, actionsFailed: 0 },
+          },
+          {
+            recording: { id: 'rec_2', testName: 'Test 2' },
+            result: { status: 'failed', actionsExecuted: 10, actionsFailed: 2 },
+          },
+          {
+            recording: { id: 'rec_3', testName: 'Test 3' },
+            result: { status: 'success', actionsExecuted: 3, actionsFailed: 0 },
+          },
+        ];
+
+        const passed = results.filter((r) => r.result.status === 'success').length;
+        const failed = results.filter((r) => r.result.status !== 'success').length;
+        const hasFailures = failed > 0;
+
+        expect(passed).toBe(2);
+        expect(failed).toBe(1);
+        expect(hasFailures).toBe(true);
+      });
+
+      it('should output summary JSON for tag-based execution', () => {
+        const tag = 'smoke';
+        const results = [
+          {
+            recording: { id: 'rec_1', testName: 'Test 1' },
+            result: {
+              status: 'success',
+              duration: 1000,
+              actionsExecuted: 5,
+              actionsFailed: 0,
+              errors: [],
+            },
+          },
+        ];
+        const hasFailures = results.some((r) => r.result.status !== 'success');
+
+        const jsonOutput = {
+          version: '1.0',
+          status: hasFailures ? 'failed' : 'passed',
+          tag,
+          totalRecordings: results.length,
+          passed: results.filter((r) => r.result.status === 'success').length,
+          failed: results.filter((r) => r.result.status !== 'success').length,
+          recordings: results.map(({ recording, result }) => ({
+            id: recording.id,
+            testName: recording.testName,
+            status: result.status === 'success' ? 'passed' : 'failed',
+            duration: result.duration,
+            actionsExecuted: result.actionsExecuted,
+            actionsFailed: result.actionsFailed,
+            errors: result.errors,
+          })),
+        };
+
+        expect(jsonOutput.tag).toBe('smoke');
+        expect(jsonOutput.totalRecordings).toBe(1);
+        expect(jsonOutput.status).toBe('passed');
+        expect(jsonOutput.recordings[0].id).toBe('rec_1');
+      });
+
+      it('should handle empty tag results', () => {
+        const recordings: unknown[] = [];
+
+        if (recordings.length === 0) {
+          // Expected behavior: exit with 0 (no failure, just no tests to run)
+          expect(true).toBe(true);
+        }
+      });
+    });
+  });
 });

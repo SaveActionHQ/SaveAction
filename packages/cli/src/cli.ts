@@ -14,8 +14,8 @@ export async function cli() {
 
   // Run command
   program
-    .command('run <file>')
-    .description('Run a test recording')
+    .command('run [file]')
+    .description('Run a test recording from file or platform')
     .option('--headless [value]', 'Run in headless mode', true)
     .option('--browser <name>', 'Browser to use (chromium, firefox, webkit)', 'chromium')
     .option('--video', 'Record video', false)
@@ -26,6 +26,12 @@ export async function cli() {
     .option('--max-delay <ms>', 'Maximum delay between actions in milliseconds', '30000')
     .option('--output <format>', 'Output format: console or json', 'console')
     .option('--output-file <path>', 'Save results to JSON file')
+    // Platform integration options
+    .option('--api-url <url>', 'SaveAction platform API URL (or set SAVEACTION_API_URL)')
+    .option('--api-token <token>', 'SaveAction platform API token (or set SAVEACTION_API_TOKEN)')
+    .option('--recording-id <id>', 'Fetch and run a recording by ID from the platform')
+    .option('--tag <tag>', 'Fetch and run all recordings with the specified tag')
+    .option('--base-url <url>', 'Override the base URL for all actions in the recording')
     .action(runCommand);
 
   // Info command
