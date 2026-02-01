@@ -24,8 +24,15 @@ import { getEnv, validateProductionEnv } from './config/index.js';
 import { initializeDatabase, closeDatabase } from './db/index.js';
 import { createTestRunProcessor } from './queues/testRunProcessor.js';
 import { createScheduledTestProcessor } from './queues/scheduledTestProcessor.js';
+import { createCleanupProcessor, runStartupCleanup } from './queues/cleanupProcessor.js';
 import { JobQueueManager } from './queues/JobQueueManager.js';
-import type { TestRunJobData, TestRunJobResult, ScheduledTestJobData } from './queues/types.js';
+import type {
+  TestRunJobData,
+  TestRunJobResult,
+  ScheduledTestJobData,
+  CleanupJobData,
+  CleanupJobResult,
+} from './queues/types.js';
 import type { ScheduledTestJobResult } from './queues/scheduledTestProcessor.js';
 
 // Worker configuration
@@ -103,6 +110,7 @@ const logger = {
 
 let testRunWorker: Worker<TestRunJobData, TestRunJobResult> | null = null;
 let scheduledTestWorker: Worker<ScheduledTestJobData, ScheduledTestJobResult> | null = null;
+let cleanupWorker: Worker<CleanupJobData, CleanupJobResult> | null = null;
 let jobQueueManager: JobQueueManager | null = null;
 let redisConnection: Redis | null = null;
 let isShuttingDown = false;
@@ -171,6 +179,58 @@ async function start(): Promise<void> {
     logger,
   });
 
+  // Create cleanup processor function
+  const cleanupProcessor = createCleanupProcessor({
+    db,
+    logger,
+    videoStoragePath: env.VIDEO_STORAGE_PATH,
+    runTimeoutMs: 10 * 60 * 1000, // 10 minutes
+    videoRetentionDays: 30,
+  });
+
+  // Run startup cleanup (mark orphaned runs as failed)
+  logger.info('Running startup cleanup for orphaned runs...');
+  const startupResult = await runStartupCleanup({
+    db,
+    logger,
+    runTimeoutMs: 10 * 60 * 1000, // 10 minutes
+  });
+  if (startupResult.orphanedRunsCleaned > 0) {
+    logger.info('Startup cleanup completed', {
+      orphanedRunsCleaned: startupResult.orphanedRunsCleaned,
+    });
+  }
+
+  // Schedule recurring cleanup jobs
+  logger.info('Scheduling recurring cleanup jobs...');
+
+  // Schedule orphaned runs cleanup every hour
+  await jobQueueManager.addRepeatableJob(
+    'cleanup',
+    'orphaned-runs-cleanup',
+    {
+      cleanupType: 'orphaned-runs',
+      createdAt: new Date().toISOString(),
+    },
+    '0 * * * *', // Every hour at minute 0
+    { jobId: 'cleanup-orphaned-runs-hourly' }
+  );
+  logger.info('Scheduled orphaned-runs cleanup job (hourly)');
+
+  // Schedule old videos cleanup daily at 3 AM
+  await jobQueueManager.addRepeatableJob(
+    'cleanup',
+    'old-videos-cleanup',
+    {
+      cleanupType: 'old-videos',
+      maxAgeDays: 30,
+      createdAt: new Date().toISOString(),
+    },
+    '0 3 * * *', // Daily at 3:00 AM
+    { jobId: 'cleanup-old-videos-daily' }
+  );
+  logger.info('Scheduled old-videos cleanup job (daily at 3 AM)');
+
   // Create BullMQ workers
   logger.info('Creating BullMQ workers...');
 
@@ -200,6 +260,16 @@ async function start(): Promise<void> {
       drainDelay: 5,
     }
   );
+
+  // Cleanup worker (handles orphaned runs and old video cleanup)
+  cleanupWorker = new Worker<CleanupJobData, CleanupJobResult>('cleanup', cleanupProcessor, {
+    connection: redisConnection,
+    concurrency: 1, // Cleanup runs sequentially to avoid conflicts
+    prefix: 'saveaction',
+    stalledInterval: 30000,
+    lockDuration: 300000, // 5 minutes for cleanup operations
+    drainDelay: 5,
+  });
 
   // Test-runs worker event handlers
   testRunWorker.on('ready', () => {
@@ -291,10 +361,51 @@ async function start(): Promise<void> {
     logger.warn('Scheduled test job stalled', { queue: 'scheduled-tests', jobId });
   });
 
+  // Cleanup worker event handlers
+  cleanupWorker.on('ready', () => {
+    logger.info('Cleanup worker is ready and listening for jobs');
+  });
+
+  cleanupWorker.on('active', (job) => {
+    logger.info('Cleanup job started', {
+      queue: 'cleanup',
+      jobId: job.id,
+      cleanupType: job.data.cleanupType,
+    });
+  });
+
+  cleanupWorker.on('completed', (job, result) => {
+    logger.info('Cleanup job completed', {
+      queue: 'cleanup',
+      jobId: job.id,
+      cleanupType: result.cleanupType,
+      itemsProcessed: result.itemsProcessed,
+      itemsDeleted: result.itemsDeleted,
+      errorCount: result.errors.length,
+    });
+  });
+
+  cleanupWorker.on('failed', (job, error) => {
+    logger.error('Cleanup job failed', error, {
+      queue: 'cleanup',
+      jobId: job?.id,
+      cleanupType: job?.data.cleanupType,
+    });
+  });
+
+  cleanupWorker.on('error', (error) => {
+    logger.error('Cleanup worker error', error);
+  });
+
+  cleanupWorker.on('stalled', (jobId) => {
+    logger.warn('Cleanup job stalled', { queue: 'cleanup', jobId });
+  });
+
   logger.info('SaveAction Worker started successfully', {
-    queues: ['test-runs', 'scheduled-tests'],
+    queues: ['test-runs', 'scheduled-tests', 'cleanup'],
     testRunsConcurrency: WORKER_CONCURRENCY,
     scheduledTestsConcurrency: 3,
+    cleanupConcurrency: 1,
   });
 }
 
@@ -322,6 +433,12 @@ async function shutdown(signal: string): Promise<void> {
       logger.info('Closing scheduled-tests worker...');
       await scheduledTestWorker.close();
       logger.info('Scheduled-tests worker closed');
+    }
+
+    if (cleanupWorker) {
+      logger.info('Closing cleanup worker...');
+      await cleanupWorker.close();
+      logger.info('Cleanup worker closed');
     }
 
     // Close JobQueueManager
