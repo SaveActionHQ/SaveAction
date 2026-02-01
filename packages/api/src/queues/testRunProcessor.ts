@@ -3,13 +3,19 @@
  *
  * Processes test run jobs using @saveaction/core's PlaywrightRunner.
  * Handles the full lifecycle: start → execute → complete/fail.
+ *
+ * Real-time Progress Events:
+ * - Publishes progress events to Redis pub/sub for SSE streaming
+ * - Events: run:started, action:started, action:success, action:failed, run:completed
  */
 
 import type { Job } from 'bullmq';
+import type Redis from 'ioredis';
 import type { TestRunJobData, TestRunJobResult } from './types.js';
 import type { Database } from '../db/index.js';
 import { RunRepository } from '../repositories/RunRepository.js';
 import { RecordingRepository } from '../repositories/RecordingRepository.js';
+import { RunProgressPublisher } from '../services/RunProgressService.js';
 import {
   PlaywrightRunner,
   type RunOptions,
@@ -24,14 +30,16 @@ import {
  */
 export interface TestRunProcessorOptions {
   db: Database;
+  /** Redis connection for publishing progress events */
+  redis?: Redis;
   videoStoragePath?: string;
   screenshotStoragePath?: string;
 }
 
 /**
- * Custom reporter that tracks action results
+ * Custom reporter that tracks action results and publishes progress events
  */
-class ActionTrackingReporter implements Reporter {
+class ProgressTrackingReporter implements Reporter {
   private readonly actionResults: Array<{
     actionId: string;
     actionType: string;
@@ -47,23 +55,53 @@ class ActionTrackingReporter implements Reporter {
   }> = [];
   private currentActionStart: number = 0;
 
+  /** Total number of actions in the recording */
+  private totalActions: number = 0;
+
+  /** Run ID for progress events */
+  private readonly runId: string;
+
+  /** Progress publisher (optional - only available if Redis is configured) */
+  private readonly progressPublisher?: RunProgressPublisher;
+
+  constructor(runId: string, progressPublisher?: RunProgressPublisher) {
+    this.runId = runId;
+    this.progressPublisher = progressPublisher;
+  }
+
   getResults() {
     return this.actionResults;
   }
 
-  onStart(_recording: { testName: string; actionsTotal: number }): void {
-    // Recording started
+  onStart(recording: { testName: string; actionsTotal: number }): void {
+    this.totalActions = recording.actionsTotal;
+    // Note: run:started is published by the processor before execute() is called
   }
 
-  onActionStart(_action: Action, _index: number): void {
+  onActionStart(action: Action, index: number): void {
     this.currentActionStart = Date.now();
+
+    // Publish action started event (fire and forget)
+    this.progressPublisher
+      ?.publishActionStarted({
+        runId: this.runId,
+        actionId: action.id ?? `act_${index.toString().padStart(3, '0')}`,
+        actionType: action.type,
+        actionIndex: index - 1, // Convert to 0-based
+        totalActions: this.totalActions,
+      })
+      .catch(() => {
+        // Ignore publish errors - don't break test execution
+      });
   }
 
   onActionSuccess(action: Action, index: number, duration: number): void {
     const startedAt = new Date(Date.now() - duration);
     const selector = this.extractSelector(action);
+    const actionId = action.id ?? `act_${index.toString().padStart(3, '0')}`;
+
     this.actionResults.push({
-      actionId: action.id ?? `act_${index.toString().padStart(3, '0')}`,
+      actionId,
       actionType: action.type,
       actionIndex: index - 1, // Convert to 0-based
       status: 'success',
@@ -74,14 +112,31 @@ class ActionTrackingReporter implements Reporter {
       selectorValue: selector?.value,
     });
     this.currentActionStart = 0;
+
+    // Publish action success event (fire and forget)
+    this.progressPublisher
+      ?.publishActionSuccess({
+        runId: this.runId,
+        actionId,
+        actionType: action.type,
+        actionIndex: index - 1,
+        totalActions: this.totalActions,
+        durationMs: duration,
+        selectorUsed: selector?.type,
+      })
+      .catch(() => {
+        // Ignore publish errors
+      });
   }
 
   onActionError(action: Action, index: number, error: Error): void {
     const duration = this.currentActionStart ? Date.now() - this.currentActionStart : 0;
     const startedAt = new Date(Date.now() - duration);
     const selector = this.extractSelector(action);
+    const actionId = action.id ?? `act_${index.toString().padStart(3, '0')}`;
+
     this.actionResults.push({
-      actionId: action.id ?? `act_${index.toString().padStart(3, '0')}`,
+      actionId,
       actionType: action.type,
       actionIndex: index - 1, // Convert to 0-based
       status: 'failed',
@@ -94,13 +149,30 @@ class ActionTrackingReporter implements Reporter {
       errorStack: error.stack,
     });
     this.currentActionStart = 0;
+
+    // Publish action failed event (fire and forget)
+    this.progressPublisher
+      ?.publishActionFailed({
+        runId: this.runId,
+        actionId,
+        actionType: action.type,
+        actionIndex: index - 1,
+        totalActions: this.totalActions,
+        errorMessage: error.message,
+        durationMs: duration,
+      })
+      .catch(() => {
+        // Ignore publish errors
+      });
   }
 
   // Called for skipped actions (if the reporter has this method)
   onActionSkipped(action: Action, index: number, reason: string): void {
     const selector = this.extractSelector(action);
+    const actionId = action.id ?? `act_${index.toString().padStart(3, '0')}`;
+
     this.actionResults.push({
-      actionId: action.id ?? `act_${index.toString().padStart(3, '0')}`,
+      actionId,
       actionType: action.type,
       actionIndex: index - 1, // Convert to 0-based
       status: 'skipped',
@@ -111,10 +183,24 @@ class ActionTrackingReporter implements Reporter {
       selectorValue: selector?.value,
       errorMessage: reason,
     });
+
+    // Publish action skipped event (fire and forget)
+    this.progressPublisher
+      ?.publishActionSkipped({
+        runId: this.runId,
+        actionId,
+        actionType: action.type,
+        actionIndex: index - 1,
+        totalActions: this.totalActions,
+        reason,
+      })
+      .catch(() => {
+        // Ignore publish errors
+      });
   }
 
   onComplete(_result: RunResult): void {
-    // Run completed
+    // Note: run:completed is published by the processor after execute() completes
   }
 
   /**
@@ -146,10 +232,13 @@ class ActionTrackingReporter implements Reporter {
 export function createTestRunProcessor(
   options: TestRunProcessorOptions
 ): (job: Job<TestRunJobData>) => Promise<TestRunJobResult> {
-  const { db } = options;
+  const { db, redis } = options;
 
   const runRepository = new RunRepository(db);
   const recordingRepository = new RecordingRepository(db);
+
+  // Create progress publisher if Redis is available
+  const progressPublisher = redis ? new RunProgressPublisher(redis) : undefined;
 
   return async (job: Job<TestRunJobData>): Promise<TestRunJobResult> => {
     const { runId, recordingId, userId, browser, headless, recordVideo, timeout } = job.data;
@@ -193,8 +282,20 @@ export function createTestRunProcessor(
         throw new Error('Not authorized to run this recording');
       }
 
-      // Create reporter to track actions
-      const reporter = new ActionTrackingReporter();
+      // Create reporter to track actions and publish progress events
+      const reporter = new ProgressTrackingReporter(runId, progressPublisher);
+
+      // Get recording data for events
+      const recordingData = recording.data as Recording;
+
+      // Publish run started event
+      await progressPublisher?.publishRunStarted({
+        runId,
+        recordingId,
+        recordingName: recording.name,
+        totalActions: recording.actionCount,
+        browser: browser ?? 'chromium',
+      });
 
       // Build run options with abort signal
       const runOptions: RunOptions = {
@@ -208,9 +309,8 @@ export function createTestRunProcessor(
       await job.updateProgress(10);
 
       // Execute the test run with reporter
-      // Cast recording.data to Recording type (validated at upload time)
       const runner = new PlaywrightRunner(runOptions, reporter);
-      const result = await runner.execute(recording.data as Recording);
+      const result = await runner.execute(recordingData);
 
       // Clear cancellation check interval
       clearInterval(cancellationCheckInterval);
@@ -278,6 +378,17 @@ export function createTestRunProcessor(
         await runRepository.createActions(actionRecords);
       }
 
+      // Publish run completed event
+      await progressPublisher?.publishRunCompleted({
+        runId,
+        status: finalStatus,
+        durationMs: duration,
+        actionsExecuted,
+        actionsFailed,
+        actionsSkipped: recording.actionCount - actionsExecuted,
+        videoPath: result.video,
+      });
+
       await job.updateProgress(100);
 
       return {
@@ -308,6 +419,24 @@ export function createTestRunProcessor(
         errorMessage: isCancelled ? 'Run cancelled by user' : errorMessage,
         errorStack: isCancelled ? undefined : errorStack,
       });
+
+      // Publish run error/completed event
+      if (isCancelled) {
+        await progressPublisher?.publishRunCompleted({
+          runId,
+          status: 'cancelled',
+          durationMs: duration,
+          actionsExecuted: 0,
+          actionsFailed: 0,
+          actionsSkipped: 0,
+        });
+      } else {
+        await progressPublisher?.publishRunError({
+          runId,
+          errorMessage,
+          errorStack,
+        });
+      }
 
       return {
         runId,

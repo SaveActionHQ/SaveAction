@@ -168,6 +168,7 @@ async function start(): Promise<void> {
   // Create test-runs processor function
   const testRunProcessor = createTestRunProcessor({
     db,
+    redis: redisConnection,
     videoStoragePath: env.VIDEO_STORAGE_PATH,
     screenshotStoragePath: env.SCREENSHOT_STORAGE_PATH,
   });
