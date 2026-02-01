@@ -87,8 +87,13 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
     screenshotStoragePath,
   });
 
-  // All routes require authentication
+  // All routes require authentication (except video which handles its own auth)
   fastify.addHook('onRequest', async (request, reply) => {
+    // Skip auth for video endpoint - it handles auth via query param
+    if (request.url.includes('/video')) {
+      return;
+    }
+
     try {
       await request.jwtVerify();
     } catch {
@@ -388,16 +393,57 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
 
   /**
    * GET /runs/:id/video - Stream run video
+   * Supports token via query param for <video> element (can't set headers)
    */
-  fastify.get<{ Params: { id: string } }>(
+  fastify.get<{ Params: { id: string }; Querystring: { token?: string } }>(
     '/:id/video',
     {
+      // Skip normal preHandler auth - we'll handle it manually
+      preHandler: async (request, reply) => {
+        // Try to get token from query param (for video element)
+        const queryToken = (request.query as { token?: string }).token;
+
+        if (queryToken) {
+          // Manually verify JWT from query param
+          try {
+            const decoded = fastify.jwt.verify(queryToken);
+            (request as any).user = decoded;
+          } catch {
+            return reply.status(401).send({
+              success: false,
+              error: {
+                code: 'INVALID_TOKEN',
+                message: 'Invalid or expired token',
+              },
+            });
+          }
+        } else {
+          // Fall back to standard auth header
+          try {
+            await request.jwtVerify();
+          } catch {
+            return reply.status(401).send({
+              success: false,
+              error: {
+                code: 'UNAUTHORIZED',
+                message: 'Authentication required',
+              },
+            });
+          }
+        }
+      },
       schema: {
         params: {
           type: 'object',
           required: ['id'],
           properties: {
             id: { type: 'string', format: 'uuid' },
+          },
+        },
+        querystring: {
+          type: 'object',
+          properties: {
+            token: { type: 'string' },
           },
         },
       },
@@ -434,6 +480,14 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
         // Get file stats for Content-Length
         const stat = fs.statSync(videoPath);
         const filename = path.basename(videoPath);
+
+        // Get origin for CORS
+        const origin = request.headers.origin || 'http://localhost:3000';
+
+        // Set CORS headers for cross-origin video streaming
+        reply.header('Access-Control-Allow-Origin', origin);
+        reply.header('Access-Control-Allow-Credentials', 'true');
+        reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
 
         // Set appropriate headers
         reply.header('Content-Type', 'video/webm');
@@ -688,6 +742,9 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
         });
       }
 
+      // Get origin from request for CORS
+      const origin = request.headers.origin || '*';
+
       // If run is already completed, send a single completed event
       if (['passed', 'failed', 'cancelled'].includes(run.status)) {
         reply.raw.writeHead(200, {
@@ -695,6 +752,8 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
           'Cache-Control': 'no-cache',
           Connection: 'keep-alive',
           'X-Accel-Buffering': 'no', // Disable nginx buffering
+          'Access-Control-Allow-Origin': origin,
+          'Access-Control-Allow-Credentials': 'true',
         });
 
         const completedEvent: RunProgressEvent = {
@@ -721,6 +780,8 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
         'Cache-Control': 'no-cache',
         Connection: 'keep-alive',
         'X-Accel-Buffering': 'no', // Disable nginx buffering
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Credentials': 'true',
       });
 
       // Send initial comment to establish connection

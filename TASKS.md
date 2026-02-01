@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** February 1, 2026
+**Last Updated:** February 2, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -544,19 +544,46 @@
 - **Description:** Build recordings list with paginated table. Search by name, filter by tags, sort by date. Quick actions: run, delete, duplicate.
 - **Implementation:** Created RecordingsList component with paginated data table. Features: search by name, tag filtering dropdown, sortable columns (name, created date). Quick actions: Run (queues BullMQ job with toast feedback), Delete (confirmation dialog, soft delete), Duplicate (copies recording with '(Copy)' suffix). Created reusable components: DataTable, Pagination, EmptyState, ConfirmDialog. Added ToastProvider for app-wide notifications. Proper error handling with ApiClientError.
 
-### ⏳ TODO - Run Execution UI
+### ✅ DONE - Run Execution UI
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
+- **Completed:** 2026-02-02
 - **Description:** Build run trigger form: browser selection, headless toggle, video recording option. Real-time progress updates with action-by-action log.
+- **Implementation:**
+  - Created RunExecutionDialog component with browser selection (Chromium/Firefox/WebKit)
+  - Video recording toggle (sends `videoEnabled` to API)
+  - Real-time SSE progress streaming with action-by-action log
+  - Auto-scroll to follow current running action
+  - Status indicators for pending/running/success/failed actions
+  - Error display with details on failure
+  - Integrated into recordings list "Run" quick action
 
-### ⏳ TODO - Run Results Page
+### ✅ DONE - Run Results Page
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
+- **Completed:** 2026-02-02
 - **Description:** Build run details page: status, duration, action results table, error details, video playback, screenshots gallery.
+- **Implementation:**
+  - Created `/runs/[id]` page with full run details
+  - Status badge with icons (passed/failed/running/queued/cancelled)
+  - Duration, browser, headless mode, video enabled display
+  - Action results table with status, duration, error messages
+  - Video player component with play/pause, progress, fullscreen, download
+  - Video streaming via `GET /api/v1/runs/:id/video` with JWT token auth (query param for video element)
+  - CORS headers for cross-origin video streaming
+  - Cancel/Retry/Delete actions with confirmation dialogs
+  - Note: Screenshots gallery deferred to separate task
+
+### ⏳ TODO - Screenshots Gallery
+
+- **Package:** @saveaction/web
+- **Priority:** P2
+- **Labels:** `feature`, `ui`, `enhancement`
+- **Description:** Add screenshot capture on test failure and gallery display in run results page. Features: automatic screenshot on action failure, screenshot storage via API, gallery component with lightbox view, thumbnail grid in run details page. Requires core runner changes to capture screenshots.
 
 ### ⏳ TODO - Settings Pages
 
@@ -749,13 +776,13 @@
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
 | Phase 3: API                     | 32     | 29     | 0       | 3      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
-| Phase 4: Web                     | 9      | 5      | 0       | 4      |
+| Phase 4: Web                     | 10     | 7      | 0       | 3      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **88** | **61** | **2**   | **25** |
+| **TOTAL**                        | **89** | **63** | **2**   | **24** |
 
 ### Test Summary
 
