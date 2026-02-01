@@ -4,6 +4,7 @@ import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import chalk from 'chalk';
 import { createPlatformClient, PlatformError } from '../platform/index.js';
+import { CIDetector, type CIMetadata } from '../ci/index.js';
 
 /**
  * Options for the run command
@@ -72,6 +73,19 @@ export interface RunJsonOutput {
   timestamps: {
     startedAt: string;
     completedAt: string;
+  };
+  ci?: {
+    detected: boolean;
+    provider: string | null;
+    commit: string | null;
+    branch: string | null;
+    pr: number | null;
+    workflow: string | null;
+    buildNumber: string | null;
+    buildUrl: string | null;
+    repository: string | null;
+    actor: string | null;
+    event: string | null;
   };
 }
 
@@ -209,13 +223,31 @@ export async function runCommand(file: string | undefined, options: RunCommandOp
   const isJsonOutput = outputFormat === 'json' || !!options.outputFile;
   const startedAt = new Date().toISOString();
 
+  // Detect CI environment
+  const ciDetector = new CIDetector();
+  const ciMetadata = ciDetector.detect();
+
+  // Log CI detection in console mode
+  if (!isJsonOutput && ciMetadata.detected) {
+    console.log(chalk.cyan(`🤖 CI environment detected: ${ciMetadata.provider}`));
+    if (ciMetadata.commit) {
+      console.log(chalk.gray(`   Commit: ${ciMetadata.commit.substring(0, 7)}`));
+    }
+    if (ciMetadata.branch) {
+      console.log(chalk.gray(`   Branch: ${ciMetadata.branch}`));
+    }
+    if (ciMetadata.pr) {
+      console.log(chalk.gray(`   PR: #${ciMetadata.pr}`));
+    }
+  }
+
   try {
     // Determine recording source
     const source = determineRecordingSource(file, options);
 
     // Handle tag-based execution (multiple recordings)
     if (source.type === 'platform-tag') {
-      await runMultipleRecordings(source.tag, options, startedAt);
+      await runMultipleRecordings(source.tag, options, startedAt, ciMetadata);
       return;
     }
 
@@ -292,7 +324,8 @@ export async function runCommand(file: string | undefined, options: RunCommandOp
         startedAt,
         completedAt,
         source.type === 'platform' ? source.recordingId : undefined,
-        options.baseUrl
+        options.baseUrl,
+        ciMetadata
       );
 
       if (options.outputFile) {
@@ -328,7 +361,7 @@ export async function runCommand(file: string | undefined, options: RunCommandOp
     }
 
     if (isJsonOutput) {
-      const errorOutput = {
+      const errorOutput: Record<string, unknown> = {
         version: '1.0',
         status: 'failed',
         error: errorMessage,
@@ -337,6 +370,23 @@ export async function runCommand(file: string | undefined, options: RunCommandOp
           completedAt,
         },
       };
+
+      // Include CI metadata if detected
+      if (ciMetadata && ciMetadata.detected) {
+        errorOutput.ci = {
+          detected: true,
+          provider: ciMetadata.provider,
+          commit: ciMetadata.commit,
+          branch: ciMetadata.branch,
+          pr: ciMetadata.pr,
+          workflow: ciMetadata.workflow,
+          buildNumber: ciMetadata.buildNumber,
+          buildUrl: ciMetadata.buildUrl,
+          repository: ciMetadata.repository,
+          actor: ciMetadata.actor,
+          event: ciMetadata.event,
+        };
+      }
 
       if (options.outputFile) {
         await writeOutputFile(options.outputFile, errorOutput);
@@ -359,7 +409,8 @@ export async function runCommand(file: string | undefined, options: RunCommandOp
 async function runMultipleRecordings(
   tag: string,
   options: RunCommandOptions,
-  startedAt: string
+  startedAt: string,
+  ciMetadata?: CIMetadata
 ): Promise<void> {
   const outputFormat = options.output || 'console';
   const isJsonOutput = outputFormat === 'json' || !!options.outputFile;
@@ -427,7 +478,7 @@ async function runMultipleRecordings(
 
     // Output summary
     if (isJsonOutput) {
-      const jsonOutput = {
+      const jsonOutput: Record<string, unknown> = {
         version: '1.0',
         status: hasFailures ? 'failed' : 'passed',
         tag,
@@ -448,6 +499,23 @@ async function runMultipleRecordings(
           completedAt,
         },
       };
+
+      // Include CI metadata if detected
+      if (ciMetadata && ciMetadata.detected) {
+        jsonOutput.ci = {
+          detected: true,
+          provider: ciMetadata.provider,
+          commit: ciMetadata.commit,
+          branch: ciMetadata.branch,
+          pr: ciMetadata.pr,
+          workflow: ciMetadata.workflow,
+          buildNumber: ciMetadata.buildNumber,
+          buildUrl: ciMetadata.buildUrl,
+          repository: ciMetadata.repository,
+          actor: ciMetadata.actor,
+          event: ciMetadata.event,
+        };
+      }
 
       if (options.outputFile) {
         await writeOutputFile(options.outputFile, jsonOutput);
@@ -483,12 +551,29 @@ async function runMultipleRecordings(
     }
 
     if (isJsonOutput) {
-      const errorOutput = {
+      const errorOutput: Record<string, unknown> = {
         version: '1.0',
         status: 'failed',
         error: errorMessage,
         timestamps: { startedAt, completedAt },
       };
+
+      // Include CI metadata if detected
+      if (ciMetadata && ciMetadata.detected) {
+        errorOutput.ci = {
+          detected: true,
+          provider: ciMetadata.provider,
+          commit: ciMetadata.commit,
+          branch: ciMetadata.branch,
+          pr: ciMetadata.pr,
+          workflow: ciMetadata.workflow,
+          buildNumber: ciMetadata.buildNumber,
+          buildUrl: ciMetadata.buildUrl,
+          repository: ciMetadata.repository,
+          actor: ciMetadata.actor,
+          event: ciMetadata.event,
+        };
+      }
 
       if (options.outputFile) {
         await writeOutputFile(options.outputFile, errorOutput);
@@ -516,11 +601,12 @@ function buildJsonOutput(
   startedAt: string,
   completedAt: string,
   recordingId?: string,
-  baseUrlOverride?: string
+  baseUrlOverride?: string,
+  ciMetadata?: CIMetadata
 ): RunJsonOutput {
   const isPlatformSource = sourceLabel.startsWith('platform:');
 
-  return {
+  const output: RunJsonOutput = {
     version: '1.0',
     status: result.status === 'success' ? 'passed' : 'failed',
     recording: {
@@ -556,6 +642,25 @@ function buildJsonOutput(
       completedAt,
     },
   };
+
+  // Include CI metadata if detected
+  if (ciMetadata && ciMetadata.detected) {
+    output.ci = {
+      detected: true,
+      provider: ciMetadata.provider,
+      commit: ciMetadata.commit,
+      branch: ciMetadata.branch,
+      pr: ciMetadata.pr,
+      workflow: ciMetadata.workflow,
+      buildNumber: ciMetadata.buildNumber,
+      buildUrl: ciMetadata.buildUrl,
+      repository: ciMetadata.repository,
+      actor: ciMetadata.actor,
+      event: ciMetadata.event,
+    };
+  }
+
+  return output;
 }
 
 /**
