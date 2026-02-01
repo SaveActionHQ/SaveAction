@@ -155,8 +155,21 @@ saveaction run --tag smoke \
   "timestamps": {
     "startedAt": "2026-02-01T10:00:00.000Z",
     "completedAt": "2026-02-01T10:00:05.234Z"
+  },
+  "ci": {
+    "detected": true,
+    "provider": "github-actions",
+    "commit": "a1b2c3d4e5f67890abcdef1234567890abcdef12",
+    "branch": "main",
+    "pr": "42",
+    "workflow": "E2E Tests",
+    "buildNumber": "123",
+    "repository": "owner/repo"
   }
 }
+```
+
+> **Note:** The `ci` field is only included when running in a detected CI environment.
 ```
 
 ### Tag-Based Execution Result
@@ -192,8 +205,20 @@ saveaction run --tag smoke \
   "timestamps": {
     "startedAt": "2026-02-01T10:00:00.000Z",
     "completedAt": "2026-02-01T10:00:15.000Z"
+  },
+  "ci": {
+    "detected": true,
+    "provider": "gitlab-ci",
+    "commit": "abc123def456",
+    "branch": "feature/tests",
+    "pr": "15",
+    "workflow": "E2E Pipeline",
+    "buildNumber": "789"
   }
 }
+```
+
+> **Note:** The `ci` field is only included when running in a detected CI environment.
 ```
 
 ## CI/CD Examples
@@ -311,6 +336,138 @@ pipeline {
 |------|---------|
 | `0` | All tests passed |
 | `1` | One or more tests failed or error occurred |
+
+## CI Environment Detection
+
+The CLI automatically detects when running in a CI/CD environment and captures relevant metadata for inclusion in JSON output. This helps with:
+
+- **Traceability**: Link test results to specific commits, branches, and PRs
+- **Debugging**: Know exactly which CI run produced a result
+- **Reporting**: Aggregate results by branch, PR, or workflow
+
+### Supported CI Providers
+
+| Provider | Detection Method |
+|----------|-----------------|
+| GitHub Actions | `GITHUB_ACTIONS=true` |
+| GitLab CI | `GITLAB_CI=true` |
+| Jenkins | `JENKINS_URL` set |
+| CircleCI | `CIRCLECI=true` |
+| Azure Pipelines | `TF_BUILD=True` |
+| Travis CI | `TRAVIS=true` |
+| Bitbucket Pipelines | `BITBUCKET_BUILD_NUMBER` set |
+| TeamCity | `TEAMCITY_VERSION` set |
+| Generic CI | `CI=true` (fallback) |
+
+### CI Metadata Captured
+
+When running in CI, the following metadata is captured (when available):
+
+| Field | Description | Example |
+|-------|-------------|---------|
+| `provider` | CI provider name | `github-actions`, `gitlab-ci` |
+| `commit` | Git commit SHA | `a1b2c3d4e5f6...` |
+| `branch` | Git branch name | `main`, `feature/login` |
+| `pr` | Pull/Merge request number | `123` |
+| `workflow` | Workflow/pipeline name | `CI`, `E2E Tests` |
+| `buildNumber` | Build/run number | `456` |
+| `buildUrl` | Link to build | `https://github.com/.../actions/runs/...` |
+| `repository` | Repository name | `owner/repo` |
+| `actor` | User who triggered | `username` |
+| `event` | Trigger event | `push`, `pull_request` |
+
+### JSON Output with CI Metadata
+
+When running in a CI environment with `--output json`, the CI metadata is automatically included:
+
+```json
+{
+  "version": "1.0",
+  "status": "passed",
+  "recording": {
+    "file": "test.json",
+    "testName": "Login Test",
+    "url": "https://app.example.com/login",
+    "actionsTotal": 5
+  },
+  "execution": {
+    "browser": "chromium",
+    "headless": true,
+    "timeout": 30000
+  },
+  "result": {
+    "duration": 5234,
+    "actionsExecuted": 5,
+    "actionsPassed": 5,
+    "actionsFailed": 0,
+    "errors": []
+  },
+  "timestamps": {
+    "startedAt": "2026-02-01T10:00:00.000Z",
+    "completedAt": "2026-02-01T10:00:05.234Z"
+  },
+  "ci": {
+    "detected": true,
+    "provider": "github-actions",
+    "commit": "a1b2c3d4e5f67890abcdef1234567890abcdef12",
+    "branch": "main",
+    "pr": "42",
+    "workflow": "E2E Tests",
+    "buildNumber": "123",
+    "buildUrl": "https://github.com/owner/repo/actions/runs/123",
+    "repository": "owner/repo",
+    "actor": "developer",
+    "event": "push"
+  }
+}
+```
+
+### CI Detection Examples
+
+#### GitHub Actions
+
+The CLI automatically detects GitHub Actions and captures:
+- Commit SHA from `GITHUB_SHA`
+- Branch from `GITHUB_REF_NAME` or parsed from `GITHUB_HEAD_REF`
+- PR number from `GITHUB_REF` (e.g., `refs/pull/42/merge`)
+- Workflow name from `GITHUB_WORKFLOW`
+- Run number from `GITHUB_RUN_NUMBER`
+- Build URL constructed from `GITHUB_SERVER_URL`, `GITHUB_REPOSITORY`, and `GITHUB_RUN_ID`
+
+#### GitLab CI
+
+The CLI automatically detects GitLab CI and captures:
+- Commit SHA from `CI_COMMIT_SHA`
+- Branch from `CI_COMMIT_BRANCH` or `CI_MERGE_REQUEST_SOURCE_BRANCH_NAME`
+- MR number from `CI_MERGE_REQUEST_IID`
+- Pipeline name from `CI_PIPELINE_NAME`
+- Pipeline ID from `CI_PIPELINE_ID`
+- Pipeline URL from `CI_PIPELINE_URL`
+
+### Console Output in CI
+
+When running in CI without JSON output, the CLI displays CI information:
+
+```
+📍 CI Environment Detected: github-actions
+   Branch: main
+   Commit: a1b2c3d
+   PR: #42
+
+🎬 Starting test execution...
+```
+
+### Disabling CI Detection
+
+CI detection is automatic and cannot be disabled. If you need to test CI behavior locally, you can set the relevant environment variables:
+
+```bash
+# Simulate GitHub Actions locally
+GITHUB_ACTIONS=true \
+GITHUB_SHA=abc123 \
+GITHUB_REF_NAME=feature-branch \
+saveaction run test.json --output json
+```
 
 ## Base URL Override Behavior
 

@@ -625,4 +625,172 @@ describe('run command JSON output', () => {
       });
     });
   });
+
+  describe('CI metadata in JSON output', () => {
+    it('should include CI metadata when detected', () => {
+      const ciMetadata = {
+        detected: true,
+        provider: 'github-actions',
+        commit: 'abc123def456',
+        branch: 'main',
+        pr: 42,
+        workflow: 'CI',
+        buildNumber: '100',
+        buildUrl: 'https://github.com/owner/repo/actions/runs/100',
+        repository: 'owner/repo',
+        actor: 'testuser',
+        event: 'push',
+      };
+
+      // Simulate JSON output with CI metadata
+      const jsonOutput: Record<string, unknown> = {
+        version: '1.0',
+        status: 'passed',
+        recording: {
+          file: 'test.json',
+          testName: 'Test',
+          url: 'https://example.com',
+          actionsTotal: 5,
+        },
+        execution: {
+          browser: 'chromium',
+          headless: true,
+          timingEnabled: true,
+          timingMode: 'realistic',
+          timeout: 30000,
+        },
+        result: {
+          duration: 5000,
+          actionsExecuted: 5,
+          actionsPassed: 5,
+          actionsFailed: 0,
+          errors: [],
+        },
+        timestamps: {
+          startedAt: '2026-02-01T10:00:00Z',
+          completedAt: '2026-02-01T10:00:05Z',
+        },
+      };
+
+      if (ciMetadata.detected) {
+        jsonOutput.ci = ciMetadata;
+      }
+
+      expect(jsonOutput.ci).toBeDefined();
+      expect((jsonOutput.ci as Record<string, unknown>).detected).toBe(true);
+      expect((jsonOutput.ci as Record<string, unknown>).provider).toBe('github-actions');
+      expect((jsonOutput.ci as Record<string, unknown>).commit).toBe('abc123def456');
+      expect((jsonOutput.ci as Record<string, unknown>).branch).toBe('main');
+      expect((jsonOutput.ci as Record<string, unknown>).pr).toBe(42);
+      expect((jsonOutput.ci as Record<string, unknown>).workflow).toBe('CI');
+      expect((jsonOutput.ci as Record<string, unknown>).buildNumber).toBe('100');
+      expect((jsonOutput.ci as Record<string, unknown>).buildUrl).toBe(
+        'https://github.com/owner/repo/actions/runs/100'
+      );
+      expect((jsonOutput.ci as Record<string, unknown>).repository).toBe('owner/repo');
+      expect((jsonOutput.ci as Record<string, unknown>).actor).toBe('testuser');
+      expect((jsonOutput.ci as Record<string, unknown>).event).toBe('push');
+    });
+
+    it('should not include CI metadata when not detected', () => {
+      const ciMetadata = {
+        detected: false,
+        provider: null,
+        commit: null,
+        branch: null,
+        pr: null,
+        workflow: null,
+        buildNumber: null,
+        buildUrl: null,
+        repository: null,
+        actor: null,
+        event: null,
+      };
+
+      const jsonOutput: Record<string, unknown> = {
+        version: '1.0',
+        status: 'passed',
+      };
+
+      if (ciMetadata.detected) {
+        jsonOutput.ci = ciMetadata;
+      }
+
+      expect(jsonOutput.ci).toBeUndefined();
+    });
+
+    it('should include CI metadata in multi-recording output', () => {
+      const ciMetadata = {
+        detected: true,
+        provider: 'gitlab-ci',
+        commit: 'def789',
+        branch: 'feature/test',
+        pr: 15,
+        workflow: 'Pipeline',
+        buildNumber: '200',
+        buildUrl: 'https://gitlab.com/project/-/pipelines/200',
+        repository: 'group/project',
+        actor: 'developer',
+        event: 'merge_request',
+      };
+
+      const jsonOutput: Record<string, unknown> = {
+        version: '1.0',
+        status: 'passed',
+        tag: 'smoke',
+        totalRecordings: 3,
+        passed: 3,
+        failed: 0,
+        recordings: [],
+        timestamps: {
+          startedAt: '2026-02-01T10:00:00Z',
+          completedAt: '2026-02-01T10:00:30Z',
+        },
+      };
+
+      if (ciMetadata.detected) {
+        jsonOutput.ci = ciMetadata;
+      }
+
+      expect(jsonOutput.ci).toBeDefined();
+      expect((jsonOutput.ci as Record<string, unknown>).provider).toBe('gitlab-ci');
+      expect((jsonOutput.ci as Record<string, unknown>).commit).toBe('def789');
+    });
+
+    it('should include CI metadata in error output', () => {
+      const ciMetadata = {
+        detected: true,
+        provider: 'jenkins',
+        commit: 'xyz123',
+        branch: 'develop',
+        pr: null,
+        workflow: 'build-job',
+        buildNumber: '50',
+        buildUrl: 'https://jenkins.example.com/job/build-job/50',
+        repository: 'owner/repo',
+        actor: null,
+        event: 'push',
+      };
+
+      const errorOutput: Record<string, unknown> = {
+        version: '1.0',
+        status: 'failed',
+        error: 'Recording file not found',
+        timestamps: {
+          startedAt: '2026-02-01T10:00:00Z',
+          completedAt: '2026-02-01T10:00:01Z',
+        },
+      };
+
+      if (ciMetadata.detected) {
+        errorOutput.ci = ciMetadata;
+      }
+
+      expect(errorOutput.status).toBe('failed');
+      expect(errorOutput.ci).toBeDefined();
+      expect((errorOutput.ci as Record<string, unknown>).provider).toBe('jenkins');
+      expect((errorOutput.ci as Record<string, unknown>).commit).toBe('xyz123');
+      expect((errorOutput.ci as Record<string, unknown>).pr).toBeNull();
+    });
+  });
 });

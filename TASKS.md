@@ -467,12 +467,14 @@
 - **Description:** Add `--base-url <url>` option to override the starting URL in recordings. Essential for testing different environments (staging, production) with same recording. Example: `saveaction run --tag smoke --base-url https://staging.myapp.com`
 - **Implementation:** Replaces base URL in recording.url and all action URLs while preserving paths and query strings. Works with both local files and platform recordings.
 
-### ⏳ TODO - CI Environment Detection
+### ✅ DONE - CI Environment Detection
 
 - **Package:** @saveaction/cli
 - **Priority:** P2
 - **Labels:** `feature`, `cli`, `ci-cd`
+- **Completed:** 2026-02-01
 - **Description:** Auto-detect CI environment (GitHub Actions, GitLab CI, Jenkins). Capture metadata: commit SHA, branch name, workflow name, PR number. Include in run results for traceability.
+- **Implementation:** Created CIDetector class supporting 8 CI providers (GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure Pipelines, Travis CI, Bitbucket Pipelines, TeamCity) plus generic CI detection. Captures 11 metadata fields (commit, branch, pr, workflow, buildNumber, buildUrl, repository, actor, event). Integrated into run command with automatic console output and JSON `ci` field.
 
 ### ⏳ TODO - Report Results to Platform (Future)
 
