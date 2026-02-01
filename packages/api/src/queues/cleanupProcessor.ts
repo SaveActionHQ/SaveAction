@@ -4,6 +4,7 @@
  * Processes cleanup jobs for:
  * - orphaned-runs: Mark stale "running" runs as failed (timeout cleanup)
  * - old-videos: Delete video files older than retention period
+ * - old-screenshots: Delete screenshot files older than retention period
  *
  * Note: expired-tokens cleanup is not needed since we use JWT refresh tokens
  * which are stateless and self-expiring.
@@ -34,10 +35,14 @@ export interface CleanupProcessorOptions {
   logger: CleanupLogger;
   /** Path to video storage directory */
   videoStoragePath?: string;
+  /** Path to screenshot storage directory */
+  screenshotStoragePath?: string;
   /** Default timeout for orphaned runs in ms (default: 10 minutes) */
   runTimeoutMs?: number;
   /** Max age for videos in days (default: 30) */
   videoRetentionDays?: number;
+  /** Max age for screenshots in days (default: 30) */
+  screenshotRetentionDays?: number;
 }
 
 /**
@@ -51,6 +56,11 @@ const DEFAULT_RUN_TIMEOUT_MS = 10 * 60 * 1000;
 const DEFAULT_VIDEO_RETENTION_DAYS = 30;
 
 /**
+ * Default screenshot retention (30 days)
+ */
+const DEFAULT_SCREENSHOT_RETENTION_DAYS = 30;
+
+/**
  * Create the cleanup processor function
  */
 export function createCleanupProcessor(options: CleanupProcessorOptions) {
@@ -58,8 +68,10 @@ export function createCleanupProcessor(options: CleanupProcessorOptions) {
     db,
     logger,
     videoStoragePath = './storage/videos',
+    screenshotStoragePath = './storage/screenshots',
     runTimeoutMs = DEFAULT_RUN_TIMEOUT_MS,
     videoRetentionDays = DEFAULT_VIDEO_RETENTION_DAYS,
+    screenshotRetentionDays = DEFAULT_SCREENSHOT_RETENTION_DAYS,
   } = options;
 
   const runRepository = new RunRepository(db);
@@ -93,6 +105,21 @@ export function createCleanupProcessor(options: CleanupProcessorOptions) {
             const result = await cleanupOldVideos(
               runRepository,
               videoStoragePath,
+              retentionDays,
+              logger
+            );
+            itemsProcessed = result.found;
+            itemsDeleted = result.deleted;
+            errors.push(...result.errors);
+          }
+          break;
+
+        case 'old-screenshots':
+          {
+            const retentionDays = maxAgeDays ?? screenshotRetentionDays;
+            const result = await cleanupOldScreenshots(
+              runRepository,
+              screenshotStoragePath,
               retentionDays,
               logger
             );
@@ -260,6 +287,94 @@ async function cleanupOldVideos(
   }
 
   logger.info('Video cleanup completed', {
+    found,
+    deleted,
+    retentionDays,
+    errorCount: errors.length,
+  });
+
+  return { found, deleted, errors };
+}
+
+/**
+ * Clean up old screenshot files that exceed retention period
+ * Also cleans orphaned screenshots (files without matching run records)
+ */
+async function cleanupOldScreenshots(
+  runRepository: RunRepository,
+  screenshotStoragePath: string,
+  retentionDays: number,
+  logger: CleanupLogger
+): Promise<{ found: number; deleted: number; errors: string[] }> {
+  const errors: string[] = [];
+  let found = 0;
+  let deleted = 0;
+
+  // Ensure screenshot storage path exists
+  try {
+    await fs.access(screenshotStoragePath);
+  } catch {
+    logger.info('Screenshot storage path does not exist, skipping cleanup', {
+      path: screenshotStoragePath,
+    });
+    return { found: 0, deleted: 0, errors: [] };
+  }
+
+  const cutoffTime = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
+  const entries = await fs.readdir(screenshotStoragePath, { withFileTypes: true });
+
+  for (const entry of entries) {
+    if (!entry.isFile()) continue;
+    if (
+      !entry.name.endsWith('.png') &&
+      !entry.name.endsWith('.jpg') &&
+      !entry.name.endsWith('.jpeg')
+    )
+      continue;
+
+    found++;
+    const filePath = path.join(screenshotStoragePath, entry.name);
+
+    try {
+      const stat = await fs.stat(filePath);
+
+      // Check if file is older than retention period
+      if (stat.mtimeMs < cutoffTime) {
+        // Extract run ID from filename if possible (format: run-{id}-{step}.png)
+        const runIdMatch = entry.name.match(/^run-([a-zA-Z0-9-]+)(?:-\d+)?\.(png|jpg|jpeg)$/);
+        const runId = runIdMatch?.[1];
+
+        // Check if the run still exists
+        let shouldDelete = true;
+        if (runId) {
+          const run = await runRepository.findById(runId);
+          if (run && run.status === 'running') {
+            // Don't delete screenshots for runs that might still be active
+            shouldDelete = false;
+            logger.debug('Skipping screenshot for active run', { runId, filePath });
+          }
+        }
+
+        if (shouldDelete) {
+          await fs.unlink(filePath);
+          deleted++;
+          logger.debug('Deleted old screenshot', {
+            filePath,
+            age: Math.floor((Date.now() - stat.mtimeMs) / (24 * 60 * 60 * 1000)),
+          });
+        }
+      }
+    } catch (error) {
+      const msg = `Failed to process screenshot ${filePath}: ${error instanceof Error ? error.message : String(error)}`;
+      errors.push(msg);
+      logger.warn('Failed to process screenshot file', {
+        filePath,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
+
+  logger.info('Screenshot cleanup completed', {
     found,
     deleted,
     retentionDays,

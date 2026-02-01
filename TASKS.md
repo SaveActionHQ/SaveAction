@@ -382,12 +382,12 @@
 - **Labels:** `observability`, `devops`
 - **Description:** Fastify uses pino by default. Configured: JSON structured logging in production, pino-pretty in development, LOG_LEVEL environment variable (debug/info/warn/error), request ID tracing via genReqId (crypto.randomUUID), request logging with URL and method in errorHandler. **Future enhancement:** Add user ID, recording ID, run ID to log context for better debugging.
 
-### ⏳ TODO - Video/Screenshot Storage & Cleanup
+### ✅ DONE - Video/Screenshot Storage & Cleanup
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `storage`, `devops`
-- **Description:** Define storage strategy for videos and screenshots. Local filesystem with configurable path (Docker volume in production). Background job to cleanup old files (e.g., delete after 30 days). Optional S3-compatible storage support for scalability.
+- **Description:** Implemented storage strategy for videos and screenshots with local filesystem configurable via VIDEO_STORAGE_PATH and SCREENSHOT_STORAGE_PATH environment variables (defaults: ./storage/videos and ./storage/screenshots). Background cleanup jobs run daily at 3:00 AM (videos) and 3:30 AM (screenshots) with 30-day retention. Cleanup processor skips active runs and handles orphaned files gracefully. S3-compatible storage support deferred to P3 - not needed for MVP.
 
 ### ⏳ TODO - External Run Reports (Future)
 

@@ -318,5 +318,7 @@ Set `LOG_LEVEL=debug` for verbose output during development.
 - Stream video without full download
 
 ### Cleanup Jobs
-- Auto-delete old runs (configurable retention)
-- Orphaned video cleanup
+✅ **Implemented** - See [STORAGE.md](STORAGE.md) for full documentation:
+- Old video cleanup (30-day retention, daily at 3:00 AM)
+- Old screenshot cleanup (30-day retention, daily at 3:30 AM)
+- Orphaned run cleanup (hourly)

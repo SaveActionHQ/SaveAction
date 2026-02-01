@@ -40,7 +40,7 @@ export interface TestRunJobData extends BaseJobData {
  */
 export interface CleanupJobData extends BaseJobData {
   /** Type of cleanup to perform */
-  cleanupType: 'old-videos' | 'orphaned-runs' | 'expired-tokens';
+  cleanupType: 'old-videos' | 'old-screenshots' | 'orphaned-runs' | 'expired-tokens';
   /** Max age in days for cleanup */
   maxAgeDays?: number;
 }
