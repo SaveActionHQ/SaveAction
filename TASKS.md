@@ -417,12 +417,13 @@
 - **Labels:** `stability`, `devops`
 - **Description:** Implemented SIGTERM/SIGINT signal handlers in server.ts. Calls app.close() which triggers Fastify's onClose hooks. Redis client disconnects gracefully. JobQueueManager.shutdown() closes all queues and workers with configurable timeout (default 30s). Database connections closed via Drizzle. Logs shutdown progress. Implemented across server.ts, RedisClient, and JobQueueManager.
 
-### ⏳ TODO - API Integration Tests
+### ✅ DONE - API Integration Tests
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `testing`
-- **Description:** Write integration tests for all API routes using Vitest + supertest or Fastify inject(). Test auth flows, CRUD operations, permissions, error cases. Target 80%+ route coverage.
+- **Completed:** 2026-02-01
+- **Description:** Integration tests for all API routes using Vitest + Fastify inject(). Tests cover: auth flows (register, login, logout, refresh, password reset), recordings CRUD (create, read, update, delete, restore, export, tags), runs API (create, list, get, cancel, retry, delete), schedules API (create, list, get, update, toggle, delete), API tokens (create, list, revoke). Uses real PostgreSQL and Redis via docker-compose.dev.yml. Test helpers: createTestApp(), createUser(), createRecording(), truncateTables(). 792 API tests total with 80%+ route coverage.
 
 ### ⏳ TODO - Real-time Run Progress (SSE)
 
@@ -716,7 +717,7 @@
 | -------------------------------- | ------ | ------ | ------- | ------ |
 | Phase 1: Core                    | 12     | 12     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
-| Phase 3: API                     | 35     | 23     | 0       | 12     |
+| Phase 3: API                     | 32     | 28     | 0       | 4      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 0      | 0       | 5      |
 | Phase 4: Web                     | 9      | 0      | 0       | 9      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
@@ -724,16 +725,16 @@
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **91** | **47** | **2**   | **42** |
+| **TOTAL**                        | **88** | **52** | **2**   | **34** |
 
 ### Test Summary
 
 | Package | Tests |
 |---------|-------|
-| @saveaction/core | 136 |
+| @saveaction/core | 140 |
 | @saveaction/cli | 90 (3 skipped) |
-| @saveaction/api | 635 |
-| **TOTAL** | **861 tests** |
+| @saveaction/api | 792 |
+| **TOTAL** | **1,022 tests** |
 
 ---
 
