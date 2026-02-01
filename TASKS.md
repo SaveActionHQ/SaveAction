@@ -425,12 +425,24 @@
 - **Completed:** 2026-02-01
 - **Description:** Integration tests for all API routes using Vitest + Fastify inject(). Tests cover: auth flows (register, login, logout, refresh, password reset), recordings CRUD (create, read, update, delete, restore, export, tags), runs API (create, list, get, cancel, retry, delete), schedules API (create, list, get, update, toggle, delete), API tokens (create, list, revoke). Uses real PostgreSQL and Redis via docker-compose.dev.yml. Test helpers: createTestApp(), createUser(), createRecording(), truncateTables(). 792 API tests total with 80%+ route coverage.
 
-### ⏳ TODO - Real-time Run Progress (SSE)
+### ✅ DONE - Real-time Run Progress (SSE)
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `feature`, `api`
-- **Description:** Implement Server-Sent Events (SSE) endpoint to stream run progress in real-time. GET /api/runs/:id/progress/stream returns event stream with action start/success/error events during test execution. SSE chosen over WebSocket: simpler, one-direction (server→client), no library needed, firewall-friendly. Required for Phase 4 Web UI live progress display.
+- **Completed:** 2026-02-01
+- **Description:** Implement Server-Sent Events (SSE) endpoint to stream run progress in real-time. GET /api/v1/runs/:id/progress/stream returns event stream with action start/success/error events during test execution. SSE chosen over WebSocket: simpler, one-direction (server→client), no library needed, firewall-friendly. Required for Phase 4 Web UI live progress display.
+- **Implementation:**
+  - Created `RunProgressService.ts` with `RunProgressPublisher` class for publishing events via Redis pub/sub
+  - Event types: `run:started`, `action:started`, `action:success`, `action:failed`, `action:skipped`, `run:completed`, `run:error`
+  - Modified `testRunProcessor.ts` with `ProgressTrackingReporter` that publishes events during test execution
+  - Worker publishes events as actions execute (fire-and-forget to not block test execution)
+  - SSE endpoint in runs routes subscribes to Redis channel and streams events to client
+  - Auto-closes stream on `run:completed` or `run:error` events
+  - Returns completed event immediately if run already finished
+  - Keepalive comments every 30 seconds to prevent connection timeout
+  - 10-minute safety timeout for long-running tests
+  - 23 unit tests for RunProgressService
 
 ---
 
@@ -735,7 +747,7 @@
 | -------------------------------- | ------ | ------ | ------- | ------ |
 | Phase 1: Core                    | 12     | 12     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
-| Phase 3: API                     | 32     | 28     | 0       | 4      |
+| Phase 3: API                     | 32     | 29     | 0       | 3      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
 | Phase 4: Web                     | 9      | 5      | 0       | 4      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
@@ -743,7 +755,7 @@
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **88** | **60** | **2**   | **26** |
+| **TOTAL**                        | **88** | **61** | **2**   | **25** |
 
 ### Test Summary
 
@@ -751,8 +763,8 @@
 |---------|-------|
 | @saveaction/core | 140 |
 | @saveaction/cli | 131 (3 skipped) |
-| @saveaction/api | 792 |
-| **TOTAL** | **1,063 tests** |
+| @saveaction/api | 815 |
+| **TOTAL** | **1,086 tests** |
 
 ---
 

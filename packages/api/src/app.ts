@@ -289,6 +289,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       prefix: '/api/v1/runs',
       db: app.db,
       jobQueueManager: app.queues, // Now properly initialized if Redis is configured
+      redisUrl: env.REDIS_URL, // For SSE progress streaming
     });
 
     // Register schedule routes (requires database, JWT, and optionally queues)

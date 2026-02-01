@@ -3,6 +3,9 @@
  *
  * Handles test run operations including execution, listing, and management.
  * All routes require JWT authentication.
+ *
+ * SSE Endpoint:
+ * GET /runs/:id/progress/stream - Real-time progress updates via Server-Sent Events
  */
 
 import type { FastifyPluginAsync, FastifyReply } from 'fastify';
@@ -16,6 +19,7 @@ import { RunRepository } from '../repositories/RunRepository.js';
 import { RecordingRepository } from '../repositories/RecordingRepository.js';
 import type { Database } from '../db/index.js';
 import type { JobQueueManager } from '../queues/JobQueueManager.js';
+import { subscribeToRunProgress, type RunProgressEvent } from '../services/RunProgressService.js';
 import { z } from 'zod';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -28,6 +32,8 @@ interface RunRoutesOptions {
   jobQueueManager?: JobQueueManager;
   videoStoragePath?: string;
   screenshotStoragePath?: string;
+  /** Redis URL for SSE progress streaming */
+  redisUrl?: string;
 }
 
 /**
@@ -71,7 +77,7 @@ function handleRunError(error: unknown, reply: FastifyReply): FastifyReply {
  * Run routes plugin
  */
 const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options) => {
-  const { db, jobQueueManager, videoStoragePath, screenshotStoragePath } = options;
+  const { db, jobQueueManager, videoStoragePath, screenshotStoragePath, redisUrl } = options;
 
   // Create repositories and service
   const runRepository = new RunRepository(db);
@@ -577,6 +583,252 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
         return reply.status(204).send();
       } catch (error) {
         return handleRunError(error, reply);
+      }
+    }
+  );
+
+  /**
+   * GET /runs/:id/progress/stream - Stream run progress via Server-Sent Events
+   *
+   * Returns a text/event-stream with real-time progress updates.
+   * Events:
+   * - run:started - Run has started
+   * - action:started - Action is starting
+   * - action:success - Action completed successfully
+   * - action:failed - Action failed
+   * - action:skipped - Action was skipped
+   * - run:completed - Run finished
+   * - run:error - Run encountered an error
+   *
+   * The stream closes automatically when run:completed or run:error is received.
+   */
+  fastify.get<{ Params: { id: string } }>(
+    '/:id/progress/stream',
+    {
+      schema: {
+        tags: ['Runs'],
+        summary: 'Stream run progress via SSE',
+        description:
+          'Subscribe to real-time progress updates for a test run using Server-Sent Events (SSE). The stream automatically closes when the run completes or errors.',
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+        },
+        response: {
+          200: {
+            type: 'string',
+            description: 'text/event-stream with progress events',
+          },
+          404: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              error: {
+                type: 'object',
+                properties: {
+                  code: { type: 'string' },
+                  message: { type: 'string' },
+                },
+              },
+            },
+          },
+          503: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              error: {
+                type: 'object',
+                properties: {
+                  code: { type: 'string' },
+                  message: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const userId = (request.user as { sub: string }).sub;
+      const { id } = request.params;
+
+      // Check if Redis is available for SSE
+      if (!redisUrl) {
+        return reply.status(503).send({
+          success: false,
+          error: {
+            code: 'SSE_UNAVAILABLE',
+            message: 'Real-time progress streaming is not available (Redis not configured)',
+          },
+        });
+      }
+
+      // Verify the run exists and belongs to the user
+      const run = await runRepository.findById(id);
+      if (!run) {
+        return reply.status(404).send({
+          success: false,
+          error: {
+            code: 'RUN_NOT_FOUND',
+            message: 'Run not found',
+          },
+        });
+      }
+
+      if (run.userId !== userId) {
+        return reply.status(403).send({
+          success: false,
+          error: {
+            code: 'NOT_AUTHORIZED',
+            message: 'Not authorized to access this run',
+          },
+        });
+      }
+
+      // If run is already completed, send a single completed event
+      if (['passed', 'failed', 'cancelled'].includes(run.status)) {
+        reply.raw.writeHead(200, {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          Connection: 'keep-alive',
+          'X-Accel-Buffering': 'no', // Disable nginx buffering
+        });
+
+        const completedEvent: RunProgressEvent = {
+          type: 'run:completed',
+          runId: id,
+          timestamp: new Date().toISOString(),
+          status: run.status as 'passed' | 'failed' | 'cancelled',
+          durationMs: run.durationMs ?? 0,
+          actionsExecuted: run.actionsExecuted ?? 0,
+          actionsFailed: run.actionsFailed ?? 0,
+          actionsSkipped: run.actionsSkipped ?? 0,
+          videoPath: run.videoPath ?? undefined,
+        };
+
+        reply.raw.write(`event: ${completedEvent.type}\n`);
+        reply.raw.write(`data: ${JSON.stringify(completedEvent)}\n\n`);
+        reply.raw.end();
+        return;
+      }
+
+      // Set SSE headers
+      reply.raw.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        Connection: 'keep-alive',
+        'X-Accel-Buffering': 'no', // Disable nginx buffering
+      });
+
+      // Send initial comment to establish connection
+      reply.raw.write(':ok\n\n');
+
+      // Track if the stream should close
+      let shouldClose = false;
+      let unsubscribe: (() => Promise<void>) | null = null;
+
+      // Handle client disconnect
+      request.raw.on('close', async () => {
+        shouldClose = true;
+        if (unsubscribe) {
+          await unsubscribe();
+        }
+      });
+
+      try {
+        // Subscribe to progress events
+        unsubscribe = await subscribeToRunProgress(redisUrl, id, {
+          onEvent: (event) => {
+            if (shouldClose) return;
+
+            // Write SSE event
+            reply.raw.write(`event: ${event.type}\n`);
+            reply.raw.write(`data: ${JSON.stringify(event)}\n\n`);
+
+            // Close stream on terminal events
+            if (event.type === 'run:completed' || event.type === 'run:error') {
+              shouldClose = true;
+              reply.raw.end();
+              unsubscribe?.();
+            }
+          },
+          onError: (error) => {
+            if (shouldClose) return;
+
+            // Send error event
+            const errorEvent: RunProgressEvent = {
+              type: 'run:error',
+              runId: id,
+              timestamp: new Date().toISOString(),
+              errorMessage: error.message,
+            };
+            reply.raw.write(`event: ${errorEvent.type}\n`);
+            reply.raw.write(`data: ${JSON.stringify(errorEvent)}\n\n`);
+            reply.raw.end();
+            shouldClose = true;
+          },
+          onClose: () => {
+            if (!shouldClose) {
+              reply.raw.end();
+            }
+          },
+        });
+
+        // Send keepalive comments every 30 seconds
+        const keepaliveInterval = setInterval(() => {
+          if (shouldClose) {
+            clearInterval(keepaliveInterval);
+            return;
+          }
+          try {
+            reply.raw.write(':keepalive\n\n');
+          } catch {
+            // Client disconnected
+            clearInterval(keepaliveInterval);
+            shouldClose = true;
+            unsubscribe?.();
+          }
+        }, 30000);
+
+        // Wait for stream to complete (blocking)
+        // The stream will end when shouldClose is set to true
+        await new Promise<void>((resolve) => {
+          const checkClosed = setInterval(() => {
+            if (shouldClose) {
+              clearInterval(checkClosed);
+              clearInterval(keepaliveInterval);
+              resolve();
+            }
+          }, 100);
+
+          // Safety timeout after 10 minutes
+          setTimeout(() => {
+            if (!shouldClose) {
+              shouldClose = true;
+              clearInterval(checkClosed);
+              clearInterval(keepaliveInterval);
+              reply.raw.end();
+              resolve();
+            }
+          }, 600000);
+        });
+      } catch (error) {
+        // Subscription error
+        fastify.log.error({ error, runId: id }, 'SSE subscription error');
+        if (!shouldClose) {
+          const errorEvent: RunProgressEvent = {
+            type: 'run:error',
+            runId: id,
+            timestamp: new Date().toISOString(),
+            errorMessage: error instanceof Error ? error.message : 'Unknown error',
+          };
+          reply.raw.write(`event: ${errorEvent.type}\n`);
+          reply.raw.write(`data: ${JSON.stringify(errorEvent)}\n\n`);
+          reply.raw.end();
+        }
       }
     }
   );
