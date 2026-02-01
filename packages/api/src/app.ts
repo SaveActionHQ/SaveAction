@@ -1,5 +1,6 @@
 import Fastify, { FastifyInstance, FastifyServerOptions } from 'fastify';
 import cors from '@fastify/cors';
+import cookie from '@fastify/cookie';
 import sensible from '@fastify/sensible';
 import {
   errorHandler,
@@ -11,6 +12,9 @@ import {
   checkDatabaseHealth,
   jwtPlugin,
   swaggerPlugin,
+  helmetPlugin,
+  rateLimitPlugin,
+  csrfPlugin,
 } from './plugins/index.js';
 import authRoutes from './routes/auth.js';
 import apiTokenRoutes from './routes/tokens.js';
@@ -35,6 +39,12 @@ export interface AppOptions {
   skipAuth?: boolean;
   /** Skip Swagger/OpenAPI documentation (useful for tests) */
   skipSwagger?: boolean;
+  /** Skip security headers (useful for tests) */
+  skipHelmet?: boolean;
+  /** Skip rate limiting (useful for tests) */
+  skipRateLimit?: boolean;
+  /** Skip CSRF protection (useful for tests) */
+  skipCsrf?: boolean;
 }
 
 /**
@@ -51,6 +61,9 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     skipMigrations = false,
     skipAuth = false,
     skipSwagger = false,
+    skipHelmet = false,
+    skipRateLimit = false,
+    skipCsrf = false,
   } = options;
 
   // Create Fastify instance with logging
@@ -83,10 +96,31 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
     origin: env.CORS_ORIGIN === '*' ? true : env.CORS_ORIGIN.split(','),
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID'],
-    exposedHeaders: ['X-Request-ID'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Request-ID', 'X-CSRF-Token'],
+    exposedHeaders: [
+      'X-Request-ID',
+      'X-RateLimit-Limit',
+      'X-RateLimit-Remaining',
+      'X-RateLimit-Reset',
+    ],
     maxAge: 86400, // 24 hours
   });
+
+  // Register cookie plugin (required for refresh tokens and CSRF)
+  // Must be registered before CSRF plugin and auth routes
+  await app.register(cookie, {
+    secret: env.JWT_REFRESH_SECRET || env.JWT_SECRET,
+    parseOptions: {},
+  });
+
+  // Register security headers (Helmet) - unless skipped for testing
+  if (!skipHelmet) {
+    await app.register(helmetPlugin, {
+      isProduction: env.NODE_ENV === 'production',
+      enableHsts: env.NODE_ENV === 'production',
+      swaggerPrefix: '/api/docs',
+    });
+  }
 
   // Register Swagger/OpenAPI documentation (unless skipped for testing)
   if (!skipSwagger) {
@@ -199,6 +233,17 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       keyPrefix: 'saveaction:',
     });
 
+    // Register rate limiting with Redis store (unless skipped)
+    if (!skipRateLimit) {
+      await app.register(rateLimitPlugin, {
+        redis: app.redis?.getClient(), // Use Redis for distributed rate limiting
+        global: 100, // 100 requests/min for unauthenticated
+        authenticated: 200, // 200 requests/min for authenticated
+        auth: 20, // 20 requests/min for auth endpoints (anti-brute-force)
+        timeWindow: 60000, // 1 minute
+      });
+    }
+
     // Register BullMQ (requires Redis, unless skipped)
     // Note: Workers are NOT registered here - they run in a separate process (worker.ts)
     // This is intentional for production scalability:
@@ -211,6 +256,30 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
         enableWorkers: false, // Workers run in separate process
       });
     }
+  } else if (!skipRateLimit) {
+    // Register rate limiting with in-memory store (no Redis)
+    await app.register(rateLimitPlugin, {
+      global: 100,
+      authenticated: 200,
+      auth: 20,
+      timeWindow: 60000,
+    });
+  }
+
+  // Register CSRF protection (unless skipped)
+  // Must be registered after cookie plugin
+  if (!skipCsrf) {
+    await app.register(csrfPlugin, {
+      skip: false,
+      cookieName: '_csrf',
+      headerName: 'x-csrf-token',
+      cookie: {
+        path: '/api',
+        httpOnly: false, // Must be false for JS to read
+        secure: env.NODE_ENV === 'production',
+        sameSite: 'strict',
+      },
+    });
   }
 
   // Register run routes AFTER BullMQ (requires database, JWT, and optionally queues)
