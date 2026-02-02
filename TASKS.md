@@ -105,6 +105,21 @@
 - **Labels:** `testing`, `integration`
 - **Description:** Add real browser integration tests for PlaywrightRunner and ElementLocator. Launch actual Chromium instance, execute actions against local test HTML fixtures. Test: click, input, navigation, scroll actions with real DOM. 43 integration tests covering: click actions (6), input actions (5), select actions (2), scroll actions (2), complex workflows (3), error handling (2), browser options (2), selector strategies (22). Run separately with `pnpm run test:integration` in packages/core.
 
+### ⏳ TODO - Screenshot Capture on Failure
+
+- **Package:** @saveaction/core
+- **Priority:** P1
+- **Labels:** `feature`, `runner`, `enhancement`
+- **Depends On:** None (new feature)
+- **Description:** Implement automatic screenshot capture when an action fails. The `RunOptions.screenshot` option exists but is not implemented - PlaywrightRunner stores the option but never calls `page.screenshot()`. Implementation requirements:
+  - Add `screenshotDir?: string` to RunOptions for output directory
+  - In `executeAction()` catch block, call `page.screenshot()` on failure
+  - Save screenshots as `{runId}-{actionIndex}-{actionId}.png`
+  - Return screenshot path in `ActionResult.screenshotPath`
+  - Support both per-action screenshots (on failure) and configurable screenshot modes (always, never, on-failure)
+  - Ensure screenshot capture doesn't throw if page is already closed
+  - Add unit tests for screenshot capture logic
+
 ---
 
 ## Phase 2: CLI Tool (@saveaction/cli)
@@ -389,6 +404,21 @@
 - **Labels:** `storage`, `devops`
 - **Description:** Implemented storage strategy for videos and screenshots with local filesystem configurable via VIDEO_STORAGE_PATH and SCREENSHOT_STORAGE_PATH environment variables (defaults: ./storage/videos and ./storage/screenshots). Background cleanup jobs run daily at 3:00 AM (videos) and 3:30 AM (screenshots) with 30-day retention. Cleanup processor skips active runs and handles orphaned files gracefully. S3-compatible storage support deferred to P3 - not needed for MVP.
 
+### ⏳ TODO - Screenshot Serving Endpoint
+
+- **Package:** @saveaction/api
+- **Priority:** P1
+- **Labels:** `feature`, `api`
+- **Depends On:** Core - Screenshot Capture on Failure
+- **Description:** Implement API endpoint to serve screenshot files for the web UI gallery. Requirements:
+  - GET /api/v1/runs/:id/actions/:actionId/screenshot - serve screenshot file
+  - JWT authentication via query parameter (like video endpoint) for `<img>` tag compatibility
+  - Proper CORS headers for cross-origin image loading
+  - Content-Type: image/png header
+  - 404 if screenshot doesn't exist
+  - Update testRunProcessor to pass `screenshotDir` to RunnerService and save actual paths to `run_actions.screenshot_path`
+  - Integration tests for screenshot serving
+
 ### ⏳ TODO - External Run Reports (Future)
 
 - **Package:** @saveaction/api
@@ -583,7 +613,15 @@
 - **Package:** @saveaction/web
 - **Priority:** P2
 - **Labels:** `feature`, `ui`, `enhancement`
-- **Description:** Add screenshot capture on test failure and gallery display in run results page. Features: automatic screenshot on action failure, screenshot storage via API, gallery component with lightbox view, thumbnail grid in run details page. Requires core runner changes to capture screenshots.
+- **Depends On:** Core - Screenshot Capture on Failure, API - Screenshot Serving Endpoint
+- **Description:** Build screenshot gallery component for run results page. This task requires the core runner to capture screenshots and the API to serve them first. Features:
+  - Thumbnail grid showing screenshots for failed actions in run details page
+  - Lightbox/modal view for full-size screenshot on click
+  - Screenshot indicator icon in actions table for rows with screenshots
+  - Lazy loading of screenshot thumbnails for performance
+  - Download screenshot button in lightbox
+  - Error handling for missing/failed screenshot loads
+  - Use `GET /api/v1/runs/:id/actions/:actionId/screenshot?token=` endpoint (JWT in query param like video)
 
 ### ⏳ TODO - Settings Pages
 
@@ -772,9 +810,9 @@
 
 | Phase                            | Total  | Done   | Skipped | Todo   |
 | -------------------------------- | ------ | ------ | ------- | ------ |
-| Phase 1: Core                    | 12     | 12     | 0       | 0      |
+| Phase 1: Core                    | 13     | 12     | 0       | 1      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
-| Phase 3: API                     | 32     | 29     | 0       | 3      |
+| Phase 3: API                     | 33     | 29     | 0       | 4      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
 | Phase 4: Web                     | 10     | 7      | 0       | 3      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
@@ -782,7 +820,7 @@
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **89** | **63** | **2**   | **24** |
+| **TOTAL**                        | **91** | **63** | **2**   | **26** |
 
 ### Test Summary
 
