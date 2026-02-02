@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** February 2, 2026
+**Last Updated:** February 4, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -406,20 +406,21 @@
 - **Labels:** `storage`, `devops`
 - **Description:** Implemented storage strategy for videos and screenshots with local filesystem configurable via VIDEO_STORAGE_PATH and SCREENSHOT_STORAGE_PATH environment variables (defaults: ./storage/videos and ./storage/screenshots). Background cleanup jobs run daily at 3:00 AM (videos) and 3:30 AM (screenshots) with 30-day retention. Cleanup processor skips active runs and handles orphaned files gracefully. S3-compatible storage support deferred to P3 - not needed for MVP.
 
-### ⏳ TODO - Screenshot Serving Endpoint
+### ✅ DONE - Screenshot Serving Endpoint
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `api`
 - **Depends On:** Core - Screenshot Capture on Failure
-- **Description:** Implement API endpoint to serve screenshot files for the web UI gallery. Requirements:
-  - GET /api/v1/runs/:id/actions/:actionId/screenshot - serve screenshot file
+- **Description:** Implemented API endpoint to serve screenshot files for the web UI gallery:
+  - GET /api/v1/runs/:id/actions/:actionId/screenshot - serves screenshot file
   - JWT authentication via query parameter (like video endpoint) for `<img>` tag compatibility
-  - Proper CORS headers for cross-origin image loading
-  - Content-Type: image/png header
-  - 404 if screenshot doesn't exist
-  - Update testRunProcessor to pass `screenshotDir` to RunnerService and save actual paths to `run_actions.screenshot_path`
-  - Integration tests for screenshot serving
+  - CORS headers (Access-Control-Allow-Origin, Cross-Origin-Resource-Policy) for cross-origin image loading
+  - Content-Type: image/png header with Cache-Control: private, max-age=3600
+  - Proper 404 responses with distinct error codes: ACTION_NOT_FOUND, SCREENSHOT_NOT_FOUND, SCREENSHOT_FILE_NOT_FOUND
+  - Added `findActionByRunIdAndActionId` method to RunRepository
+  - Updated testRunProcessor to pass screenshot options to PlaywrightRunner and save paths to run_actions.screenshot_path
+  - Unit tests (6 new tests) covering auth, 404 cases, token via query param
 
 ### ⏳ TODO - External Run Reports (Future)
 

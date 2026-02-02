@@ -31,6 +31,10 @@ export interface TestRunJobData extends BaseJobData {
   headless?: boolean;
   /** Record video */
   recordVideo?: boolean;
+  /** Capture screenshots */
+  recordScreenshots?: boolean;
+  /** Screenshot capture mode */
+  screenshotMode?: 'on-failure' | 'always' | 'never';
   /** Execution timeout in ms */
   timeout?: number;
 }
@@ -69,6 +73,8 @@ export interface TestRunJobResult {
   actionsFailed: number;
   errorMessage?: string;
   videoPath?: string;
+  /** Paths to captured screenshots */
+  screenshotPaths?: string[];
 }
 
 /**

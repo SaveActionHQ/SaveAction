@@ -685,6 +685,21 @@ export class RunRepository {
   }
 
   /**
+   * Get a specific action by run ID and action ID
+   */
+  async findActionByRunIdAndActionId(
+    runId: string,
+    actionId: string
+  ): Promise<SafeRunAction | null> {
+    const [result] = await this.db
+      .select()
+      .from(runActions)
+      .where(and(eq(runActions.runId, runId), eq(runActions.actionId, actionId)));
+
+    return result ? toSafeRunAction(result) : null;
+  }
+
+  /**
    * Get failed actions for a run
    */
   async findFailedActionsByRunId(runId: string): Promise<SafeRunAction[]> {

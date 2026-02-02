@@ -74,6 +74,12 @@ const mockSafeRunAction = {
   createdAt: new Date('2026-01-01'),
 };
 
+// Mock run action data with screenshot (SafeRunAction type)
+const mockSafeRunActionWithScreenshot = {
+  ...mockSafeRunAction,
+  screenshotPath: '/storage/screenshots/run-123-001-act_001.png',
+};
+
 // Create mock runner service
 const createMockRunnerService = () => ({
   queueRun: vi.fn().mockResolvedValue(mockSafeRun),
@@ -94,6 +100,17 @@ const createMockRunnerService = () => ({
   deleteRun: vi.fn().mockResolvedValue(undefined),
   restoreRun: vi.fn().mockResolvedValue({ ...mockSafeRun, deletedAt: null }),
   permanentlyDeleteRun: vi.fn().mockResolvedValue(undefined),
+});
+
+// Create mock run repository
+const createMockRunRepository = () => ({
+  findById: vi.fn().mockResolvedValue(mockSafeRun),
+  findActionByRunIdAndActionId: vi.fn().mockResolvedValue(mockSafeRunAction),
+  findActionsByRunId: vi.fn().mockResolvedValue([mockSafeRunAction]),
+  create: vi.fn().mockResolvedValue(mockSafeRun),
+  update: vi.fn().mockResolvedValue(mockSafeRun),
+  delete: vi.fn().mockResolvedValue(undefined),
+  createActions: vi.fn().mockResolvedValue([mockSafeRunAction]),
 });
 
 // Mock the entire module
@@ -119,18 +136,29 @@ vi.mock('../services/RunnerService.js', () => {
   };
 });
 
+// Mock the run repository
+vi.mock('../repositories/RunRepository.js', () => {
+  return {
+    RunRepository: vi.fn().mockImplementation(() => createMockRunRepository()),
+  };
+});
+
 // Import after mocking
 import runRoutes from './runs.js';
 import { RunnerService, RunError } from '../services/RunnerService.js';
+import { RunRepository } from '../repositories/RunRepository.js';
 
 describe('Run Routes', () => {
   let app: FastifyInstance;
   let mockService: ReturnType<typeof createMockRunnerService>;
+  let mockRepository: ReturnType<typeof createMockRunRepository>;
 
   beforeEach(async () => {
-    // Create fresh mock for each test
+    // Create fresh mocks for each test
     mockService = createMockRunnerService();
+    mockRepository = createMockRunRepository();
     (RunnerService as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => mockService);
+    (RunRepository as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => mockRepository);
 
     app = Fastify();
 
@@ -677,6 +705,135 @@ describe('Run Routes', () => {
       });
 
       expect(response.statusCode).toBe(404);
+    });
+  });
+
+  describe('GET /api/runs/:id/actions/:actionId/screenshot', () => {
+    it('should return 404 when no screenshot available', async () => {
+      mockRepository.findActionByRunIdAndActionId.mockResolvedValue(mockSafeRunAction);
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockSafeRun.id}/actions/act_001/screenshot`,
+        headers: { authorization: 'Bearer valid-token' },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('SCREENSHOT_NOT_FOUND');
+    });
+
+    it('should return 404 when screenshot file does not exist', async () => {
+      mockRepository.findActionByRunIdAndActionId.mockResolvedValue({
+        ...mockSafeRunAction,
+        screenshotPath: '/non/existent/screenshot.png',
+      });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockSafeRun.id}/actions/act_001/screenshot`,
+        headers: { authorization: 'Bearer valid-token' },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('SCREENSHOT_FILE_NOT_FOUND');
+    });
+
+    it('should return 404 when action not found', async () => {
+      mockRepository.findActionByRunIdAndActionId.mockResolvedValue(null);
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockSafeRun.id}/actions/act_999/screenshot`,
+        headers: { authorization: 'Bearer valid-token' },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('ACTION_NOT_FOUND');
+    });
+
+    it('should return 404 when run not found', async () => {
+      mockService.getRunById.mockRejectedValue(new RunError('RUN_NOT_FOUND', 'Run not found', 404));
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockSafeRun.id}/actions/act_001/screenshot`,
+        headers: { authorization: 'Bearer valid-token' },
+      });
+
+      expect(response.statusCode).toBe(404);
+    });
+
+    it('should accept token via query parameter', async () => {
+      // Even with invalid file path, should get past auth check to file not found
+      mockRepository.findActionByRunIdAndActionId.mockResolvedValue({
+        ...mockSafeRunAction,
+        screenshotPath: '/fake/path.png',
+      });
+
+      // Close current app and create one that verifies tokens via query param
+      await app.close();
+
+      app = Fastify();
+      app.decorate('jwt', {
+        verify: vi.fn().mockReturnValue({ sub: 'user-123', email: 'test@example.com' }),
+      } as any);
+      app.decorateRequest('jwtVerify', async function () {
+        (this as any).user = { sub: 'user-123', email: 'test@example.com' };
+      });
+
+      // Recreate mocks for new app
+      (RunnerService as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => mockService);
+      (RunRepository as unknown as ReturnType<typeof vi.fn>).mockImplementation(
+        () => mockRepository
+      );
+
+      await app.register(runRoutes, {
+        prefix: '/api/runs',
+        db: {} as any,
+      });
+      await app.ready();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockSafeRun.id}/actions/act_001/screenshot?token=valid-token`,
+      });
+
+      // Should reach file check (404) rather than auth check (401)
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('SCREENSHOT_FILE_NOT_FOUND');
+    });
+
+    it('should return 401 with invalid token via query parameter', async () => {
+      await app.close();
+
+      app = Fastify();
+      app.decorate('jwt', {
+        verify: vi.fn().mockImplementation(() => {
+          throw new Error('Invalid token');
+        }),
+      } as any);
+      app.decorateRequest('jwtVerify', async function () {
+        throw new Error('Missing auth');
+      });
+
+      await app.register(runRoutes, {
+        prefix: '/api/runs',
+        db: {} as any,
+      });
+      await app.ready();
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockSafeRun.id}/actions/act_001/screenshot?token=invalid-token`,
+      });
+
+      expect(response.statusCode).toBe(401);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('INVALID_TOKEN');
     });
   });
 
