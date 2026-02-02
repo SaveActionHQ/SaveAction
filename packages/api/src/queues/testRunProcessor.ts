@@ -52,6 +52,7 @@ class ProgressTrackingReporter implements Reporter {
     selectorValue?: string;
     errorMessage?: string;
     errorStack?: string;
+    screenshotPath?: string;
   }> = [];
   private currentActionStart: number = 0;
 
@@ -64,13 +65,28 @@ class ProgressTrackingReporter implements Reporter {
   /** Progress publisher (optional - only available if Redis is configured) */
   private readonly progressPublisher?: RunProgressPublisher;
 
+  /** Map of action ID to screenshot path (populated after execution) */
+  private screenshotPaths: Map<string, string> = new Map();
+
   constructor(runId: string, progressPublisher?: RunProgressPublisher) {
     this.runId = runId;
     this.progressPublisher = progressPublisher;
   }
 
+  /**
+   * Set screenshot paths after run execution
+   * These come from RunResult.errors[].screenshotPath
+   */
+  setScreenshotPaths(paths: Map<string, string>): void {
+    this.screenshotPaths = paths;
+  }
+
   getResults() {
-    return this.actionResults;
+    // Merge screenshot paths into action results
+    return this.actionResults.map((result) => ({
+      ...result,
+      screenshotPath: this.screenshotPaths.get(result.actionId) || result.screenshotPath,
+    }));
   }
 
   onStart(recording: { testName: string; actionsTotal: number }): void {
@@ -241,7 +257,17 @@ export function createTestRunProcessor(
   const progressPublisher = redis ? new RunProgressPublisher(redis) : undefined;
 
   return async (job: Job<TestRunJobData>): Promise<TestRunJobResult> => {
-    const { runId, recordingId, userId, browser, headless, recordVideo, timeout } = job.data;
+    const {
+      runId,
+      recordingId,
+      userId,
+      browser,
+      headless,
+      recordVideo,
+      recordScreenshots,
+      screenshotMode,
+      timeout,
+    } = job.data;
 
     const startTime = Date.now();
 
@@ -303,6 +329,10 @@ export function createTestRunProcessor(
         headless: headless ?? true,
         timeout: timeout ?? 30000,
         video: recordVideo ?? false,
+        screenshot: recordScreenshots ?? false,
+        screenshotMode: screenshotMode ?? 'on-failure',
+        screenshotDir: options.screenshotStoragePath ?? './storage/screenshots',
+        runId, // Pass runId for screenshot file naming
         abortSignal: abortController.signal,
       };
 
@@ -316,6 +346,40 @@ export function createTestRunProcessor(
       clearInterval(cancellationCheckInterval);
 
       await job.updateProgress(90);
+
+      // Extract screenshot paths and map to action IDs
+      // Screenshots can come from:
+      // 1. result.errors[].screenshotPath (on-failure mode)
+      // 2. result.screenshots[] array (always mode) - filenames: {runId}-{index}-{actionId}.png
+      const screenshotPathsMap = new Map<string, string>();
+
+      // First, map from errors (for failed actions)
+      if (result.errors) {
+        for (const error of result.errors) {
+          if (error.screenshotPath) {
+            screenshotPathsMap.set(error.actionId, error.screenshotPath);
+          }
+        }
+      }
+
+      // Then, map from screenshots array (for all captured screenshots in 'always' mode)
+      // Filename pattern: {runId}-{paddedIndex}-{actionId}.png
+      // Example: 1336fc8f-26da-4263-8bc0-460a26246c91-001-act_001.png
+      if (result.screenshots && result.screenshots.length > 0) {
+        for (const screenshotPath of result.screenshots) {
+          // Extract actionId from filename
+          const filename = screenshotPath.split(/[/\\]/).pop() || '';
+          // Match pattern: ends with -{index}-{actionId}.png
+          // actionId is typically act_NNN format
+          const match = filename.match(/-(\d{3})-(act_\d+)\.png$/);
+          if (match) {
+            const actionId = match[2]; // e.g., "act_001"
+            screenshotPathsMap.set(actionId, screenshotPath);
+          }
+        }
+      }
+
+      reporter.setScreenshotPaths(screenshotPathsMap);
 
       // Calculate stats
       const duration = Date.now() - startTime;
@@ -346,6 +410,7 @@ export function createTestRunProcessor(
         errorMessage: result.errors?.[0]?.error,
         errorStack: undefined,
         errorActionId: result.errors?.[0]?.actionId,
+        screenshotPaths: result.screenshots,
       });
 
       // Save action results
@@ -365,7 +430,7 @@ export function createTestRunProcessor(
           retriedSelectors: undefined,
           errorMessage: action.errorMessage,
           errorStack: action.errorStack,
-          screenshotPath: undefined,
+          screenshotPath: action.screenshotPath,
           screenshotBefore: undefined,
           screenshotAfter: undefined,
           elementFound: action.status !== 'failed',
@@ -399,6 +464,7 @@ export function createTestRunProcessor(
         actionsFailed,
         errorMessage: result.errors?.[0]?.error,
         videoPath: result.video,
+        screenshotPaths: result.screenshots,
       };
     } catch (error) {
       // Clear cancellation check interval on error

@@ -87,10 +87,10 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
     screenshotStoragePath,
   });
 
-  // All routes require authentication (except video which handles its own auth)
+  // All routes require authentication (except video/screenshot which handle their own auth)
   fastify.addHook('onRequest', async (request, reply) => {
-    // Skip auth for video endpoint - it handles auth via query param
-    if (request.url.includes('/video')) {
+    // Skip auth for video and screenshot endpoints - they handle auth via query param
+    if (request.url.includes('/video') || request.url.includes('/screenshot')) {
       return;
     }
 
@@ -496,6 +496,146 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
 
         // Stream the file
         const stream = fs.createReadStream(videoPath);
+        return reply.send(stream);
+      } catch (error) {
+        return handleRunError(error, reply);
+      }
+    }
+  );
+
+  /**
+   * GET /runs/:id/actions/:actionId/screenshot - Serve action screenshot
+   * Supports token via query param for <img> element (can't set headers)
+   */
+  fastify.get<{
+    Params: { id: string; actionId: string };
+    Querystring: { token?: string };
+  }>(
+    '/:id/actions/:actionId/screenshot',
+    {
+      // Skip normal preHandler auth - we'll handle it manually
+      preHandler: async (request, reply) => {
+        // Try to get token from query param (for img element)
+        const queryToken = (request.query as { token?: string }).token;
+
+        if (queryToken) {
+          // Manually verify JWT from query param
+          try {
+            const decoded = fastify.jwt.verify(queryToken);
+            (request as any).user = decoded;
+          } catch {
+            return reply.status(401).send({
+              success: false,
+              error: {
+                code: 'INVALID_TOKEN',
+                message: 'Invalid or expired token',
+              },
+            });
+          }
+        } else {
+          // Fall back to standard auth header
+          try {
+            await request.jwtVerify();
+          } catch {
+            return reply.status(401).send({
+              success: false,
+              error: {
+                code: 'UNAUTHORIZED',
+                message: 'Authentication required',
+              },
+            });
+          }
+        }
+      },
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id', 'actionId'],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+            actionId: { type: 'string' },
+          },
+        },
+        querystring: {
+          type: 'object',
+          properties: {
+            token: { type: 'string' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request.user as { sub: string }).sub;
+        const { id, actionId } = request.params;
+
+        // Verify run belongs to user
+        const run = await runnerService.getRunById(userId, id);
+        if (!run) {
+          return reply.status(404).send({
+            success: false,
+            error: {
+              code: 'RUN_NOT_FOUND',
+              message: 'Run not found',
+            },
+          });
+        }
+
+        // Get the specific action
+        const action = await runRepository.findActionByRunIdAndActionId(id, actionId);
+        if (!action) {
+          return reply.status(404).send({
+            success: false,
+            error: {
+              code: 'ACTION_NOT_FOUND',
+              message: 'Action not found',
+            },
+          });
+        }
+
+        if (!action.screenshotPath) {
+          return reply.status(404).send({
+            success: false,
+            error: {
+              code: 'SCREENSHOT_NOT_FOUND',
+              message: 'No screenshot available for this action',
+            },
+          });
+        }
+
+        // Check if file exists
+        const screenshotPath = action.screenshotPath;
+        if (!fs.existsSync(screenshotPath)) {
+          return reply.status(404).send({
+            success: false,
+            error: {
+              code: 'SCREENSHOT_FILE_NOT_FOUND',
+              message: 'Screenshot file not found on server',
+            },
+          });
+        }
+
+        // Get file stats for Content-Length
+        const stat = fs.statSync(screenshotPath);
+        const filename = path.basename(screenshotPath);
+
+        // Get origin for CORS
+        const origin = request.headers.origin || 'http://localhost:3000';
+
+        // Set CORS headers for cross-origin image loading
+        reply.header('Access-Control-Allow-Origin', origin);
+        reply.header('Access-Control-Allow-Credentials', 'true');
+        reply.header('Cross-Origin-Resource-Policy', 'cross-origin');
+
+        // Set appropriate headers for PNG image
+        reply.header('Content-Type', 'image/png');
+        reply.header('Content-Length', stat.size);
+        reply.header('Content-Disposition', `inline; filename="${filename}"`);
+        // Cache for 1 hour (screenshots are immutable)
+        reply.header('Cache-Control', 'private, max-age=3600');
+
+        // Stream the file
+        const stream = fs.createReadStream(screenshotPath);
         return reply.send(stream);
       } catch (error) {
         return handleRunError(error, reply);

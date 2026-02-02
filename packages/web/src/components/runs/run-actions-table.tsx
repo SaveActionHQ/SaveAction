@@ -12,6 +12,7 @@ import {
   TableCell,
 } from '@/components/shared/data-table';
 import { formatDuration, cn } from '@/lib/utils';
+import { ScreenshotIndicator } from './screenshot-gallery';
 
 // Run action type from API
 export interface RunAction {
@@ -344,9 +345,10 @@ function ActionsSkeleton() {
 interface RunActionsTableProps {
   actions: RunAction[];
   isLoading?: boolean;
+  onScreenshotClick?: (actionId: string) => void;
 }
 
-export function RunActionsTable({ actions, isLoading }: RunActionsTableProps) {
+export function RunActionsTable({ actions, isLoading, onScreenshotClick }: RunActionsTableProps) {
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
 
   const toggleRow = (actionId: string) => {
@@ -402,6 +404,7 @@ export function RunActionsTable({ actions, isLoading }: RunActionsTableProps) {
             <TableHead>Status</TableHead>
             <TableHead>Duration</TableHead>
             <TableHead>Selector</TableHead>
+            <TableHead className="w-12 text-center" title="Screenshot">📷</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
         </TableHeader>
@@ -447,6 +450,12 @@ export function RunActionsTable({ actions, isLoading }: RunActionsTableProps) {
                     <span className="text-muted-foreground">-</span>
                   )}
                 </TableCell>
+                <TableCell className="text-center">
+                  <ScreenshotIndicator
+                    hasScreenshot={!!action.screenshotPath}
+                    onClick={() => onScreenshotClick?.(action.actionId)}
+                  />
+                </TableCell>
                 <TableCell>
                   <ChevronDownIcon
                     className={cn(
@@ -458,7 +467,7 @@ export function RunActionsTable({ actions, isLoading }: RunActionsTableProps) {
               </TableRow>
               {expandedRows.has(action.id) && (
                 <tr>
-                  <td colSpan={6} className="p-0">
+                  <td colSpan={7} className="p-0">
                     <ActionDetails action={action} />
                   </td>
                 </tr>

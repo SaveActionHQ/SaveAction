@@ -1,6 +1,11 @@
 import type { Action } from '../types/index.js';
 
 /**
+ * Screenshot capture mode for test runs
+ */
+export type ScreenshotMode = 'on-failure' | 'always' | 'never';
+
+/**
  * Result of a test run
  */
 export interface RunResult {
@@ -11,6 +16,7 @@ export interface RunResult {
   actionsFailed: number;
   errors: ActionError[];
   video?: string; // path to video file
+  screenshots?: string[]; // paths to screenshot files
   timingEnabled?: boolean; // Whether timing delays were used
   skippedActions?: SkippedAction[]; // Phase 2: Track skipped optional actions
 }
@@ -23,6 +29,7 @@ export interface ActionError {
   actionType: string;
   error: string;
   timestamp: number;
+  screenshotPath?: string; // Screenshot captured on error
 }
 
 /**
@@ -41,6 +48,7 @@ export interface ActionResult {
   status: 'success' | 'failed' | 'skipped';
   duration: number;
   error?: string;
+  screenshotPath?: string; // Screenshot path if captured
 }
 
 /**
@@ -50,7 +58,9 @@ export interface RunOptions {
   headless?: boolean; // Default: true
   browser?: 'chromium' | 'firefox' | 'webkit'; // Default: chromium
   video?: boolean; // Default: false
-  screenshot?: boolean; // Default: false
+  screenshot?: boolean; // Default: false - enable screenshot capture
+  screenshotMode?: ScreenshotMode; // Default: 'on-failure'
+  screenshotDir?: string; // Default: './screenshots'
   timeout?: number; // Default: 30000ms
 
   // Timing options for realistic playback
@@ -64,6 +74,9 @@ export interface RunOptions {
 
   // Cancellation support
   abortSignal?: AbortSignal; // Signal to cancel the run
+
+  // Run identification (for screenshot naming)
+  runId?: string; // Unique run identifier for screenshot filenames
 }
 
 /**

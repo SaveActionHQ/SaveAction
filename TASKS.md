@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** February 2, 2026
+**Last Updated:** February 4, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -104,6 +104,23 @@
 - **Priority:** P2
 - **Labels:** `testing`, `integration`
 - **Description:** Add real browser integration tests for PlaywrightRunner and ElementLocator. Launch actual Chromium instance, execute actions against local test HTML fixtures. Test: click, input, navigation, scroll actions with real DOM. 43 integration tests covering: click actions (6), input actions (5), select actions (2), scroll actions (2), complex workflows (3), error handling (2), browser options (2), selector strategies (22). Run separately with `pnpm run test:integration` in packages/core.
+
+### ✅ DONE - Screenshot Capture on Failure
+
+- **Package:** @saveaction/core
+- **Priority:** P1
+- **Labels:** `feature`, `runner`, `enhancement`
+- **Completed:** 2026-02-02
+- **Description:** Implemented automatic screenshot capture with configurable modes. Features:
+  - Added `screenshotDir?: string` and `screenshotMode?: 'on-failure' | 'always' | 'never'` to RunOptions
+  - `captureScreenshot()` method in PlaywrightRunner saves screenshots on failure or always (configurable)
+  - Screenshots saved as `run-{timestamp}-{actionIndex}-{actionId}.png`
+  - `ActionResult.screenshotPath` returns path to captured screenshot
+  - Safe capture with try/catch - doesn't throw if page is closed
+  - CLI options added: `--screenshot`, `--screenshot-mode <mode>`, `--screenshot-dir <path>`
+  - 22 unit tests for screenshot capture logic
+  - 8 integration tests for browser screenshot capture
+  - Manual end-to-end verification: 22/22 actions captured successfully
 
 ---
 
@@ -389,6 +406,22 @@
 - **Labels:** `storage`, `devops`
 - **Description:** Implemented storage strategy for videos and screenshots with local filesystem configurable via VIDEO_STORAGE_PATH and SCREENSHOT_STORAGE_PATH environment variables (defaults: ./storage/videos and ./storage/screenshots). Background cleanup jobs run daily at 3:00 AM (videos) and 3:30 AM (screenshots) with 30-day retention. Cleanup processor skips active runs and handles orphaned files gracefully. S3-compatible storage support deferred to P3 - not needed for MVP.
 
+### ✅ DONE - Screenshot Serving Endpoint
+
+- **Package:** @saveaction/api
+- **Priority:** P1
+- **Labels:** `feature`, `api`
+- **Depends On:** Core - Screenshot Capture on Failure
+- **Description:** Implemented API endpoint to serve screenshot files for the web UI gallery:
+  - GET /api/v1/runs/:id/actions/:actionId/screenshot - serves screenshot file
+  - JWT authentication via query parameter (like video endpoint) for `<img>` tag compatibility
+  - CORS headers (Access-Control-Allow-Origin, Cross-Origin-Resource-Policy) for cross-origin image loading
+  - Content-Type: image/png header with Cache-Control: private, max-age=3600
+  - Proper 404 responses with distinct error codes: ACTION_NOT_FOUND, SCREENSHOT_NOT_FOUND, SCREENSHOT_FILE_NOT_FOUND
+  - Added `findActionByRunIdAndActionId` method to RunRepository
+  - Updated testRunProcessor to pass screenshot options to PlaywrightRunner and save paths to run_actions.screenshot_path
+  - Unit tests (6 new tests) covering auth, 404 cases, token via query param
+
 ### ⏳ TODO - External Run Reports (Future)
 
 - **Package:** @saveaction/api
@@ -576,14 +609,30 @@
   - Video streaming via `GET /api/v1/runs/:id/video` with JWT token auth (query param for video element)
   - CORS headers for cross-origin video streaming
   - Cancel/Retry/Delete actions with confirmation dialogs
-  - Note: Screenshots gallery deferred to separate task
+  - Screenshots gallery with lightbox (see Screenshots Gallery task)
 
-### ⏳ TODO - Screenshots Gallery
+### ✅ DONE - Screenshots Gallery
 
 - **Package:** @saveaction/web
 - **Priority:** P2
 - **Labels:** `feature`, `ui`, `enhancement`
-- **Description:** Add screenshot capture on test failure and gallery display in run results page. Features: automatic screenshot on action failure, screenshot storage via API, gallery component with lightbox view, thumbnail grid in run details page. Requires core runner changes to capture screenshots.
+- **Depends On:** Core - Screenshot Capture on Failure, API - Screenshot Serving Endpoint
+- **Completed:** 2026-02-02
+- **Description:** Built screenshot gallery component for run results page with all features:
+  - Thumbnail grid showing screenshots for all captured actions
+  - Responsive grid layout (2-6 columns based on screen size)
+  - Lightbox/modal view with full-size screenshot on click
+  - Keyboard navigation (arrow keys, Escape to close)
+  - Zoom controls (50%-400%) with pan support when zoomed
+  - Thumbnail strip in lightbox for quick navigation
+  - Screenshot indicator icon (📷) in actions table for rows with screenshots
+  - Click indicator to scroll to gallery section
+  - Intersection Observer for lazy loading thumbnails
+  - Download button in lightbox with proper filename
+  - Comprehensive error handling for failed/missing screenshots
+  - Failed actions highlighted with red border
+  - Error message display for failed actions in lightbox
+  - Uses `GET /api/v1/runs/:id/actions/:actionId/screenshot?token=` endpoint
 
 ### ⏳ TODO - Settings Pages
 
@@ -772,26 +821,26 @@
 
 | Phase                            | Total  | Done   | Skipped | Todo   |
 | -------------------------------- | ------ | ------ | ------- | ------ |
-| Phase 1: Core                    | 12     | 12     | 0       | 0      |
+| Phase 1: Core                    | 13     | 13     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
-| Phase 3: API                     | 32     | 29     | 0       | 3      |
+| Phase 3: API                     | 33     | 29     | 0       | 4      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
-| Phase 4: Web                     | 10     | 7      | 0       | 3      |
+| Phase 4: Web                     | 10     | 8      | 0       | 2      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **89** | **63** | **2**   | **24** |
+| **TOTAL**                        | **91** | **65** | **2**   | **24** |
 
 ### Test Summary
 
 | Package | Tests |
 |---------|-------|
-| @saveaction/core | 140 |
-| @saveaction/cli | 131 (3 skipped) |
-| @saveaction/api | 815 |
-| **TOTAL** | **1,086 tests** |
+| @saveaction/core | 163 |
+| @saveaction/cli | 173 (3 skipped) |
+| @saveaction/api | 821 |
+| **TOTAL** | **1,157 tests** |
 
 ---
 

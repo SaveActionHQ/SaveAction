@@ -61,6 +61,7 @@ export const createRunSchema = z.object({
   headless: z.boolean().optional().default(true),
   videoEnabled: z.boolean().optional().default(false),
   screenshotEnabled: z.boolean().optional().default(false),
+  screenshotMode: z.enum(['on-failure', 'always', 'never']).optional().default('on-failure'),
   timeout: z.number().int().positive().max(600000).optional().default(30000), // Max 10 minutes
   timingEnabled: z.boolean().optional().default(true),
   timingMode: z.enum(['realistic', 'fast', 'instant']).optional().default('realistic'),
@@ -205,6 +206,8 @@ export class RunnerService {
           browser: validated.browser,
           headless: validated.headless,
           recordVideo: validated.videoEnabled,
+          recordScreenshots: validated.screenshotEnabled,
+          screenshotMode: validated.screenshotMode,
           timeout: validated.timeout,
           createdAt: new Date().toISOString(),
         };
