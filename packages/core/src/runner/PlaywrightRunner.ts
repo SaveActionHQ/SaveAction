@@ -6,6 +6,8 @@ import {
   type BrowserContext,
   type Page,
 } from 'playwright';
+import * as fs from 'fs';
+import * as path from 'path';
 import type {
   Recording,
   Action,
@@ -44,7 +46,9 @@ enum ErrorSeverity {
  * Main Playwright test runner with enhanced error recovery and intelligent navigation
  */
 export class PlaywrightRunner {
-  private options: Required<Omit<RunOptions, 'abortSignal'>>;
+  private options: Required<Omit<RunOptions, 'abortSignal' | 'runId'>> & {
+    runId?: string;
+  };
   private elementLocator: ElementLocator;
   private navigationHistory: NavigationHistoryManager;
   private navigationAnalyzer: NavigationAnalyzer;
@@ -64,18 +68,24 @@ export class PlaywrightRunner {
   // Cancellation support
   private abortSignal?: AbortSignal;
 
+  // Screenshot tracking
+  private capturedScreenshots: string[] = [];
+
   constructor(options: RunOptions = {}, reporter?: Reporter) {
     this.options = {
       headless: options.headless ?? true,
       browser: options.browser ?? 'chromium',
       video: options.video ?? false,
       screenshot: options.screenshot ?? false,
+      screenshotMode: options.screenshotMode ?? 'on-failure',
+      screenshotDir: options.screenshotDir ?? './screenshots',
       timeout: options.timeout ?? 30000,
       enableTiming: options.enableTiming ?? true,
       timingMode: options.timingMode ?? 'realistic',
       speedMultiplier: options.speedMultiplier ?? 1.0,
       maxActionDelay: options.maxActionDelay ?? 30000,
       continueOnError: options.continueOnError ?? false, // Phase 2
+      runId: options.runId,
     };
     this.abortSignal = options.abortSignal;
     this.elementLocator = new ElementLocator();
@@ -249,6 +259,9 @@ export class PlaywrightRunner {
     // Use normalized, sorted, and deduplicated recording
     this.processedRecording = { ...normalizedRecording, actions: deduplicatedActions };
 
+    // Reset captured screenshots for this run
+    this.capturedScreenshots = [];
+
     const result: RunResult = {
       status: 'success',
       duration: 0,
@@ -257,6 +270,7 @@ export class PlaywrightRunner {
       actionsFailed: 0,
       errors: [],
       skippedActions: [], // Phase 2
+      screenshots: [], // Screenshot capture feature
     };
 
     try {
@@ -561,6 +575,11 @@ export class PlaywrightRunner {
           result.actionsExecuted++;
           this.reporter?.onActionSuccess(action, i + 1, actionDuration);
 
+          // Capture screenshot if 'always' mode is enabled
+          if (this.shouldCaptureScreenshot(false)) {
+            await this.captureScreenshot(page, action, i + 1, 'always');
+          }
+
           // Add delay buffer after input actions for JavaScript validation
           if (action.type === 'input') {
             await page.waitForTimeout(150);
@@ -606,12 +625,19 @@ export class PlaywrightRunner {
 
           const severity = this.classifyError(error as Error);
 
+          // Capture screenshot on failure
+          let screenshotPath: string | undefined;
+          if (this.shouldCaptureScreenshot(true)) {
+            screenshotPath = await this.captureScreenshot(page, action, i + 1, 'failure');
+          }
+
           result.actionsFailed++;
           result.errors.push({
             actionId: action.id,
             actionType: action.type,
             error: error instanceof Error ? error.message : String(error),
             timestamp: Date.now(),
+            screenshotPath,
           });
           this.reporter?.onActionError(action, i + 1, error as Error);
 
@@ -656,6 +682,7 @@ export class PlaywrightRunner {
       if (browser) await browser.close();
 
       result.duration = Date.now() - startTime;
+      result.screenshots = this.capturedScreenshots;
       this.reporter?.onComplete(result);
     }
 
@@ -901,6 +928,96 @@ export class PlaywrightRunner {
     }
 
     return null;
+  }
+
+  /**
+   * Capture screenshot with error handling
+   * @param page - Playwright page instance
+   * @param action - Action that triggered the screenshot
+   * @param actionIndex - Index of the action (1-based for display)
+   * @param reason - Reason for screenshot ('failure' or 'always')
+   * @returns Path to saved screenshot or undefined if capture failed
+   */
+  private async captureScreenshot(
+    page: Page,
+    action: Action,
+    actionIndex: number,
+    reason: 'failure' | 'always'
+  ): Promise<string | undefined> {
+    // Check if screenshots are enabled
+    if (!this.options.screenshot) {
+      return undefined;
+    }
+
+    // Check screenshot mode
+    const mode = this.options.screenshotMode;
+    if (mode === 'never') {
+      return undefined;
+    }
+    if (mode === 'on-failure' && reason !== 'failure') {
+      return undefined;
+    }
+
+    try {
+      // Check if page is still accessible
+      if (page.isClosed()) {
+        console.warn('   📷 Cannot capture screenshot: page is closed');
+        return undefined;
+      }
+
+      // Ensure screenshot directory exists
+      const screenshotDir = this.options.screenshotDir;
+      if (!fs.existsSync(screenshotDir)) {
+        fs.mkdirSync(screenshotDir, { recursive: true });
+      }
+
+      // Generate filename: {runId}-{actionIndex}-{actionId}.png
+      // Use timestamp as fallback if runId is not provided
+      const runId = this.options.runId || `run-${Date.now()}`;
+      const paddedIndex = String(actionIndex).padStart(3, '0');
+      const filename = `${runId}-${paddedIndex}-${action.id}.png`;
+      const screenshotPath = path.join(screenshotDir, filename);
+
+      // Capture screenshot
+      await page.screenshot({
+        path: screenshotPath,
+        fullPage: false, // Only visible viewport to keep file size reasonable
+        type: 'png',
+      });
+
+      console.log(`   📷 Screenshot saved: ${filename}`);
+
+      // Track for result
+      this.capturedScreenshots.push(screenshotPath);
+
+      return screenshotPath;
+    } catch (error) {
+      // Don't let screenshot failure break the test
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.warn(`   📷 Screenshot capture failed: ${errorMessage}`);
+      return undefined;
+    }
+  }
+
+  /**
+   * Check if screenshot should be captured for the current action
+   * Based on screenshot mode and action outcome
+   */
+  private shouldCaptureScreenshot(isFailure: boolean): boolean {
+    if (!this.options.screenshot) {
+      return false;
+    }
+
+    const mode = this.options.screenshotMode;
+    switch (mode) {
+      case 'never':
+        return false;
+      case 'always':
+        return true;
+      case 'on-failure':
+      default:
+        return isFailure;
+    }
   }
 
   /**

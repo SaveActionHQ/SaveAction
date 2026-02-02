@@ -13,6 +13,9 @@ export interface RunCommandOptions {
   headless: boolean | string;
   browser: 'chromium' | 'firefox' | 'webkit';
   video: boolean;
+  screenshot: boolean;
+  screenshotMode: 'on-failure' | 'always' | 'never';
+  screenshotDir: string;
   timeout: string;
   timing: boolean | string;
   timingMode: 'realistic' | 'fast' | 'instant';
@@ -299,6 +302,9 @@ export async function runCommand(file: string | undefined, options: RunCommandOp
       headless,
       browser: options.browser,
       video: options.video,
+      screenshot: options.screenshot,
+      screenshotMode: options.screenshotMode,
+      screenshotDir: options.screenshotDir,
       timeout: parseInt(options.timeout, 10),
       enableTiming,
       timingMode: options.timingMode,
@@ -439,6 +445,9 @@ async function runMultipleRecordings(
       headless,
       browser: options.browser,
       video: options.video,
+      screenshot: options.screenshot,
+      screenshotMode: options.screenshotMode,
+      screenshotDir: options.screenshotDir,
       timeout: parseInt(options.timeout, 10),
       enableTiming,
       timingMode: options.timingMode,

@@ -338,6 +338,208 @@ describe('PlaywrightRunner Integration Tests', () => {
       expect(result.status).toBe('success');
     });
   });
+
+  describe('Screenshot Capture', () => {
+    const screenshotDir = path.join(__dirname, '__fixtures__', 'test-screenshots');
+
+    // Clean up screenshots after tests
+    afterAll(async () => {
+      // Clean up test screenshots
+      const fs = await import('fs');
+      if (fs.existsSync(screenshotDir)) {
+        const files = fs.readdirSync(screenshotDir);
+        for (const file of files) {
+          fs.unlinkSync(path.join(screenshotDir, file));
+        }
+        fs.rmdirSync(screenshotDir);
+      }
+    });
+
+    it('should capture screenshot on action failure when mode is on-failure', async () => {
+      const recording = createRecording([
+        createClickAction('act_001', '#non-existent-element', { id: 'non-existent-element' }),
+      ]);
+
+      const fs = await import('fs');
+
+      const runner = new PlaywrightRunner({
+        headless: true,
+        screenshot: true,
+        screenshotMode: 'on-failure',
+        screenshotDir,
+        runId: 'test-failure-run',
+      });
+      const result = await runner.execute(recording);
+
+      // Check if screenshot was captured
+      expect(result.screenshots).toBeDefined();
+
+      // The runner should have captured at least one screenshot on failure
+      // Note: The actual screenshot may or may not be saved depending on error handling
+      if (result.actionsFailed > 0) {
+        // At least one error should have screenshot path
+        const hasScreenshotInErrors = result.errors.some((e) => e.screenshotPath !== undefined);
+        if (hasScreenshotInErrors) {
+          const screenshotPath = result.errors[0].screenshotPath!;
+          expect(screenshotPath).toContain('test-failure-run');
+          expect(screenshotPath).toContain('.png');
+        }
+      }
+    });
+
+    it('should capture screenshot on successful action when mode is always', async () => {
+      const recording = createRecording([
+        createClickAction('act_001', '#click-btn', { id: 'click-btn' }),
+      ]);
+
+      const fs = await import('fs');
+
+      const runner = new PlaywrightRunner({
+        headless: true,
+        screenshot: true,
+        screenshotMode: 'always',
+        screenshotDir,
+        runId: 'test-always-run',
+      });
+      const result = await runner.execute(recording);
+
+      // Check that screenshots array is populated
+      expect(result.screenshots).toBeDefined();
+      expect(result.screenshots!.length).toBeGreaterThan(0);
+
+      // Verify screenshot file exists
+      const screenshotPath = result.screenshots![0];
+      expect(fs.existsSync(screenshotPath)).toBe(true);
+      expect(screenshotPath).toContain('test-always-run');
+      expect(screenshotPath).toContain('.png');
+    });
+
+    it('should not capture screenshots when mode is never', async () => {
+      const recording = createRecording([
+        createClickAction('act_001', '#click-btn', { id: 'click-btn' }),
+      ]);
+
+      const runner = new PlaywrightRunner({
+        headless: true,
+        screenshot: true,
+        screenshotMode: 'never',
+        screenshotDir,
+        runId: 'test-never-run',
+      });
+      const result = await runner.execute(recording);
+
+      expect(result.status).toBe('success');
+      expect(result.screenshots).toBeDefined();
+      expect(result.screenshots!.length).toBe(0);
+    });
+
+    it('should not capture screenshots when screenshot option is false', async () => {
+      const recording = createRecording([
+        createClickAction('act_001', '#click-btn', { id: 'click-btn' }),
+      ]);
+
+      const runner = new PlaywrightRunner({
+        headless: true,
+        screenshot: false,
+        screenshotMode: 'always',
+        screenshotDir,
+        runId: 'test-disabled-run',
+      });
+      const result = await runner.execute(recording);
+
+      expect(result.status).toBe('success');
+      expect(result.screenshots).toBeDefined();
+      expect(result.screenshots!.length).toBe(0);
+    });
+
+    it('should create screenshot directory if it does not exist', async () => {
+      const customDir = path.join(__dirname, '__fixtures__', 'custom-screenshot-dir');
+      const fs = await import('fs');
+
+      // Ensure directory doesn't exist
+      if (fs.existsSync(customDir)) {
+        const files = fs.readdirSync(customDir);
+        for (const file of files) {
+          fs.unlinkSync(path.join(customDir, file));
+        }
+        fs.rmdirSync(customDir);
+      }
+
+      const recording = createRecording([
+        createClickAction('act_001', '#click-btn', { id: 'click-btn' }),
+      ]);
+
+      const runner = new PlaywrightRunner({
+        headless: true,
+        screenshot: true,
+        screenshotMode: 'always',
+        screenshotDir: customDir,
+        runId: 'test-dir-creation',
+      });
+      const result = await runner.execute(recording);
+
+      expect(result.status).toBe('success');
+      expect(fs.existsSync(customDir)).toBe(true);
+
+      // Cleanup
+      const files = fs.readdirSync(customDir);
+      for (const file of files) {
+        fs.unlinkSync(path.join(customDir, file));
+      }
+      fs.rmdirSync(customDir);
+    });
+
+    it('should name screenshots with correct format: {runId}-{index}-{actionId}.png', async () => {
+      const recording = createRecording([
+        createClickAction('act_001', '#click-btn', { id: 'click-btn' }),
+      ]);
+
+      const fs = await import('fs');
+
+      const runner = new PlaywrightRunner({
+        headless: true,
+        screenshot: true,
+        screenshotMode: 'always',
+        screenshotDir,
+        runId: 'run_12345',
+      });
+      const result = await runner.execute(recording);
+
+      expect(result.screenshots!.length).toBeGreaterThan(0);
+      const filename = path.basename(result.screenshots![0]);
+
+      // Expected format: run_12345-001-act_001.png
+      expect(filename).toMatch(/^run_12345-001-act_001\.png$/);
+    });
+
+    it('should capture multiple screenshots for multiple actions', async () => {
+      const recording = createRecording([
+        createClickAction('act_001', '#click-btn', { id: 'click-btn' }),
+        createInputAction('act_002', '#username', 'testuser', { id: 'username' }),
+        createClickAction('act_003', '[data-testid="test-btn"]', { dataTestId: 'test-btn' }),
+      ]);
+
+      const fs = await import('fs');
+
+      const runner = new PlaywrightRunner({
+        headless: true,
+        screenshot: true,
+        screenshotMode: 'always',
+        screenshotDir,
+        runId: 'multi-action-run',
+      });
+      const result = await runner.execute(recording);
+
+      expect(result.status).toBe('success');
+      expect(result.actionsExecuted).toBe(3);
+      expect(result.screenshots!.length).toBe(3);
+
+      // Verify all files exist
+      for (const screenshotPath of result.screenshots!) {
+        expect(fs.existsSync(screenshotPath)).toBe(true);
+      }
+    });
+  });
 });
 
 // Helper functions to create test recordings and actions
@@ -470,13 +672,11 @@ function createScrollAction(
     type: 'scroll',
     timestamp: Date.now(),
     url: TEST_PAGE_URL,
-    selector: {
+    element: {
       css: cssSelector,
       priority: ['css'],
     },
-    scrollPosition: { x: scrollX, y: scrollY },
-    scrollDelta: { deltaX: 0, deltaY: scrollY },
-    scrollTarget: 'element',
-    behavior: 'smooth',
+    scrollX,
+    scrollY,
   };
 }

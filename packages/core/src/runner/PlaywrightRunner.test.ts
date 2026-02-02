@@ -654,4 +654,259 @@ describe('PlaywrightRunner', () => {
       expect(() => checkCancellation()).toThrow('CANCELLED: Run was cancelled by user');
     });
   });
+
+  describe('screenshot capture', () => {
+    describe('options handling', () => {
+      it('should accept screenshot option enabled', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+        });
+
+        expect((runner as any).options.screenshot).toBe(true);
+      });
+
+      it('should default screenshot to false', () => {
+        const runner = new PlaywrightRunner({});
+
+        expect((runner as any).options.screenshot).toBe(false);
+      });
+
+      it('should accept screenshotMode option', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotMode: 'always',
+        });
+
+        expect((runner as any).options.screenshotMode).toBe('always');
+      });
+
+      it('should default screenshotMode to on-failure', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+        });
+
+        expect((runner as any).options.screenshotMode).toBe('on-failure');
+      });
+
+      it('should accept screenshotDir option', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotDir: './my-screenshots',
+        });
+
+        expect((runner as any).options.screenshotDir).toBe('./my-screenshots');
+      });
+
+      it('should default screenshotDir to ./screenshots', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+        });
+
+        expect((runner as any).options.screenshotDir).toBe('./screenshots');
+      });
+
+      it('should accept runId option for screenshot naming', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          runId: 'run_123456',
+        });
+
+        expect((runner as any).options.runId).toBe('run_123456');
+      });
+    });
+
+    describe('shouldCaptureScreenshot', () => {
+      it('should return false when screenshot is disabled', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: false,
+        });
+
+        const shouldCapture = (runner as any).shouldCaptureScreenshot(true);
+        expect(shouldCapture).toBe(false);
+      });
+
+      it('should return true for failure when mode is on-failure', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotMode: 'on-failure',
+        });
+
+        const shouldCapture = (runner as any).shouldCaptureScreenshot(true);
+        expect(shouldCapture).toBe(true);
+      });
+
+      it('should return false for success when mode is on-failure', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotMode: 'on-failure',
+        });
+
+        const shouldCapture = (runner as any).shouldCaptureScreenshot(false);
+        expect(shouldCapture).toBe(false);
+      });
+
+      it('should return true for failure when mode is always', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotMode: 'always',
+        });
+
+        const shouldCapture = (runner as any).shouldCaptureScreenshot(true);
+        expect(shouldCapture).toBe(true);
+      });
+
+      it('should return true for success when mode is always', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotMode: 'always',
+        });
+
+        const shouldCapture = (runner as any).shouldCaptureScreenshot(false);
+        expect(shouldCapture).toBe(true);
+      });
+
+      it('should return false for failure when mode is never', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotMode: 'never',
+        });
+
+        const shouldCapture = (runner as any).shouldCaptureScreenshot(true);
+        expect(shouldCapture).toBe(false);
+      });
+
+      it('should return false for success when mode is never', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotMode: 'never',
+        });
+
+        const shouldCapture = (runner as any).shouldCaptureScreenshot(false);
+        expect(shouldCapture).toBe(false);
+      });
+    });
+
+    describe('screenshot filename format', () => {
+      it('should format filename as {runId}-{actionIndex}-{actionId}.png', () => {
+        const runId = 'run_123456';
+        const actionIndex = 5;
+        const actionId = 'act_001';
+
+        const paddedIndex = String(actionIndex).padStart(3, '0');
+        const filename = `${runId}-${paddedIndex}-${actionId}.png`;
+
+        expect(filename).toBe('run_123456-005-act_001.png');
+      });
+
+      it('should pad action index with leading zeros', () => {
+        const paddedIndex1 = String(1).padStart(3, '0');
+        const paddedIndex10 = String(10).padStart(3, '0');
+        const paddedIndex100 = String(100).padStart(3, '0');
+
+        expect(paddedIndex1).toBe('001');
+        expect(paddedIndex10).toBe('010');
+        expect(paddedIndex100).toBe('100');
+      });
+
+      it('should use timestamp-based runId when runId not provided', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+        });
+
+        expect((runner as any).options.runId).toBeUndefined();
+      });
+    });
+
+    describe('RunResult screenshots array', () => {
+      it('should initialize capturedScreenshots as empty array', () => {
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+        });
+
+        expect((runner as any).capturedScreenshots).toEqual([]);
+      });
+
+      it('should track screenshot path in ActionError', () => {
+        const error = {
+          actionId: 'act_001',
+          actionType: 'click',
+          error: 'Element not found',
+          timestamp: Date.now(),
+          screenshotPath: './screenshots/run_123-001-act_001.png',
+        };
+
+        expect(error.screenshotPath).toBe('./screenshots/run_123-001-act_001.png');
+      });
+
+      it('should allow undefined screenshotPath in ActionError', () => {
+        const error: {
+          actionId: string;
+          actionType: string;
+          error: string;
+          timestamp: number;
+          screenshotPath?: string;
+        } = {
+          actionId: 'act_001',
+          actionType: 'click',
+          error: 'Element not found',
+          timestamp: Date.now(),
+        };
+
+        expect(error.screenshotPath).toBeUndefined();
+      });
+    });
+
+    describe('screenshot mode combinations', () => {
+      it('should only capture failures when mode is on-failure (default)', () => {
+        const scenarios = [
+          { isFailure: true, shouldCapture: true },
+          { isFailure: false, shouldCapture: false },
+        ];
+
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotMode: 'on-failure',
+        });
+
+        for (const { isFailure, shouldCapture } of scenarios) {
+          const result = (runner as any).shouldCaptureScreenshot(isFailure);
+          expect(result).toBe(shouldCapture);
+        }
+      });
+
+      it('should capture all actions when mode is always', () => {
+        const scenarios = [
+          { isFailure: true, shouldCapture: true },
+          { isFailure: false, shouldCapture: true },
+        ];
+
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotMode: 'always',
+        });
+
+        for (const { isFailure, shouldCapture } of scenarios) {
+          const result = (runner as any).shouldCaptureScreenshot(isFailure);
+          expect(result).toBe(shouldCapture);
+        }
+      });
+
+      it('should never capture when mode is never', () => {
+        const scenarios = [
+          { isFailure: true, shouldCapture: false },
+          { isFailure: false, shouldCapture: false },
+        ];
+
+        const runner = new PlaywrightRunner({
+          screenshot: true,
+          screenshotMode: 'never',
+        });
+
+        for (const { isFailure, shouldCapture } of scenarios) {
+          const result = (runner as any).shouldCaptureScreenshot(isFailure);
+          expect(result).toBe(shouldCapture);
+        }
+      });
+    });
+  });
 });

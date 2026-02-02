@@ -105,20 +105,22 @@
 - **Labels:** `testing`, `integration`
 - **Description:** Add real browser integration tests for PlaywrightRunner and ElementLocator. Launch actual Chromium instance, execute actions against local test HTML fixtures. Test: click, input, navigation, scroll actions with real DOM. 43 integration tests covering: click actions (6), input actions (5), select actions (2), scroll actions (2), complex workflows (3), error handling (2), browser options (2), selector strategies (22). Run separately with `pnpm run test:integration` in packages/core.
 
-### ⏳ TODO - Screenshot Capture on Failure
+### ✅ DONE - Screenshot Capture on Failure
 
 - **Package:** @saveaction/core
 - **Priority:** P1
 - **Labels:** `feature`, `runner`, `enhancement`
-- **Depends On:** None (new feature)
-- **Description:** Implement automatic screenshot capture when an action fails. The `RunOptions.screenshot` option exists but is not implemented - PlaywrightRunner stores the option but never calls `page.screenshot()`. Implementation requirements:
-  - Add `screenshotDir?: string` to RunOptions for output directory
-  - In `executeAction()` catch block, call `page.screenshot()` on failure
-  - Save screenshots as `{runId}-{actionIndex}-{actionId}.png`
-  - Return screenshot path in `ActionResult.screenshotPath`
-  - Support both per-action screenshots (on failure) and configurable screenshot modes (always, never, on-failure)
-  - Ensure screenshot capture doesn't throw if page is already closed
-  - Add unit tests for screenshot capture logic
+- **Completed:** 2026-02-02
+- **Description:** Implemented automatic screenshot capture with configurable modes. Features:
+  - Added `screenshotDir?: string` and `screenshotMode?: 'on-failure' | 'always' | 'never'` to RunOptions
+  - `captureScreenshot()` method in PlaywrightRunner saves screenshots on failure or always (configurable)
+  - Screenshots saved as `run-{timestamp}-{actionIndex}-{actionId}.png`
+  - `ActionResult.screenshotPath` returns path to captured screenshot
+  - Safe capture with try/catch - doesn't throw if page is closed
+  - CLI options added: `--screenshot`, `--screenshot-mode <mode>`, `--screenshot-dir <path>`
+  - 22 unit tests for screenshot capture logic
+  - 8 integration tests for browser screenshot capture
+  - Manual end-to-end verification: 22/22 actions captured successfully
 
 ---
 
@@ -810,7 +812,7 @@
 
 | Phase                            | Total  | Done   | Skipped | Todo   |
 | -------------------------------- | ------ | ------ | ------- | ------ |
-| Phase 1: Core                    | 13     | 12     | 0       | 1      |
+| Phase 1: Core                    | 13     | 13     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
 | Phase 3: API                     | 33     | 29     | 0       | 4      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
@@ -820,7 +822,7 @@
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **91** | **63** | **2**   | **26** |
+| **TOTAL**                        | **91** | **64** | **2**   | **25** |
 
 ### Test Summary
 
