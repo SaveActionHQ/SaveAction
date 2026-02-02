@@ -1,7 +1,7 @@
 'use client';
 
 import * as React from 'react';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
@@ -14,6 +14,7 @@ import { api, type Run, ApiClientError } from '@/lib/api';
 import { formatDate, formatDuration, formatRelativeTime } from '@/lib/utils';
 import { RunActionsTable, type RunAction } from '@/components/runs/run-actions-table';
 import { VideoPlayer } from '@/components/runs/video-player';
+import { ScreenshotGallery } from '@/components/runs/screenshot-gallery';
 
 // Icons
 function ArrowLeftIcon({ className }: { className?: string }) {
@@ -209,6 +210,26 @@ function AlertCircleIcon({ className }: { className?: string }) {
   );
 }
 
+function CameraIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+      <circle cx="12" cy="13" r="3" />
+    </svg>
+  );
+}
+
 // Extended Run type with additional fields from API
 interface RunDetails extends Run {
   recordingUrl?: string;
@@ -331,6 +352,19 @@ export default function RunDetailsPage() {
   const [isRetrying, setIsRetrying] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  
+  // Screenshot gallery state
+  const screenshotGalleryRef = React.useRef<HTMLDivElement>(null);
+  const [highlightedScreenshotId, setHighlightedScreenshotId] = useState<string | null>(null);
+
+  // Handler for clicking screenshot indicator in actions table
+  const handleScreenshotClick = useCallback((actionId: string) => {
+    // Scroll to screenshot gallery
+    screenshotGalleryRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    // Briefly highlight the section
+    setHighlightedScreenshotId(actionId);
+    setTimeout(() => setHighlightedScreenshotId(null), 2000);
+  }, []);
 
   // Fetch run details
   useEffect(() => {
@@ -621,13 +655,32 @@ export default function RunDetailsPage() {
         </Card>
       )}
 
+      {/* Screenshot Gallery */}
+      {actions.some((a) => a.screenshotPath) && (
+        <Card ref={screenshotGalleryRef} className={highlightedScreenshotId ? 'ring-2 ring-primary ring-offset-2 transition-all duration-300' : ''}>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <CameraIcon className="h-5 w-5" />
+              Screenshots
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ScreenshotGallery runId={run.id} actions={actions} />
+          </CardContent>
+        </Card>
+      )}
+
       {/* Actions Table */}
       <Card>
         <CardHeader>
           <CardTitle>Action Results</CardTitle>
         </CardHeader>
         <CardContent>
-          <RunActionsTable actions={actions} isLoading={actionsLoading} />
+          <RunActionsTable 
+            actions={actions} 
+            isLoading={actionsLoading} 
+            onScreenshotClick={handleScreenshotClick}
+          />
         </CardContent>
       </Card>
 

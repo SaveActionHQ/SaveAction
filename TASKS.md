@@ -609,22 +609,30 @@
   - Video streaming via `GET /api/v1/runs/:id/video` with JWT token auth (query param for video element)
   - CORS headers for cross-origin video streaming
   - Cancel/Retry/Delete actions with confirmation dialogs
-  - Note: Screenshots gallery deferred to separate task
+  - Screenshots gallery with lightbox (see Screenshots Gallery task)
 
-### ⏳ TODO - Screenshots Gallery
+### ✅ DONE - Screenshots Gallery
 
 - **Package:** @saveaction/web
 - **Priority:** P2
 - **Labels:** `feature`, `ui`, `enhancement`
 - **Depends On:** Core - Screenshot Capture on Failure, API - Screenshot Serving Endpoint
-- **Description:** Build screenshot gallery component for run results page. This task requires the core runner to capture screenshots and the API to serve them first. Features:
-  - Thumbnail grid showing screenshots for failed actions in run details page
-  - Lightbox/modal view for full-size screenshot on click
-  - Screenshot indicator icon in actions table for rows with screenshots
-  - Lazy loading of screenshot thumbnails for performance
-  - Download screenshot button in lightbox
-  - Error handling for missing/failed screenshot loads
-  - Use `GET /api/v1/runs/:id/actions/:actionId/screenshot?token=` endpoint (JWT in query param like video)
+- **Completed:** 2026-02-02
+- **Description:** Built screenshot gallery component for run results page with all features:
+  - Thumbnail grid showing screenshots for all captured actions
+  - Responsive grid layout (2-6 columns based on screen size)
+  - Lightbox/modal view with full-size screenshot on click
+  - Keyboard navigation (arrow keys, Escape to close)
+  - Zoom controls (50%-400%) with pan support when zoomed
+  - Thumbnail strip in lightbox for quick navigation
+  - Screenshot indicator icon (📷) in actions table for rows with screenshots
+  - Click indicator to scroll to gallery section
+  - Intersection Observer for lazy loading thumbnails
+  - Download button in lightbox with proper filename
+  - Comprehensive error handling for failed/missing screenshots
+  - Failed actions highlighted with red border
+  - Error message display for failed actions in lightbox
+  - Uses `GET /api/v1/runs/:id/actions/:actionId/screenshot?token=` endpoint
 
 ### ⏳ TODO - Settings Pages
 
@@ -817,22 +825,22 @@
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
 | Phase 3: API                     | 33     | 29     | 0       | 4      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
-| Phase 4: Web                     | 10     | 7      | 0       | 3      |
+| Phase 4: Web                     | 10     | 8      | 0       | 2      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **91** | **64** | **2**   | **25** |
+| **TOTAL**                        | **91** | **65** | **2**   | **24** |
 
 ### Test Summary
 
 | Package | Tests |
 |---------|-------|
-| @saveaction/core | 140 |
-| @saveaction/cli | 131 (3 skipped) |
-| @saveaction/api | 815 |
-| **TOTAL** | **1,086 tests** |
+| @saveaction/core | 163 |
+| @saveaction/cli | 173 (3 skipped) |
+| @saveaction/api | 821 |
+| **TOTAL** | **1,157 tests** |
 
 ---
 

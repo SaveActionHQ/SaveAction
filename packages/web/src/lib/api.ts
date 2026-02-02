@@ -540,6 +540,8 @@ class ApiClient {
     browser?: 'chromium' | 'firefox' | 'webkit';
     headless?: boolean;
     videoEnabled?: boolean;
+    screenshotEnabled?: boolean;
+    screenshotMode?: 'on-failure' | 'always' | 'never';
   }): Promise<Run> {
     return this.request<Run>('/api/v1/runs', {
       method: 'POST',

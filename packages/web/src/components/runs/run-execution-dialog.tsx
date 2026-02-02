@@ -140,6 +140,26 @@ function SafariIcon({ className }: { className?: string }) {
   );
 }
 
+function CameraIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M14.5 4h-5L7 7H4a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V9a2 2 0 0 0-2-2h-3l-2.5-3z" />
+      <circle cx="12" cy="13" r="3" />
+    </svg>
+  );
+}
+
 function VideoIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -369,6 +389,54 @@ function ToggleSwitch({
   );
 }
 
+// Screenshot mode type
+type ScreenshotMode = 'on-failure' | 'always' | 'never';
+
+// Screenshot mode selector component
+function ScreenshotModeSelector({
+  value,
+  onChange,
+}: {
+  value: ScreenshotMode;
+  onChange: (mode: ScreenshotMode) => void;
+}) {
+  const modes: { value: ScreenshotMode; label: string; description: string }[] = [
+    { value: 'on-failure', label: 'On Failure', description: 'Capture when action fails' },
+    { value: 'always', label: 'Always', description: 'Capture for every action' },
+    { value: 'never', label: 'Never', description: 'No screenshots' },
+  ];
+
+  return (
+    <div className="flex items-start gap-3 p-3 rounded-lg border border-border">
+      <CameraIcon className="h-5 w-5 mt-0.5 text-muted-foreground" />
+      <div className="flex-1">
+        <span className="text-sm font-medium">Screenshots</span>
+        <div className="flex gap-2 mt-2">
+          {modes.map((mode) => (
+            <button
+              key={mode.value}
+              type="button"
+              onClick={() => onChange(mode.value)}
+              className={cn(
+                'flex-1 px-3 py-2 rounded-md text-xs font-medium transition-all',
+                value === mode.value
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-secondary hover:bg-secondary-hover text-secondary-foreground'
+              )}
+              title={mode.description}
+            >
+              {mode.label}
+            </button>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground mt-1.5">
+          {modes.find((m) => m.value === value)?.description}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // Action log item component
 function ActionLogItem({ entry }: { entry: ActionLogEntry }) {
   const statusIcons = {
@@ -452,6 +520,7 @@ export function RunExecutionDialog({
   const [browser, setBrowser] = useState<'chromium' | 'firefox' | 'webkit'>('chromium');
   const [headless, setHeadless] = useState(true);
   const [recordVideo, setRecordVideo] = useState(false);
+  const [screenshotMode, setScreenshotMode] = useState<ScreenshotMode>('on-failure');
 
   // Execution state
   const [phase, setPhase] = useState<'config' | 'running' | 'completed'>('config');
@@ -528,6 +597,8 @@ export function RunExecutionDialog({
         browser,
         headless,
         videoEnabled: recordVideo,
+        screenshotEnabled: screenshotMode !== 'never',
+        screenshotMode,
       });
 
       setRunId(run.id);
@@ -862,6 +933,10 @@ export function RunExecutionDialog({
                 label="Record Video"
                 description="Capture video of the test execution"
                 icon={VideoIcon}
+              />
+              <ScreenshotModeSelector
+                value={screenshotMode}
+                onChange={setScreenshotMode}
               />
             </div>
 
