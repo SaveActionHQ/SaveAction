@@ -82,6 +82,8 @@ export const schedules = pgTable(
       retries?: number;
       environment?: Record<string, string>;
       tags?: string[];
+      recordVideo?: boolean;
+      screenshotMode?: 'on-failure' | 'always' | 'never';
     }>(),
 
     // Rate limiting

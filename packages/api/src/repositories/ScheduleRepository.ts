@@ -32,6 +32,8 @@ export interface ScheduleCreateData {
     retries?: number;
     environment?: Record<string, string>;
     tags?: string[];
+    recordVideo?: boolean;
+    screenshotMode?: 'on-failure' | 'always' | 'never';
   };
   startsAt?: Date;
   endsAt?: Date;
@@ -57,6 +59,8 @@ export interface ScheduleUpdateData {
     retries?: number;
     environment?: Record<string, string>;
     tags?: string[];
+    recordVideo?: boolean;
+    screenshotMode?: 'on-failure' | 'always' | 'never';
   };
   startsAt?: Date | null;
   endsAt?: Date | null;
@@ -130,6 +134,8 @@ export interface SafeSchedule {
     retries?: number;
     environment?: Record<string, string>;
     tags?: string[];
+    recordVideo?: boolean;
+    screenshotMode?: 'on-failure' | 'always' | 'never';
   } | null;
   maxConcurrent: number;
   maxDailyRuns: number | null;
@@ -161,6 +167,17 @@ export interface ScheduleSummary {
   cronExpression: string;
   timezone: string;
   status: ScheduleStatus;
+  runConfig: {
+    browser?: 'chromium' | 'firefox' | 'webkit';
+    headless?: boolean;
+    timeout?: number;
+    viewport?: { width: number; height: number };
+    retries?: number;
+    environment?: Record<string, string>;
+    tags?: string[];
+    recordVideo?: boolean;
+    screenshotMode?: 'on-failure' | 'always' | 'never';
+  } | null;
   nextRunAt: Date | null;
   lastRunAt: Date | null;
   lastRunStatus: string | null;
@@ -220,6 +237,7 @@ function toScheduleSummary(schedule: Schedule): ScheduleSummary {
     cronExpression: schedule.cronExpression,
     timezone: schedule.timezone,
     status: schedule.status,
+    runConfig: schedule.runConfig as ScheduleSummary['runConfig'],
     nextRunAt: schedule.nextRunAt,
     lastRunAt: schedule.lastRunAt,
     lastRunStatus: schedule.lastRunStatus,

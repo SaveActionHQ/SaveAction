@@ -133,19 +133,24 @@ export interface RunAction {
 
 export interface Schedule {
   id: string;
-  userId: string;
+  userId?: string;
   recordingId: string;
   name: string;
   cronExpression: string;
   timezone: string;
   status: 'active' | 'paused';
-  browser: 'chromium' | 'firefox' | 'webkit';
-  headless: boolean;
-  runCount: number;
+  browser?: 'chromium' | 'firefox' | 'webkit';
+  headless?: boolean;
+  recordVideo?: boolean;
+  screenshotMode?: 'on-failure' | 'always' | 'never';
+  totalRuns: number;
+  successfulRuns: number;
+  failedRuns: number;
   lastRunAt?: string;
+  lastRunStatus?: string | null;
   nextRunAt?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -209,9 +214,13 @@ class ApiClient {
     const url = `${API_BASE_URL}${endpoint}`;
 
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    // Only set Content-Type for requests with a body
+    if (options.body) {
+      (headers as Record<string, string>)['Content-Type'] = 'application/json';
+    }
 
     if (this.accessToken) {
       (headers as Record<string, string>)['Authorization'] = `Bearer ${this.accessToken}`;
@@ -625,11 +634,22 @@ class ApiClient {
     cronExpression: string;
     timezone?: string;
     browser?: 'chromium' | 'firefox' | 'webkit';
-    headless?: boolean;
+    recordVideo?: boolean;
+    screenshotMode?: 'on-failure' | 'always' | 'never';
   }): Promise<Schedule> {
+    // Backend expects browser/video/screenshot inside runConfig
+    const { browser, recordVideo, screenshotMode, ...rest } = data;
+    const payload: Record<string, unknown> = { ...rest };
+    if (browser !== undefined || recordVideo !== undefined || screenshotMode !== undefined) {
+      payload.runConfig = {
+        ...(browser !== undefined && { browser }),
+        ...(recordVideo !== undefined && { recordVideo }),
+        ...(screenshotMode !== undefined && { screenshotMode }),
+      };
+    }
     return this.request<Schedule>('/api/v1/schedules', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -643,22 +663,38 @@ class ApiClient {
       cronExpression?: string;
       timezone?: string;
       browser?: 'chromium' | 'firefox' | 'webkit';
-      headless?: boolean;
+      recordVideo?: boolean;
+      screenshotMode?: 'on-failure' | 'always' | 'never';
     }
   ): Promise<Schedule> {
+    // Backend expects browser/video/screenshot inside runConfig
+    const { browser, recordVideo, screenshotMode, ...rest } = data;
+    const payload: Record<string, unknown> = { ...rest };
+    if (browser !== undefined || recordVideo !== undefined || screenshotMode !== undefined) {
+      payload.runConfig = {
+        ...(browser !== undefined && { browser }),
+        ...(recordVideo !== undefined && { recordVideo }),
+        ...(screenshotMode !== undefined && { screenshotMode }),
+      };
+    }
     return this.request<Schedule>(`/api/v1/schedules/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
   }
 
   /**
    * Toggle schedule status (active/paused)
    */
-  async toggleSchedule(id: string): Promise<Schedule> {
-    return this.request<Schedule>(`/api/v1/schedules/${id}/toggle`, {
-      method: 'POST',
-    });
+  async toggleSchedule(
+    id: string
+  ): Promise<{ id: string; status: Schedule['status']; nextRunAt: string | null }> {
+    return this.request<{ id: string; status: Schedule['status']; nextRunAt: string | null }>(
+      `/api/v1/schedules/${id}/toggle`,
+      {
+        method: 'POST',
+      }
+    );
   }
 
   /**

@@ -158,8 +158,9 @@ export function createScheduledTestProcessor(options: ScheduledTestProcessorOpti
         recordingUrl: recording.url,
         browser: (runConfig.browser || 'chromium') as BrowserType,
         headless: runConfig.headless ?? true,
-        videoEnabled: false,
-        screenshotEnabled: false,
+        videoEnabled: runConfig.recordVideo ?? false,
+        screenshotEnabled:
+          (runConfig.screenshotMode && runConfig.screenshotMode !== 'never') ?? false,
         timeout: runConfig.timeout || 60000,
         triggeredBy: 'schedule',
         scheduleId: schedule.id,
@@ -180,7 +181,10 @@ export function createScheduledTestProcessor(options: ScheduledTestProcessorOpti
         runId: run.id,
         browser: (runConfig.browser || 'chromium') as 'chromium' | 'firefox' | 'webkit',
         headless: runConfig.headless ?? true,
-        recordVideo: false,
+        recordVideo: runConfig.recordVideo ?? false,
+        recordScreenshots:
+          (runConfig.screenshotMode && runConfig.screenshotMode !== 'never') ?? false,
+        screenshotMode: runConfig.screenshotMode ?? 'on-failure',
         timeout: runConfig.timeout || 60000,
         createdAt: new Date().toISOString(),
       };
@@ -197,10 +201,11 @@ export function createScheduledTestProcessor(options: ScheduledTestProcessorOpti
 
       // 9. Update schedule tracking (nextRunAt will be calculated by BullMQ for repeatable jobs)
       // Note: incrementRunCounters is called after the test-runs job completes via updateAfterRun
-      // Here we just track that we queued a run
+      // Here we just track that we queued a run and set status to running
       await scheduleRepository.update(scheduleId, {
         lastRunId: run.id,
         lastRunAt: new Date(),
+        lastRunStatus: 'running',
       });
 
       logger.info('Successfully queued scheduled test run', {

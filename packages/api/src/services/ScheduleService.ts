@@ -85,6 +85,8 @@ export const createScheduleSchema = z.object({
       retries: z.number().min(0).max(5).optional(),
       environment: z.record(z.string()).optional(),
       tags: z.array(z.string()).optional(),
+      recordVideo: z.boolean().optional(),
+      screenshotMode: z.enum(['on-failure', 'always', 'never']).optional(),
     })
     .optional(),
   startsAt: z.string().datetime().optional(),
@@ -116,6 +118,8 @@ export const updateScheduleSchema = z.object({
       retries: z.number().min(0).max(5).optional(),
       environment: z.record(z.string()).optional(),
       tags: z.array(z.string()).optional(),
+      recordVideo: z.boolean().optional(),
+      screenshotMode: z.enum(['on-failure', 'always', 'never']).optional(),
     })
     .optional(),
   startsAt: z.string().datetime().nullable().optional(),
