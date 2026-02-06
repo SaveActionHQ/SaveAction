@@ -75,6 +75,7 @@ export const listRunsQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(20),
   recordingId: z.string().uuid().optional(),
+  scheduleId: z.string().uuid().optional(),
   status: z
     .union([
       z.enum(['queued', 'running', 'passed', 'failed', 'cancelled', 'skipped']),
@@ -260,6 +261,7 @@ export class RunnerService {
     const filters: RunListFilters = {
       userId,
       recordingId: validated.recordingId,
+      scheduleId: validated.scheduleId,
       status: validated.status as RunStatus | RunStatus[] | undefined,
       triggeredBy: validated.triggeredBy,
       includeDeleted: validated.includeDeleted,

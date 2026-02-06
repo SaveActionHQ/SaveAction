@@ -522,12 +522,14 @@ class ApiClient {
     page?: number;
     limit?: number;
     recordingId?: string;
+    scheduleId?: string;
     status?: Run['status'];
   }): Promise<PaginatedResponse<Run>> {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', params.page.toString());
     if (params?.limit) searchParams.set('limit', params.limit.toString());
     if (params?.recordingId) searchParams.set('recordingId', params.recordingId);
+    if (params?.scheduleId) searchParams.set('scheduleId', params.scheduleId);
     if (params?.status) searchParams.set('status', params.status);
 
     const query = searchParams.toString();

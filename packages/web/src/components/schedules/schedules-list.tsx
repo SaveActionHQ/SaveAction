@@ -151,6 +151,26 @@ function LoaderIcon({ className }: { className?: string }) {
   );
 }
 
+function EyeIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
 // Status badge component
 function StatusBadge({ status }: { status: Schedule['status'] }) {
   const variants: Record<Schedule['status'], 'success-soft' | 'warning-soft' | 'secondary'> = {
@@ -415,7 +435,12 @@ export function SchedulesList({ searchQuery, statusFilter, onRefresh }: Schedule
               <TableRow key={schedule.id}>
                 <TableCell>
                   <div className="flex flex-col">
-                    <span className="font-medium">{truncate(schedule.name, 40)}</span>
+                    <Link 
+                      href={`/schedules/${schedule.id}`}
+                      className="font-medium hover:underline hover:text-primary"
+                    >
+                      {truncate(schedule.name, 40)}
+                    </Link>
                     <span className="text-xs text-muted-foreground">
                       {schedule.timezone}
                     </span>
@@ -472,6 +497,17 @@ export function SchedulesList({ searchQuery, statusFilter, onRefresh }: Schedule
                 </TableCell>
                 <TableCell>
                   <div className="flex items-center justify-end gap-1">
+                    {/* View Button */}
+                    <Link href={`/schedules/${schedule.id}`}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        title="View schedule details"
+                      >
+                        <EyeIcon className="h-4 w-4" />
+                      </Button>
+                    </Link>
+
                     {/* Toggle Button */}
                     <Button
                       variant="ghost"

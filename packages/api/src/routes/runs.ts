@@ -189,6 +189,7 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
             page: { type: 'number', minimum: 1 },
             limit: { type: 'number', minimum: 1, maximum: 100 },
             recordingId: { type: 'string', format: 'uuid' },
+            scheduleId: { type: 'string', format: 'uuid' },
             status: { type: 'string' }, // Validated by Zod instead
             triggeredBy: { type: 'string' },
             sortBy: { type: 'string', enum: ['createdAt', 'startedAt', 'completedAt', 'status'] },

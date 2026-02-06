@@ -64,6 +64,7 @@ export interface RunUpdateData {
 export interface RunListFilters {
   userId: string;
   recordingId?: string;
+  scheduleId?: string;
   status?: RunStatus | RunStatus[];
   triggeredBy?: string;
   includeDeleted?: boolean;
@@ -396,6 +397,10 @@ export class RunRepository {
 
     if (filters.recordingId) {
       conditions.push(eq(runs.recordingId, filters.recordingId));
+    }
+
+    if (filters.scheduleId) {
+      conditions.push(eq(runs.scheduleId, filters.scheduleId));
     }
 
     if (filters.status) {
