@@ -21,6 +21,7 @@ import apiTokenRoutes from './routes/tokens.js';
 import recordingRoutes from './routes/recordings.js';
 import runRoutes from './routes/runs.js';
 import scheduleRoutes from './routes/schedules.js';
+import dashboardRoutes from './routes/dashboard.js';
 import { EmailService } from './services/EmailService.js';
 import type { Env } from './config/index.js';
 
@@ -215,6 +216,12 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
             db: app.db!,
             maxDataSizeBytes: 10 * 1024 * 1024, // 10MB
             maxRecordingsPerUser: 0, // Unlimited
+          });
+
+          // Dashboard routes
+          await v1App.register(dashboardRoutes, {
+            prefix: '/dashboard',
+            db: app.db!,
           });
         },
         { prefix: '/api/v1' }
