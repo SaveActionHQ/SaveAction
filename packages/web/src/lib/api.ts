@@ -106,6 +106,8 @@ export interface Run {
   errorMessage?: string;
   errorActionId?: string;
   triggeredBy?: string;
+  scheduleId?: string;
+  scheduleName?: string;
   startedAt?: string;
   completedAt?: string;
   createdAt: string;

@@ -520,6 +520,17 @@ export default function RunDetailsPage() {
                 <> • Started {formatRelativeTime(run.startedAt)}</>
               )}
             </p>
+            {run.scheduleId && (
+              <p className="text-sm mt-1">
+                <span className="text-muted-foreground">Triggered by schedule: </span>
+                <Link 
+                  href={`/schedules/${run.scheduleId}`}
+                  className="text-primary hover:underline font-medium"
+                >
+                  #{run.scheduleId.slice(0, 8)} {run.scheduleName || ''}
+                </Link>
+              </p>
+            )}
           </div>
         </div>
 

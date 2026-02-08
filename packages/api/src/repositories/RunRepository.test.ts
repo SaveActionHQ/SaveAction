@@ -78,6 +78,13 @@ const createMockDb = () => {
   const mockRunResult = createMockRunResult();
   const mockRunActionResult = createMockRunActionResult();
 
+  // Helper to create mock chain for findById with leftJoin
+  const createFindByIdChain = () => ({
+    where: vi.fn().mockReturnValue({
+      limit: vi.fn().mockResolvedValue([{ run: mockRunResult, scheduleName: null }]),
+    }),
+  });
+
   return {
     insert: vi.fn().mockReturnValue({
       values: vi.fn().mockReturnValue({
@@ -86,6 +93,7 @@ const createMockDb = () => {
     }),
     select: vi.fn().mockReturnValue({
       from: vi.fn().mockReturnValue({
+        leftJoin: vi.fn().mockReturnValue(createFindByIdChain()),
         where: vi.fn().mockReturnValue({
           limit: vi.fn().mockResolvedValue([mockRunResult]),
           orderBy: vi.fn().mockReturnValue({
@@ -200,8 +208,10 @@ describe('RunRepository', () => {
       // Mock empty result
       mockDb.select.mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([]),
+          leftJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([]),
+            }),
           }),
         }),
       });
@@ -246,11 +256,17 @@ describe('RunRepository', () => {
       // Mock count query
       const mockWithCount = {
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([createMockRunResult()]),
-            orderBy: vi.fn().mockReturnValue({
-              limit: vi.fn().mockReturnValue({
-                offset: vi.fn().mockResolvedValue([createMockRunResult()]),
+          leftJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi
+                .fn()
+                .mockResolvedValue([{ run: createMockRunResult(), scheduleName: null }]),
+              orderBy: vi.fn().mockReturnValue({
+                limit: vi.fn().mockReturnValue({
+                  offset: vi
+                    .fn()
+                    .mockResolvedValue([{ run: createMockRunResult(), scheduleName: null }]),
+                }),
               }),
             }),
           }),
@@ -281,10 +297,14 @@ describe('RunRepository', () => {
         })
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
-            where: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockReturnValue({
-                limit: vi.fn().mockReturnValue({
-                  offset: vi.fn().mockResolvedValue([createMockRunResult()]),
+            leftJoin: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                orderBy: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockReturnValue({
+                    offset: vi
+                      .fn()
+                      .mockResolvedValue([{ run: createMockRunResult(), scheduleName: null }]),
+                  }),
                 }),
               }),
             }),
@@ -308,10 +328,14 @@ describe('RunRepository', () => {
         })
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
-            where: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockReturnValue({
-                limit: vi.fn().mockReturnValue({
-                  offset: vi.fn().mockResolvedValue([createMockRunResult()]),
+            leftJoin: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                orderBy: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockReturnValue({
+                    offset: vi
+                      .fn()
+                      .mockResolvedValue([{ run: createMockRunResult(), scheduleName: null }]),
+                  }),
                 }),
               }),
             }),
@@ -335,10 +359,14 @@ describe('RunRepository', () => {
         })
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
-            where: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockReturnValue({
-                limit: vi.fn().mockReturnValue({
-                  offset: vi.fn().mockResolvedValue([createMockRunResult()]),
+            leftJoin: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                orderBy: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockReturnValue({
+                    offset: vi
+                      .fn()
+                      .mockResolvedValue([{ run: createMockRunResult(), scheduleName: null }]),
+                  }),
                 }),
               }),
             }),
@@ -362,10 +390,14 @@ describe('RunRepository', () => {
         })
         .mockReturnValueOnce({
           from: vi.fn().mockReturnValue({
-            where: vi.fn().mockReturnValue({
-              orderBy: vi.fn().mockReturnValue({
-                limit: vi.fn().mockReturnValue({
-                  offset: vi.fn().mockResolvedValue([createMockRunResult()]),
+            leftJoin: vi.fn().mockReturnValue({
+              where: vi.fn().mockReturnValue({
+                orderBy: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockReturnValue({
+                    offset: vi
+                      .fn()
+                      .mockResolvedValue([{ run: createMockRunResult(), scheduleName: null }]),
+                  }),
                 }),
               }),
             }),
@@ -770,8 +802,14 @@ describe('RunRepository', () => {
     it('should handle null screenshotPaths', async () => {
       mockDb.select.mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([createMockRunResult({ screenshotPaths: null })]),
+          leftJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi
+                .fn()
+                .mockResolvedValue([
+                  { run: createMockRunResult({ screenshotPaths: null }), scheduleName: null },
+                ]),
+            }),
           }),
         }),
       });
@@ -784,12 +822,17 @@ describe('RunRepository', () => {
     it('should parse ciMetadata JSON', async () => {
       mockDb.select.mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([
-              createMockRunResult({
-                ciMetadata: '{"provider":"github","commit":"abc123"}',
-              }),
-            ]),
+          leftJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([
+                {
+                  run: createMockRunResult({
+                    ciMetadata: '{"provider":"github","commit":"abc123"}',
+                  }),
+                  scheduleName: null,
+                },
+              ]),
+            }),
           }),
         }),
       });
@@ -802,15 +845,20 @@ describe('RunRepository', () => {
     it('should handle null numeric fields', async () => {
       mockDb.select.mockReturnValue({
         from: vi.fn().mockReturnValue({
-          where: vi.fn().mockReturnValue({
-            limit: vi.fn().mockResolvedValue([
-              createMockRunResult({
-                actionsTotal: null,
-                actionsExecuted: null,
-                durationMs: null,
-                speedMultiplier: null,
-              }),
-            ]),
+          leftJoin: vi.fn().mockReturnValue({
+            where: vi.fn().mockReturnValue({
+              limit: vi.fn().mockResolvedValue([
+                {
+                  run: createMockRunResult({
+                    actionsTotal: null,
+                    actionsExecuted: null,
+                    durationMs: null,
+                    speedMultiplier: null,
+                  }),
+                  scheduleName: null,
+                },
+              ]),
+            }),
           }),
         }),
       });

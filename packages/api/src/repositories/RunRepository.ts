@@ -14,6 +14,7 @@ import {
   type BrowserType,
 } from '../db/schema/runs.js';
 import { runActions, type RunAction, type ActionStatus } from '../db/schema/run-actions.js';
+import { schedules } from '../db/schema/schedules.js';
 import type { Database } from '../db/index.js';
 
 /**
@@ -131,6 +132,7 @@ export interface SafeRun {
   errorActionId: string | null;
   triggeredBy: string;
   scheduleId: string | null;
+  scheduleName: string | null;
   ciMetadata: Record<string, unknown> | null;
   deletedAt: Date | null;
   createdAt: Date;
@@ -155,6 +157,8 @@ export interface RunSummary {
   startedAt: Date | null;
   completedAt: Date | null;
   triggeredBy: string;
+  scheduleId: string | null;
+  scheduleName: string | null;
   createdAt: Date;
 }
 
@@ -219,7 +223,7 @@ export interface RunActionCreateData {
 /**
  * Convert raw DB result to SafeRun
  */
-function toSafeRun(run: Run): SafeRun {
+function toSafeRun(run: Run, scheduleName?: string | null): SafeRun {
   return {
     id: run.id,
     userId: run.userId,
@@ -251,6 +255,7 @@ function toSafeRun(run: Run): SafeRun {
     errorActionId: run.errorActionId,
     triggeredBy: run.triggeredBy,
     scheduleId: run.scheduleId,
+    scheduleName: scheduleName ?? null,
     ciMetadata: run.ciMetadata ? JSON.parse(run.ciMetadata) : null,
     deletedAt: run.deletedAt,
     createdAt: run.createdAt,
@@ -261,7 +266,7 @@ function toSafeRun(run: Run): SafeRun {
 /**
  * Convert raw DB result to RunSummary
  */
-function toRunSummary(run: Partial<Run>): RunSummary {
+function toRunSummary(run: Partial<Run> & { scheduleName?: string | null }): RunSummary {
   return {
     id: run.id!,
     userId: run.userId!,
@@ -277,6 +282,8 @@ function toRunSummary(run: Partial<Run>): RunSummary {
     startedAt: run.startedAt ?? null,
     completedAt: run.completedAt ?? null,
     triggeredBy: run.triggeredBy!,
+    scheduleId: run.scheduleId ?? null,
+    scheduleName: run.scheduleName ?? null,
     createdAt: run.createdAt!,
   };
 }
@@ -360,9 +367,17 @@ export class RunRepository {
       ? eq(runs.id, id)
       : and(eq(runs.id, id), isNull(runs.deletedAt));
 
-    const result = await this.db.select().from(runs).where(conditions).limit(1);
+    const result = await this.db
+      .select({
+        run: runs,
+        scheduleName: schedules.name,
+      })
+      .from(runs)
+      .leftJoin(schedules, eq(runs.scheduleId, schedules.id))
+      .where(conditions)
+      .limit(1);
 
-    return result[0] ? toSafeRun(result[0]) : null;
+    return result[0] ? toSafeRun(result[0].run, result[0].scheduleName) : null;
   }
 
   /**
@@ -443,7 +458,7 @@ export class RunRepository {
 
     const total = countResult[0]?.count || 0;
 
-    // Get paginated results
+    // Get paginated results with schedule name join
     const result = await this.db
       .select({
         id: runs.id,
@@ -460,9 +475,12 @@ export class RunRepository {
         startedAt: runs.startedAt,
         completedAt: runs.completedAt,
         triggeredBy: runs.triggeredBy,
+        scheduleId: runs.scheduleId,
+        scheduleName: schedules.name,
         createdAt: runs.createdAt,
       })
       .from(runs)
+      .leftJoin(schedules, eq(runs.scheduleId, schedules.id))
       .where(whereClause)
       .orderBy(orderFn(sortColumn))
       .limit(limit)
@@ -578,7 +596,7 @@ export class RunRepository {
         and(eq(runs.status, 'running'), lte(runs.startedAt, cutoffTime), isNull(runs.deletedAt))
       );
 
-    return result.map(toSafeRun);
+    return result.map((run) => toSafeRun(run));
   }
 
   /**

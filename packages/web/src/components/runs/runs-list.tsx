@@ -368,9 +368,10 @@ export function RunsList({ searchQuery, statusFilter, onRefresh }: RunsListProps
         <Table>
           <TableHeader>
             <TableRow>
+              <TableHead>Run ID</TableHead>
               <TableHead>Recording</TableHead>
               <TableHead>Status</TableHead>
-              <TableHead>Browser</TableHead>
+              <TableHead>Schedule</TableHead>
               <TableHead>Progress</TableHead>
               <TableHead>Duration</TableHead>
               <TableHead>Started</TableHead>
@@ -379,42 +380,56 @@ export function RunsList({ searchQuery, statusFilter, onRefresh }: RunsListProps
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableSkeleton columns={7} rows={5} />
+              <TableSkeleton columns={8} rows={5} />
             ) : (
               runs.map((run) => (
                 <TableRow key={run.id}>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    <Link
+                      href={`/runs/${run.id}`}
+                      className="hover:text-primary hover:underline"
+                    >
+                      {run.id.slice(0, 8)}
+                    </Link>
+                  </TableCell>
                   <TableCell className="font-medium">
                     <Link
                       href={`/runs/${run.id}`}
                       className="hover:text-primary hover:underline"
                     >
-                      {truncate((run as any).recordingName || 'Unknown Recording', 40)}
+                      {truncate(run.recordingName || 'Unknown Recording', 30)}
                     </Link>
                   </TableCell>
                   <TableCell>
                     <StatusBadge status={run.status} />
                   </TableCell>
                   <TableCell>
-                    <div className="flex items-center gap-2">
-                      <BrowserIcon browser={run.browser} className="h-4 w-4" />
-                      <span className="capitalize">{run.browser}</span>
-                    </div>
+                    {run.scheduleId ? (
+                      <Link
+                        href={`/schedules/${run.scheduleId}`}
+                        className="text-sm hover:text-primary hover:underline"
+                      >
+                        {run.scheduleName || run.scheduleId.slice(0, 8)}
+                      </Link>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">-</span>
+                    )}
                   </TableCell>
                   <TableCell>
-                    {run.actionsExecuted !== undefined && (run as any).actionsTotal !== undefined ? (
+                    {run.actionsExecuted !== undefined && run.actionsTotal !== undefined ? (
                       <div className="flex items-center gap-2">
                         <div className="w-24 h-2 bg-secondary rounded-full overflow-hidden">
                           <div
                             className="h-full bg-primary transition-all duration-300"
                             style={{
                               width: `${Math.round(
-                                (run.actionsExecuted / ((run as any).actionsTotal || 1)) * 100
+                                (run.actionsExecuted / (run.actionsTotal || 1)) * 100
                               )}%`,
                             }}
                           />
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {run.actionsExecuted}/{(run as any).actionsTotal}
+                          {run.actionsExecuted}/{run.actionsTotal}
                         </span>
                       </div>
                     ) : (
@@ -422,8 +437,8 @@ export function RunsList({ searchQuery, statusFilter, onRefresh }: RunsListProps
                     )}
                   </TableCell>
                   <TableCell>
-                    {run.duration ? (
-                      formatDuration(run.duration)
+                    {run.durationMs ? (
+                      formatDuration(run.durationMs)
                     ) : (
                       <span className="text-muted-foreground">-</span>
                     )}
