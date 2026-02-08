@@ -15,6 +15,8 @@ import type { TestRunJobData, TestRunJobResult } from './types.js';
 import type { Database } from '../db/index.js';
 import { RunRepository } from '../repositories/RunRepository.js';
 import { RecordingRepository } from '../repositories/RecordingRepository.js';
+import { ScheduleRepository } from '../repositories/ScheduleRepository.js';
+import { ScheduleService } from '../services/ScheduleService.js';
 import { RunProgressPublisher } from '../services/RunProgressService.js';
 import {
   PlaywrightRunner,
@@ -252,6 +254,8 @@ export function createTestRunProcessor(
 
   const runRepository = new RunRepository(db);
   const recordingRepository = new RecordingRepository(db);
+  const scheduleRepository = new ScheduleRepository(db);
+  const scheduleService = new ScheduleService(scheduleRepository, recordingRepository);
 
   // Create progress publisher if Redis is available
   const progressPublisher = redis ? new RunProgressPublisher(redis) : undefined;
@@ -453,6 +457,12 @@ export function createTestRunProcessor(
         actionsSkipped: recording.actionCount - actionsExecuted,
         videoPath: result.video,
       });
+
+      // Update schedule tracking if this run was triggered by a schedule
+      const run = await runRepository.findById(runId);
+      if (run?.scheduleId && (finalStatus === 'passed' || finalStatus === 'failed')) {
+        await scheduleService.updateAfterRun(run.scheduleId, runId, finalStatus);
+      }
 
       await job.updateProgress(100);
 

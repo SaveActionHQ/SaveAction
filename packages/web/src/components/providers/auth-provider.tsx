@@ -51,6 +51,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: false,
   });
 
+  // Subscribe to session expired events from API client
+  React.useEffect(() => {
+    const unsubscribe = api.onSessionExpired(() => {
+      // Clear auth state and redirect to login
+      setState({
+        user: null,
+        isLoading: false,
+        isAuthenticated: false,
+      });
+      router.push(`/login?redirect=${encodeURIComponent(pathname || '/dashboard')}&expired=true`);
+    });
+
+    return unsubscribe;
+  }, [router, pathname]);
+
   // Initialize auth state on mount
   React.useEffect(() => {
     const initAuth = async () => {

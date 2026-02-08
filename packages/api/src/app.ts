@@ -147,7 +147,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
       secret: env.JWT_SECRET,
       cookieSecret: env.JWT_REFRESH_SECRET || env.JWT_SECRET,
       accessTokenExpiry: '15m',
-      refreshTokenExpiry: '7d',
+      refreshTokenExpiry: '30d',
     });
 
     // Initialize email service if SMTP is configured
@@ -194,7 +194,7 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
             jwtSecret: env.JWT_SECRET!,
             jwtRefreshSecret: env.JWT_REFRESH_SECRET || env.JWT_SECRET!,
             accessTokenExpiry: '15m',
-            refreshTokenExpiry: '7d',
+            refreshTokenExpiry: '30d',
             bcryptRounds: 12,
             maxLoginAttempts: 5,
             lockoutDuration: 900,

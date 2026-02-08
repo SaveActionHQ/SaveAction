@@ -24,16 +24,34 @@ export function formatDate(date: Date | string): string {
 /**
  * Format a date to a relative time string (e.g., "2 hours ago").
  */
-export function formatRelativeTime(date: Date | string): string {
+export function formatRelativeTime(date: Date | string, allowFuture: boolean = false): string {
   const d = typeof date === 'string' ? new Date(date) : date;
   const now = new Date();
   const diff = now.getTime() - d.getTime();
+  const isFuture = diff < 0;
+  const absDiff = Math.abs(diff);
 
-  const seconds = Math.floor(diff / 1000);
+  const seconds = Math.floor(absDiff / 1000);
   const minutes = Math.floor(seconds / 60);
   const hours = Math.floor(minutes / 60);
   const days = Math.floor(hours / 24);
 
+  // Handle future dates
+  if (isFuture && allowFuture) {
+    if (days > 7) {
+      return formatDate(d);
+    } else if (days > 0) {
+      return `in ${days}d`;
+    } else if (hours > 0) {
+      return `in ${hours}h`;
+    } else if (minutes > 0) {
+      return `in ${minutes}m`;
+    } else {
+      return 'in a moment';
+    }
+  }
+
+  // Handle past dates
   if (days > 7) {
     return formatDate(d);
   } else if (days > 0) {

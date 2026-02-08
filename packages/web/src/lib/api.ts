@@ -106,6 +106,8 @@ export interface Run {
   errorMessage?: string;
   errorActionId?: string;
   triggeredBy?: string;
+  scheduleId?: string;
+  scheduleName?: string;
   startedAt?: string;
   completedAt?: string;
   createdAt: string;
@@ -133,19 +135,24 @@ export interface RunAction {
 
 export interface Schedule {
   id: string;
-  userId: string;
+  userId?: string;
   recordingId: string;
   name: string;
   cronExpression: string;
   timezone: string;
   status: 'active' | 'paused';
-  browser: 'chromium' | 'firefox' | 'webkit';
-  headless: boolean;
-  runCount: number;
+  browser?: 'chromium' | 'firefox' | 'webkit';
+  headless?: boolean;
+  recordVideo?: boolean;
+  screenshotMode?: 'on-failure' | 'always' | 'never';
+  totalRuns: number;
+  successfulRuns: number;
+  failedRuns: number;
   lastRunAt?: string;
+  lastRunStatus?: string | null;
   nextRunAt?: string;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 }
 
 export interface PaginatedResponse<T> {
@@ -163,15 +170,43 @@ export interface PaginatedResponse<T> {
 // API Client Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Session expired callback type
+type SessionExpiredCallback = () => void;
+
 class ApiClient {
   private accessToken: string | null = null;
   private refreshPromise: Promise<string | null> | null = null;
+  private sessionExpiredCallbacks: Set<SessionExpiredCallback> = new Set();
 
   constructor() {
     // Initialize token from localStorage on client side
     if (typeof window !== 'undefined') {
       this.accessToken = localStorage.getItem('accessToken');
     }
+  }
+
+  /**
+   * Subscribe to session expired events
+   * Returns an unsubscribe function
+   */
+  onSessionExpired(callback: SessionExpiredCallback): () => void {
+    this.sessionExpiredCallbacks.add(callback);
+    return () => {
+      this.sessionExpiredCallbacks.delete(callback);
+    };
+  }
+
+  /**
+   * Notify all listeners that session has expired
+   */
+  private notifySessionExpired(): void {
+    this.sessionExpiredCallbacks.forEach((callback) => {
+      try {
+        callback();
+      } catch {
+        // Ignore callback errors
+      }
+    });
   }
 
   /**
@@ -209,9 +244,13 @@ class ApiClient {
     const url = `${API_BASE_URL}${endpoint}`;
 
     const headers: HeadersInit = {
-      'Content-Type': 'application/json',
       ...options.headers,
     };
+
+    // Only set Content-Type for requests with a body
+    if (options.body) {
+      (headers as Record<string, string>)['Content-Type'] = 'application/json';
+    }
 
     if (this.accessToken) {
       (headers as Record<string, string>)['Authorization'] = `Bearer ${this.accessToken}`;
@@ -249,8 +288,9 @@ class ApiClient {
         }
         return result.data;
       } else {
-        // Refresh failed, clear token and throw
+        // Refresh failed, clear token and notify listeners
         this.setAccessToken(null);
+        this.notifySessionExpired();
         throw new ApiClientError({
           code: 'SESSION_EXPIRED',
           message: 'Session expired. Please login again.',
@@ -513,12 +553,14 @@ class ApiClient {
     page?: number;
     limit?: number;
     recordingId?: string;
+    scheduleId?: string;
     status?: Run['status'];
   }): Promise<PaginatedResponse<Run>> {
     const searchParams = new URLSearchParams();
     if (params?.page) searchParams.set('page', params.page.toString());
     if (params?.limit) searchParams.set('limit', params.limit.toString());
     if (params?.recordingId) searchParams.set('recordingId', params.recordingId);
+    if (params?.scheduleId) searchParams.set('scheduleId', params.scheduleId);
     if (params?.status) searchParams.set('status', params.status);
 
     const query = searchParams.toString();
@@ -625,11 +667,22 @@ class ApiClient {
     cronExpression: string;
     timezone?: string;
     browser?: 'chromium' | 'firefox' | 'webkit';
-    headless?: boolean;
+    recordVideo?: boolean;
+    screenshotMode?: 'on-failure' | 'always' | 'never';
   }): Promise<Schedule> {
+    // Backend expects browser/video/screenshot inside runConfig
+    const { browser, recordVideo, screenshotMode, ...rest } = data;
+    const payload: Record<string, unknown> = { ...rest };
+    if (browser !== undefined || recordVideo !== undefined || screenshotMode !== undefined) {
+      payload.runConfig = {
+        ...(browser !== undefined && { browser }),
+        ...(recordVideo !== undefined && { recordVideo }),
+        ...(screenshotMode !== undefined && { screenshotMode }),
+      };
+    }
     return this.request<Schedule>('/api/v1/schedules', {
       method: 'POST',
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
   }
 
@@ -643,22 +696,38 @@ class ApiClient {
       cronExpression?: string;
       timezone?: string;
       browser?: 'chromium' | 'firefox' | 'webkit';
-      headless?: boolean;
+      recordVideo?: boolean;
+      screenshotMode?: 'on-failure' | 'always' | 'never';
     }
   ): Promise<Schedule> {
+    // Backend expects browser/video/screenshot inside runConfig
+    const { browser, recordVideo, screenshotMode, ...rest } = data;
+    const payload: Record<string, unknown> = { ...rest };
+    if (browser !== undefined || recordVideo !== undefined || screenshotMode !== undefined) {
+      payload.runConfig = {
+        ...(browser !== undefined && { browser }),
+        ...(recordVideo !== undefined && { recordVideo }),
+        ...(screenshotMode !== undefined && { screenshotMode }),
+      };
+    }
     return this.request<Schedule>(`/api/v1/schedules/${id}`, {
       method: 'PUT',
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
   }
 
   /**
    * Toggle schedule status (active/paused)
    */
-  async toggleSchedule(id: string): Promise<Schedule> {
-    return this.request<Schedule>(`/api/v1/schedules/${id}/toggle`, {
-      method: 'POST',
-    });
+  async toggleSchedule(
+    id: string
+  ): Promise<{ id: string; status: Schedule['status']; nextRunAt: string | null }> {
+    return this.request<{ id: string; status: Schedule['status']; nextRunAt: string | null }>(
+      `/api/v1/schedules/${id}/toggle`,
+      {
+        method: 'POST',
+      }
+    );
   }
 
   /**
