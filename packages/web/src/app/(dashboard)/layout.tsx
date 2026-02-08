@@ -56,6 +56,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
   const { isLoading, isAuthenticated } = useAuth();
 
+  const handleMobileNavClose = React.useCallback(() => {
+    setMobileNavOpen(false);
+  }, []);
+
+  const handleMobileNavOpen = React.useCallback(() => {
+    setMobileNavOpen(true);
+  }, []);
+
   // Show loading skeleton while checking auth
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -72,11 +80,11 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <Sidebar className="hidden lg:flex" />
 
       {/* Mobile Navigation */}
-      <MobileNav open={mobileNavOpen} onClose={() => setMobileNavOpen(false)} />
+      <MobileNav open={mobileNavOpen} onClose={handleMobileNavClose} />
 
       {/* Main Content */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Header onMenuClick={() => setMobileNavOpen(true)} />
+        <Header onMenuClick={handleMobileNavOpen} />
         <main className="flex-1 overflow-y-auto bg-background-secondary p-4 lg:p-6">
           {children}
         </main>

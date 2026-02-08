@@ -312,6 +312,27 @@ export class AuthService {
   }
 
   /**
+   * Update user profile
+   */
+  async updateProfile(userId: string, data: { name?: string }): Promise<UserResponse> {
+    const user = await this.userRepository.findById(userId);
+
+    if (!user) {
+      throw AuthErrors.USER_NOT_FOUND;
+    }
+
+    const updated = await this.userRepository.update(userId, {
+      name: data.name !== undefined ? data.name : user.name,
+    });
+
+    if (!updated) {
+      throw AuthErrors.USER_NOT_FOUND;
+    }
+
+    return toUserResponse(updated);
+  }
+
+  /**
    * Verify access token
    */
   async verifyToken(token: string): Promise<JwtPayload> {

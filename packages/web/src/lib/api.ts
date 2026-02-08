@@ -155,6 +155,45 @@ export interface Schedule {
   updatedAt?: string;
 }
 
+// API Token Types
+export const API_TOKEN_SCOPES = [
+  'recordings:read',
+  'recordings:write',
+  'runs:read',
+  'runs:execute',
+  'schedules:read',
+  'schedules:write',
+  'webhooks:read',
+  'webhooks:write',
+] as const;
+
+export type ApiTokenScope = (typeof API_TOKEN_SCOPES)[number];
+
+export interface ApiToken {
+  id: string;
+  name: string;
+  tokenPrefix: string;
+  tokenSuffix: string;
+  scopes: string[];
+  lastUsedAt?: string | null;
+  useCount: number;
+  expiresAt?: string | null;
+  revokedAt?: string | null;
+  revokedReason?: string | null;
+  createdAt: string;
+}
+
+export interface CreateTokenResponse {
+  id: string;
+  name: string;
+  token: string; // Full token - only shown once on creation
+  tokenPrefix: string;
+  tokenSuffix: string;
+  scopes: string[];
+  expiresAt?: string | null;
+  createdAt: string;
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: {
@@ -736,6 +775,72 @@ class ApiClient {
   async deleteSchedule(id: string): Promise<void> {
     return this.request<void>(`/api/v1/schedules/${id}`, {
       method: 'DELETE',
+    });
+  }
+
+  // =====================
+  // API Tokens API
+  // =====================
+
+  /**
+   * List API tokens
+   */
+  async listApiTokens(active?: boolean): Promise<{ tokens: ApiToken[]; total: number }> {
+    const query = active !== undefined ? `?active=${active}` : '';
+    return this.request<{ tokens: ApiToken[]; total: number }>(`/api/v1/tokens${query}`);
+  }
+
+  /**
+   * Get a single API token
+   */
+  async getApiToken(id: string): Promise<ApiToken> {
+    return this.request<ApiToken>(`/api/v1/tokens/${id}`);
+  }
+
+  /**
+   * Create a new API token
+   */
+  async createApiToken(data: {
+    name: string;
+    scopes: string[];
+    expiresAt?: string | null;
+  }): Promise<CreateTokenResponse> {
+    return this.request<CreateTokenResponse>('/api/v1/tokens', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Revoke an API token
+   */
+  async revokeApiToken(id: string, reason?: string): Promise<void> {
+    return this.request<void>(`/api/v1/tokens/${id}/revoke`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    });
+  }
+
+  /**
+   * Delete an API token
+   */
+  async deleteApiToken(id: string): Promise<void> {
+    return this.request<void>(`/api/v1/tokens/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // =====================
+  // User Profile API
+  // =====================
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(data: { name?: string }): Promise<User> {
+    return this.request<User>('/api/v1/auth/me', {
+      method: 'PATCH',
+      body: JSON.stringify(data),
     });
   }
 }
