@@ -15,7 +15,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Logo } from './logo';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAuth, useUser } from '@/components/providers/auth-provider';
 
 interface MobileNavProps {
@@ -54,8 +54,11 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
 
   // Close on route change
   React.useEffect(() => {
-    onClose();
-  }, [pathname, onClose]);
+    if (open) {
+      onClose();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   // Prevent body scroll when open
   React.useEffect(() => {
@@ -103,7 +106,6 @@ export function MobileNav({ open, onClose }: MobileNavProps) {
         <div className="border-b border-border p-4">
           <div className="flex items-center gap-3">
             <Avatar size="lg">
-              <AvatarImage src="/avatar.png" alt="User avatar" />
               <AvatarFallback>{userInitials}</AvatarFallback>
             </Avatar>
             <div className="flex-1 min-w-0">

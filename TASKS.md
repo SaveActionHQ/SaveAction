@@ -634,12 +634,23 @@
   - Error message display for failed actions in lightbox
   - Uses `GET /api/v1/runs/:id/actions/:actionId/screenshot?token=` endpoint
 
-### ⏳ TODO - Settings Pages
+### ✅ DONE - Settings Pages
 
 - **Package:** @saveaction/web
 - **Priority:** P1
 - **Labels:** `feature`, `ui`
+- **Completed:** 2026-02-09
 - **Description:** Build settings pages: API token management (generate, list, revoke), webhook configuration, user profile.
+- **Implementation:**
+  - Created tabbed settings page at `/settings` with Profile, API Tokens, and Security tabs
+  - Profile tab: Edit display name, view account details (ID, status, member since, email verification)
+  - API Tokens tab: List tokens with scopes, create new tokens with scope selection and expiry, copy token on creation, revoke/delete tokens
+  - Security tab: Change password form with validation, password strength indicator, security tips
+  - Added `PATCH /api/v1/auth/me` endpoint for profile updates
+  - Created reusable Tabs and Select UI components
+  - Fixed header dropdown (removed Profile link, kept Settings and Logout)
+  - Fixed mobile nav menu opening, removed search bar and notification icon
+  - All features fully functional with proper error handling and toast notifications
 
 ### ⏳ TODO - Platform E2E Tests
 
@@ -825,13 +836,13 @@
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
 | Phase 3: API                     | 33     | 29     | 0       | 4      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
-| Phase 4: Web                     | 10     | 8      | 0       | 2      |
+| Phase 4: Web                     | 10     | 9      | 0       | 1      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **91** | **65** | **2**   | **24** |
+| **TOTAL**                        | **91** | **66** | **2**   | **23** |
 
 ### Test Summary
 

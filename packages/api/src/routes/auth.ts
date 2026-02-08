@@ -427,6 +427,68 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, option
   );
 
   /**
+   * PATCH /auth/me - Update current user profile
+   */
+  fastify.patch<{ Body: { name?: string } }>(
+    '/me',
+    {
+      onRequest: [fastify.authenticate],
+      schema: {
+        body: {
+          type: 'object',
+          properties: {
+            name: { type: 'string', maxLength: 255 },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  email: { type: 'string' },
+                  name: { type: ['string', 'null'] },
+                  emailVerifiedAt: { type: ['string', 'null'] },
+                  isActive: { type: 'boolean' },
+                  createdAt: { type: 'string' },
+                  updatedAt: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const userId = request.jwtPayload?.sub;
+
+        if (!userId) {
+          return reply.status(401).send({
+            success: false,
+            error: {
+              code: 'UNAUTHORIZED',
+              message: 'Authentication required',
+            },
+          });
+        }
+
+        const user = await authService.updateProfile(userId, request.body);
+
+        return reply.status(200).send({
+          success: true,
+          data: user,
+        });
+      } catch (error) {
+        return handleAuthError(error, reply);
+      }
+    }
+  );
+
+  /**
    * POST /auth/change-password - Change password
    */
   fastify.post<{ Body: ChangePasswordRequest }>(
