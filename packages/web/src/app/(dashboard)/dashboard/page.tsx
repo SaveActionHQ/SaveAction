@@ -7,7 +7,7 @@ import {
   CheckCircle,
   XCircle,
   Clock,
-  TrendingUp,
+  KeyRound,
   ArrowRight,
   AlertCircle,
   Loader2,
@@ -381,9 +381,9 @@ export default function DashboardPage() {
         <CardContent>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <Button variant="outline" className="h-auto flex-col gap-2 p-4" asChild>
-              <Link href="/recordings/upload">
+              <Link href="/recordings">
                 <FileVideo className="h-6 w-6 text-primary" />
-                <span>Upload Recording</span>
+                <span>View Recordings</span>
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col gap-2 p-4" asChild>
@@ -393,14 +393,14 @@ export default function DashboardPage() {
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col gap-2 p-4" asChild>
-              <Link href="/schedules/new">
+              <Link href="/schedules">
                 <Clock className="h-6 w-6 text-primary" />
-                <span>Create Schedule</span>
+                <span>Manage Schedules</span>
               </Link>
             </Button>
             <Button variant="outline" className="h-auto flex-col gap-2 p-4" asChild>
-              <Link href="/settings/tokens">
-                <TrendingUp className="h-6 w-6 text-primary" />
+              <Link href="/settings?tab=tokens">
+                <KeyRound className="h-6 w-6 text-primary" />
                 <span>API Tokens</span>
               </Link>
             </Button>

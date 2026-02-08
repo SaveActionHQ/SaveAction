@@ -4,28 +4,7 @@ import * as React from 'react';
 import { useState, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { RunsList } from '@/components/runs/runs-list';
-import { Input } from '@/components/ui/input';
 import { type Run } from '@/lib/api';
-
-function SearchIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <circle cx="11" cy="11" r="8" />
-      <path d="m21 21-4.3-4.3" />
-    </svg>
-  );
-}
 
 function RefreshIcon({ className }: { className?: string }) {
   return (
@@ -50,7 +29,6 @@ function RefreshIcon({ className }: { className?: string }) {
 }
 
 export default function RunsPage() {
-  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -76,15 +54,6 @@ export default function RunsPage() {
 
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1 max-w-sm">
-          <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by recording name..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
-          />
-        </div>
         <select
           value={statusFilter}
           onChange={(e) => setStatusFilter(e.target.value)}
@@ -102,7 +71,6 @@ export default function RunsPage() {
       {/* Runs List */}
       <RunsList
         key={refreshKey}
-        searchQuery={searchQuery}
         statusFilter={(statusFilter || undefined) as Run['status'] | undefined}
         onRefresh={handleRefresh}
       />
