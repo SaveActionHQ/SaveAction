@@ -66,7 +66,7 @@ const DEFAULT_CONFIG: AuthConfig = {
   jwtSecret: '',
   jwtRefreshSecret: '',
   accessTokenExpiry: '15m',
-  refreshTokenExpiry: '7d',
+  refreshTokenExpiry: '30d',
   bcryptRounds: 12,
   maxLoginAttempts: 5,
   lockoutDuration: 900, // 15 minutes

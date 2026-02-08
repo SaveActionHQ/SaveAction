@@ -170,15 +170,43 @@ export interface PaginatedResponse<T> {
 // API Client Configuration
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
+// Session expired callback type
+type SessionExpiredCallback = () => void;
+
 class ApiClient {
   private accessToken: string | null = null;
   private refreshPromise: Promise<string | null> | null = null;
+  private sessionExpiredCallbacks: Set<SessionExpiredCallback> = new Set();
 
   constructor() {
     // Initialize token from localStorage on client side
     if (typeof window !== 'undefined') {
       this.accessToken = localStorage.getItem('accessToken');
     }
+  }
+
+  /**
+   * Subscribe to session expired events
+   * Returns an unsubscribe function
+   */
+  onSessionExpired(callback: SessionExpiredCallback): () => void {
+    this.sessionExpiredCallbacks.add(callback);
+    return () => {
+      this.sessionExpiredCallbacks.delete(callback);
+    };
+  }
+
+  /**
+   * Notify all listeners that session has expired
+   */
+  private notifySessionExpired(): void {
+    this.sessionExpiredCallbacks.forEach((callback) => {
+      try {
+        callback();
+      } catch {
+        // Ignore callback errors
+      }
+    });
   }
 
   /**
@@ -260,8 +288,9 @@ class ApiClient {
         }
         return result.data;
       } else {
-        // Refresh failed, clear token and throw
+        // Refresh failed, clear token and notify listeners
         this.setAccessToken(null);
+        this.notifySessionExpired();
         throw new ApiClientError({
           code: 'SESSION_EXPIRED',
           message: 'Session expired. Please login again.',
