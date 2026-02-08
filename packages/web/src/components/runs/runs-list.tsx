@@ -186,14 +186,13 @@ function BrowserIcon({ browser, className }: { browser: string; className?: stri
 }
 
 interface RunsListProps {
-  searchQuery?: string;
   statusFilter?: Run['status'];
   onRefresh?: () => void;
 }
 
 const PAGE_SIZE = 10;
 
-export function RunsList({ searchQuery, statusFilter, onRefresh }: RunsListProps) {
+export function RunsList({ statusFilter, onRefresh }: RunsListProps) {
   const { success, error: toastError } = useToast();
   const [runs, setRuns] = useState<Run[]>([]);
   const [pagination, setPagination] = useState({
@@ -227,17 +226,7 @@ export function RunsList({ searchQuery, statusFilter, onRefresh }: RunsListProps
           status: statusFilter,
         });
 
-        // Filter by search query client-side if needed
-        let filteredRuns = response.data;
-        if (searchQuery) {
-          const query = searchQuery.toLowerCase();
-          filteredRuns = filteredRuns.filter((run) =>
-            (run as any).recordingName?.toLowerCase().includes(query) ||
-            run.id.toLowerCase().includes(query)
-          );
-        }
-
-        setRuns(filteredRuns);
+        setRuns(response.data);
         setPagination(response.pagination);
       } catch (err) {
         if (err instanceof ApiClientError) {
@@ -249,7 +238,7 @@ export function RunsList({ searchQuery, statusFilter, onRefresh }: RunsListProps
         setIsLoading(false);
       }
     },
-    [searchQuery, statusFilter]
+    [statusFilter]
   );
 
   useEffect(() => {

@@ -194,6 +194,56 @@ export interface CreateTokenResponse {
   createdAt: string;
 }
 
+// Dashboard Types
+export interface DashboardStats {
+  recordings: {
+    total: number;
+  };
+  runs: {
+    total: number;
+    passed: number;
+    failed: number;
+    cancelled: number;
+    queued: number;
+    running: number;
+    passRate: number;
+  };
+  schedules: {
+    total: number;
+    active: number;
+    paused: number;
+  };
+}
+
+export interface DashboardRecentRun {
+  id: string;
+  recordingName: string;
+  recordingUrl: string;
+  status: string;
+  browser: string;
+  durationMs: number | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface DashboardUpcomingSchedule {
+  id: string;
+  name: string;
+  recordingId: string;
+  recordingName: string;
+  cronExpression: string;
+  nextRunAt: string | null;
+  totalRuns: number;
+  successfulRuns: number;
+  failedRuns: number;
+}
+
+export interface DashboardData {
+  stats: DashboardStats;
+  recentRuns: DashboardRecentRun[];
+  upcomingSchedules: DashboardUpcomingSchedule[];
+}
+
 export interface PaginatedResponse<T> {
   data: T[];
   pagination: {
@@ -828,6 +878,24 @@ class ApiClient {
     return this.request<void>(`/api/v1/tokens/${id}`, {
       method: 'DELETE',
     });
+  }
+
+  // =====================
+  // Dashboard API
+  // =====================
+
+  /**
+   * Get dashboard data (stats, recent runs, upcoming schedules)
+   */
+  async getDashboard(): Promise<DashboardData> {
+    return this.request<DashboardData>('/api/v1/dashboard');
+  }
+
+  /**
+   * Get dashboard statistics only
+   */
+  async getDashboardStats(): Promise<DashboardStats> {
+    return this.request<DashboardStats>('/api/v1/dashboard/stats');
   }
 
   // =====================
