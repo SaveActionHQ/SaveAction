@@ -380,10 +380,9 @@ class ApiClient {
         // Refresh failed, clear token and notify listeners
         this.setAccessToken(null);
         this.notifySessionExpired();
-        throw new ApiClientError({
-          code: 'SESSION_EXPIRED',
-          message: 'Session expired. Please login again.',
-        });
+        // Return a promise that never resolves - the session expiry handler will redirect
+        // This prevents the error from bubbling up to the page component
+        return new Promise<T>(() => {});
       }
     }
 

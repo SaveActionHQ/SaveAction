@@ -131,7 +131,7 @@ export default function RecordingsPage() {
     setLoadingTags(true);
     try {
       const tags = await api.getRecordingTags();
-      setAvailableTags(tags);
+      setAvailableTags(tags ?? []);
     } catch (err) {
       // Silently fail - tags are optional
       console.error('Failed to fetch tags:', err);
@@ -243,7 +243,7 @@ export default function RecordingsPage() {
               <h3 className="text-sm font-medium mb-2">Filter by Tags</h3>
               {loadingTags ? (
                 <div className="text-sm text-muted-foreground">Loading tags...</div>
-              ) : availableTags.length > 0 ? (
+              ) : availableTags?.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
                   {availableTags.map((tag) => (
                     <Badge
