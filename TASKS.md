@@ -661,6 +661,23 @@
 
 ---
 
+## Phase 4.5: Projects & Organization
+
+> **Design Document:** [PROJECTS_SUITES_PLAN.md](./PROJECTS_SUITES_PLAN.md)  
+> **Status:** Planning complete, implementation not started  
+> **Goal:** Progressive complexity - simple by default, powerful when needed
+
+**Summary:** Add optional hierarchy (Projects → Suites → Recordings) for enterprise users while keeping the simple flat structure for personal use. Default project created automatically, suites are optional groupings.
+
+**Phases:**
+- 4.5.1: Projects (database, API, UI) - 2-3 days
+- 4.5.2: Suites (folders, run suite, schedule suite) - 3-4 days  
+- 4.5.3: Environments (base URL override) - Future
+
+When ready to implement, detailed tasks will be extracted from the plan document.
+
+---
+
 ## Phase 5: Docker Deployment
 
 ### ⏳ TODO - Dockerfiles
@@ -837,6 +854,7 @@
 | Phase 3: API                     | 33     | 29     | 0       | 4      |
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
 | Phase 4: Web                     | 10     | 9      | 0       | 1      |
+| Phase 4.5: Projects & Org        | -      | -      | -       | -      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
