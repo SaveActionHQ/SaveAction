@@ -142,6 +142,7 @@ describe('Database Schema', () => {
     expect(schema.allTables).toEqual({
       users: 'users',
       apiTokens: 'api_tokens',
+      projects: 'projects',
       recordings: 'recordings',
       runs: 'runs',
       runActions: 'run_actions',

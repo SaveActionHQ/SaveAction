@@ -10,6 +10,15 @@ export type {
   SafeUser,
 } from './UserRepository.js';
 
+export { ProjectRepository } from './ProjectRepository.js';
+export type {
+  ProjectCreateData,
+  ProjectUpdateData,
+  ProjectListFilters,
+  SafeProject,
+  ProjectWithStats,
+} from './ProjectRepository.js';
+
 export { ApiTokenRepository } from './ApiTokenRepository.js';
 export type { ApiTokenCreateData, SafeApiToken, ApiTokenWithHash } from './ApiTokenRepository.js';
 

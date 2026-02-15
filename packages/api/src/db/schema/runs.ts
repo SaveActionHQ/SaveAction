@@ -10,6 +10,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { users } from './users.js';
+import { projects } from './projects.js';
 import { recordings } from './recordings.js';
 
 /**
@@ -52,6 +53,12 @@ export const runs = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+
+    // Project reference (required for organization)
+    // Denormalized from recording for direct querying
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
 
     // Recording reference (nullable for deleted recordings)
     recordingId: uuid('recording_id').references(() => recordings.id, {
@@ -123,6 +130,11 @@ export const runs = pgTable(
     // User's runs (dashboard view)
     index('runs_user_id_idx')
       .on(table.userId, table.createdAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Project's runs (required for project filtering)
+    index('runs_project_id_idx')
+      .on(table.projectId, table.createdAt)
       .where(sql`${table.deletedAt} IS NULL`),
 
     // Recording's runs (recording detail view)

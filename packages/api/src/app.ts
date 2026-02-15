@@ -18,6 +18,7 @@ import {
 } from './plugins/index.js';
 import authRoutes from './routes/auth.js';
 import apiTokenRoutes from './routes/tokens.js';
+import projectRoutes from './routes/projects.js';
 import recordingRoutes from './routes/recordings.js';
 import runRoutes from './routes/runs.js';
 import scheduleRoutes from './routes/schedules.js';
@@ -208,6 +209,13 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
             prefix: '/tokens',
             db: app.db!,
             maxTokensPerUser: 10,
+          });
+
+          // Project routes
+          await v1App.register(projectRoutes, {
+            prefix: '/projects',
+            db: app.db!,
+            maxProjectsPerUser: 100,
           });
 
           // Recording routes

@@ -13,6 +13,7 @@ export default defineConfig({
   // Schema files location - each file must be imported independently
   schema: [
     './src/db/schema/users.ts',
+    './src/db/schema/projects.ts',
     './src/db/schema/api-tokens.ts',
     './src/db/schema/recordings.ts',
     './src/db/schema/runs.ts',

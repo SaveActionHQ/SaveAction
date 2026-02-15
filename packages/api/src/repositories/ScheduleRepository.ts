@@ -19,6 +19,7 @@ import type { Database } from '../db/index.js';
  */
 export interface ScheduleCreateData {
   userId: string;
+  projectId: string;
   recordingId: string;
   name: string;
   description?: string;
@@ -80,6 +81,7 @@ export interface ScheduleUpdateData {
  */
 export interface ScheduleListFilters {
   userId: string;
+  projectId?: string;
   recordingId?: string;
   status?: ScheduleStatus | ScheduleStatus[];
   includeDeleted?: boolean;
@@ -116,6 +118,7 @@ export interface PaginatedResult<T> {
 export interface SafeSchedule {
   id: string;
   userId: string;
+  projectId: string;
   recordingId: string;
   name: string;
   description: string | null;
@@ -162,6 +165,7 @@ export interface SafeSchedule {
 export interface ScheduleSummary {
   id: string;
   userId: string;
+  projectId: string;
   recordingId: string;
   name: string;
   cronExpression: string;
@@ -194,6 +198,7 @@ function toSafeSchedule(schedule: Schedule): SafeSchedule {
   return {
     id: schedule.id,
     userId: schedule.userId,
+    projectId: schedule.projectId,
     recordingId: schedule.recordingId,
     name: schedule.name,
     description: schedule.description,
@@ -232,6 +237,7 @@ function toScheduleSummary(schedule: Schedule): ScheduleSummary {
   return {
     id: schedule.id,
     userId: schedule.userId,
+    projectId: schedule.projectId,
     recordingId: schedule.recordingId,
     name: schedule.name,
     cronExpression: schedule.cronExpression,
@@ -260,6 +266,7 @@ export class ScheduleRepository {
   async create(data: ScheduleCreateData): Promise<SafeSchedule> {
     const newSchedule: NewSchedule = {
       userId: data.userId,
+      projectId: data.projectId,
       recordingId: data.recordingId,
       name: data.name,
       description: data.description,

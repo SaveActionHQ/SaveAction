@@ -22,6 +22,7 @@ import type { Database } from '../db/index.js';
  */
 export interface RunCreateData {
   userId: string;
+  projectId: string;
   recordingId: string;
   recordingName: string;
   recordingUrl: string;
@@ -64,6 +65,7 @@ export interface RunUpdateData {
  */
 export interface RunListFilters {
   userId: string;
+  projectId?: string;
   recordingId?: string;
   scheduleId?: string;
   status?: RunStatus | RunStatus[];
@@ -104,6 +106,7 @@ export interface PaginatedResult<T> {
 export interface SafeRun {
   id: string;
   userId: string;
+  projectId: string;
   recordingId: string | null;
   recordingName: string;
   recordingUrl: string;
@@ -145,6 +148,7 @@ export interface SafeRun {
 export interface RunSummary {
   id: string;
   userId: string;
+  projectId: string;
   recordingId: string | null;
   recordingName: string;
   recordingUrl: string;
@@ -227,6 +231,7 @@ function toSafeRun(run: Run, scheduleName?: string | null): SafeRun {
   return {
     id: run.id,
     userId: run.userId,
+    projectId: run.projectId,
     recordingId: run.recordingId,
     recordingName: run.recordingName,
     recordingUrl: run.recordingUrl,
@@ -270,6 +275,7 @@ function toRunSummary(run: Partial<Run> & { scheduleName?: string | null }): Run
   return {
     id: run.id!,
     userId: run.userId!,
+    projectId: run.projectId!,
     recordingId: run.recordingId ?? null,
     recordingName: run.recordingName!,
     recordingUrl: run.recordingUrl!,
@@ -338,6 +344,7 @@ export class RunRepository {
       .insert(runs)
       .values({
         userId: data.userId,
+        projectId: data.projectId,
         recordingId: data.recordingId,
         recordingName: data.recordingName,
         recordingUrl: data.recordingUrl,

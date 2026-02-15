@@ -242,6 +242,7 @@ export class ScheduleService {
     // Create schedule in database
     const createData: ScheduleCreateData = {
       userId,
+      projectId: recording.projectId,
       recordingId: input.recordingId,
       name: input.name,
       description: input.description,

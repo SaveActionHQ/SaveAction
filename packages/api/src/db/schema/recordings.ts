@@ -1,6 +1,7 @@
 import { pgTable, uuid, varchar, timestamp, text, jsonb, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { users } from './users.js';
+import { projects } from './projects.js';
 
 /**
  * Recordings table - Stored test recordings
@@ -25,6 +26,12 @@ export const recordings = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+
+    // Project reference (required)
+    // Every recording belongs to exactly one project
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
 
     // Recording metadata (extracted for fast queries)
     name: varchar('name', { length: 255 }).notNull(),
@@ -65,6 +72,16 @@ export const recordings = pgTable(
     // User's recordings (most common query)
     index('recordings_user_id_idx')
       .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Project's recordings (required for project filtering)
+    index('recordings_project_id_idx')
+      .on(table.projectId)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Project + user composite (ownership verification)
+    index('recordings_project_user_idx')
+      .on(table.projectId, table.userId)
       .where(sql`${table.deletedAt} IS NULL`),
 
     // Search by name

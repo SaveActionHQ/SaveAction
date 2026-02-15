@@ -153,6 +153,7 @@ export function createScheduledTestProcessor(options: ScheduledTestProcessorOpti
       const runConfig = schedule.runConfig || {};
       const runData: RunCreateData = {
         userId: schedule.userId,
+        projectId: schedule.projectId,
         recordingId: schedule.recordingId,
         recordingName: recording.name,
         recordingUrl: recording.url,

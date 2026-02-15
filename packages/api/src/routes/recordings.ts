@@ -14,6 +14,7 @@ import {
   listRecordingsQuerySchema,
 } from '../services/RecordingService.js';
 import { RecordingRepository } from '../repositories/RecordingRepository.js';
+import { ProjectRepository } from '../repositories/ProjectRepository.js';
 import type { Database } from '../db/index.js';
 import { z } from 'zod';
 
@@ -69,9 +70,10 @@ function handleRecordingError(error: unknown, reply: FastifyReply): FastifyReply
 const recordingRoutes: FastifyPluginAsync<RecordingRoutesOptions> = async (fastify, options) => {
   const { db, maxDataSizeBytes, maxRecordingsPerUser } = options;
 
-  // Create repository and service
+  // Create repositories and service
   const recordingRepository = new RecordingRepository(db);
-  const recordingService = new RecordingService(recordingRepository, {
+  const projectRepository = new ProjectRepository(db);
+  const recordingService = new RecordingService(recordingRepository, projectRepository, {
     maxDataSizeBytes,
     maxRecordingsPerUser,
   });

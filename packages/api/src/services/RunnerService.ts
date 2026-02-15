@@ -181,6 +181,7 @@ export class RunnerService {
     // Create run record
     const runData: RunCreateData = {
       userId,
+      projectId: recording.projectId,
       recordingId: validated.recordingId,
       recordingName: recording.name,
       recordingUrl: recording.url,

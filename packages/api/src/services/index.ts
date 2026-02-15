@@ -51,3 +51,22 @@ export type {
   UpdateScheduleInput,
 } from './ScheduleService.js';
 export { createScheduleSchema, updateScheduleSchema } from './ScheduleService.js';
+
+export {
+  ProjectService,
+  ProjectError,
+  ProjectErrors,
+  DEFAULT_PROJECT_NAME,
+} from './ProjectService.js';
+export type {
+  ProjectServiceConfig,
+  CreateProjectRequest,
+  UpdateProjectRequest,
+  ListProjectsQuery,
+  ProjectResponse,
+} from './ProjectService.js';
+export {
+  createProjectSchema,
+  updateProjectSchema,
+  listProjectsQuerySchema,
+} from './ProjectService.js';

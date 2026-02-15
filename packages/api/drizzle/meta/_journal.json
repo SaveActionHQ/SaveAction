@@ -8,6 +8,13 @@
       "when": 1769364404675,
       "tag": "0000_spooky_drax",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1771144687610,
+      "tag": "0001_rapid_earthquake",
+      "breakpoints": true
     }
   ]
 }

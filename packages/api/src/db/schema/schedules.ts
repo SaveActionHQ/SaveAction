@@ -11,6 +11,7 @@ import {
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { users } from './users.js';
+import { projects } from './projects.js';
 import { recordings } from './recordings.js';
 
 /**
@@ -46,6 +47,12 @@ export const schedules = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+
+    // Project reference (required for organization)
+    // Denormalized from recording for direct querying
+    projectId: uuid('project_id')
+      .notNull()
+      .references(() => projects.id, { onDelete: 'cascade' }),
 
     // What to run
     recordingId: uuid('recording_id')
@@ -120,6 +127,11 @@ export const schedules = pgTable(
     // User's schedules (dashboard view)
     index('schedules_user_id_idx')
       .on(table.userId)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Project's schedules (required for project filtering)
+    index('schedules_project_id_idx')
+      .on(table.projectId)
       .where(sql`${table.deletedAt} IS NULL`),
 
     // Active schedules for cron processing

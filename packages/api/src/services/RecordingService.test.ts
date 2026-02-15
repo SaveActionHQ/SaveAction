@@ -20,6 +20,7 @@ import type {
   SafeRecording,
   RecordingSummary,
 } from '../repositories/RecordingRepository.js';
+import type { ProjectRepository, SafeProject } from '../repositories/ProjectRepository.js';
 import type { RecordingData } from '../db/schema/recordings.js';
 
 // Sample recording data
@@ -38,9 +39,22 @@ const sampleRecordingData: RecordingData = {
   version: '1.0.0',
 };
 
+const sampleProject: SafeProject = {
+  id: 'proj-123',
+  userId: 'user-123',
+  name: 'Default Project',
+  description: 'Default project',
+  color: '#3B82F6',
+  isDefault: true,
+  deletedAt: null,
+  createdAt: new Date('2026-01-01'),
+  updatedAt: new Date('2026-01-01'),
+};
+
 const sampleSafeRecording: SafeRecording = {
   id: 'rec-uuid-123',
   userId: 'user-123',
+  projectId: 'proj-123',
   name: 'Test Recording',
   url: 'https://example.com',
   description: 'Test description',
@@ -59,6 +73,7 @@ const sampleSafeRecording: SafeRecording = {
 const sampleSummary: RecordingSummary = {
   id: 'rec-uuid-123',
   userId: 'user-123',
+  projectId: 'proj-123',
   name: 'Test Recording',
   url: 'https://example.com',
   description: 'Test description',
@@ -71,6 +86,19 @@ const sampleSummary: RecordingSummary = {
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
 };
+
+// Mock project repository
+type MockedProjectRepository = {
+  findDefaultProject: ReturnType<typeof vi.fn>;
+  createDefaultProject: ReturnType<typeof vi.fn>;
+  findByIdAndUser: ReturnType<typeof vi.fn>;
+};
+
+const createMockProjectRepository = (): MockedProjectRepository => ({
+  findDefaultProject: vi.fn().mockResolvedValue(sampleProject),
+  createDefaultProject: vi.fn().mockResolvedValue(sampleProject),
+  findByIdAndUser: vi.fn().mockResolvedValue(sampleProject),
+});
 
 // Mock repository interface (only the methods we need)
 type MockedRepository = {
@@ -116,10 +144,15 @@ const createMockRepository = (): MockedRepository => ({
 describe('RecordingService', () => {
   let service: RecordingService;
   let mockRepository: MockedRepository;
+  let mockProjectRepository: MockedProjectRepository;
 
   beforeEach(() => {
     mockRepository = createMockRepository();
-    service = new RecordingService(mockRepository as unknown as RecordingRepository);
+    mockProjectRepository = createMockProjectRepository();
+    service = new RecordingService(
+      mockRepository as unknown as RecordingRepository,
+      mockProjectRepository as unknown as ProjectRepository
+    );
   });
 
   describe('Schema Validation', () => {
@@ -292,6 +325,7 @@ describe('RecordingService', () => {
     it('should reject data exceeding size limit', async () => {
       const serviceWithLimit = new RecordingService(
         mockRepository as unknown as RecordingRepository,
+        mockProjectRepository as unknown as ProjectRepository,
         {
           maxDataSizeBytes: 100, // Very small limit
         }
@@ -310,6 +344,7 @@ describe('RecordingService', () => {
     it('should enforce recording limit per user', async () => {
       const serviceWithLimit = new RecordingService(
         mockRepository as unknown as RecordingRepository,
+        mockProjectRepository as unknown as ProjectRepository,
         {
           maxRecordingsPerUser: 5,
         }
@@ -455,6 +490,7 @@ describe('RecordingService', () => {
     it('should reject data exceeding size limit on update', async () => {
       const serviceWithLimit = new RecordingService(
         mockRepository as unknown as RecordingRepository,
+        mockProjectRepository as unknown as ProjectRepository,
         {
           maxDataSizeBytes: 100,
         }
