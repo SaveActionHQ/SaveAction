@@ -11,3 +11,4 @@ export { createTestApp, injectJson, injectAuthenticated, type TestApp, type Test
 // Factories
 export { createUser, createUsers, resetUserCounter, type CreateUserOptions, type CreatedUser } from './userFactory.js';
 export { createRecording, createRecordings, createSampleRecordingData, resetRecordingCounter, type CreateRecordingOptions } from './recordingFactory.js';
+export { createProject, createDefaultProject, getOrCreateDefaultProject, createProjects, resetProjectCounter, type CreateProjectOptions } from './projectFactory.js';

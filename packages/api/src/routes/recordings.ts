@@ -107,6 +107,7 @@ const recordingRoutes: FastifyPluginAsync<RecordingRoutesOptions> = async (fasti
             name: { type: 'string', minLength: 1, maxLength: 255 },
             description: { type: 'string', maxLength: 2000, nullable: true },
             tags: { type: 'array', items: { type: 'string' }, maxItems: 20 },
+            projectId: { type: 'string', format: 'uuid' },
             data: { type: 'object' },
           },
         },
@@ -119,6 +120,7 @@ const recordingRoutes: FastifyPluginAsync<RecordingRoutesOptions> = async (fasti
                 type: 'object',
                 properties: {
                   id: { type: 'string' },
+                  projectId: { type: 'string', nullable: true },
                   name: { type: 'string' },
                   url: { type: 'string' },
                   description: { type: 'string', nullable: true },

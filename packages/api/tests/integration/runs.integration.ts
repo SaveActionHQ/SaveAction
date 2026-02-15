@@ -42,9 +42,10 @@ describe('Runs Routes Integration', () => {
   /**
    * Helper to create a run directly in database for testing
    */
-  async function createDbRun(userId: string, recordingId: string, options: Partial<typeof runs.$inferInsert> = {}) {
+  async function createDbRun(userId: string, recordingId: string, projectId: string, options: Partial<typeof runs.$inferInsert> = {}) {
     const [run] = await testApp.db.insert(runs).values({
       userId,
+      projectId,
       recordingId,
       recordingName: 'Test Recording',
       recordingUrl: 'https://example.com',
@@ -136,9 +137,9 @@ describe('Runs Routes Integration', () => {
       const recording = await createRecording({ userId: user.id });
 
       // Create some runs directly in DB
-      await createDbRun(user.id, recording.id, { status: 'passed' });
-      await createDbRun(user.id, recording.id, { status: 'failed' });
-      await createDbRun(user.id, recording.id, { status: 'passed' });
+      await createDbRun(user.id, recording.id, recording.projectId, { status: 'passed' });
+      await createDbRun(user.id, recording.id, recording.projectId, { status: 'failed' });
+      await createDbRun(user.id, recording.id, recording.projectId, { status: 'passed' });
 
       const response = await testApp.app.inject({
         method: 'GET',
@@ -161,9 +162,9 @@ describe('Runs Routes Integration', () => {
       const token = await getAuthToken(user.email, user.plainPassword);
       const recording = await createRecording({ userId: user.id });
 
-      await createDbRun(user.id, recording.id, { status: 'passed' });
-      await createDbRun(user.id, recording.id, { status: 'passed' });
-      await createDbRun(user.id, recording.id, { status: 'failed' });
+      await createDbRun(user.id, recording.id, recording.projectId, { status: 'passed' });
+      await createDbRun(user.id, recording.id, recording.projectId, { status: 'passed' });
+      await createDbRun(user.id, recording.id, recording.projectId, { status: 'failed' });
 
       const response = await testApp.app.inject({
         method: 'GET',
@@ -188,9 +189,9 @@ describe('Runs Routes Integration', () => {
       const recording1 = await createRecording({ userId: user.id, name: 'Recording 1' });
       const recording2 = await createRecording({ userId: user.id, name: 'Recording 2' });
 
-      await createDbRun(user.id, recording1.id, { status: 'passed' });
-      await createDbRun(user.id, recording1.id, { status: 'passed' });
-      await createDbRun(user.id, recording2.id, { status: 'passed' });
+      await createDbRun(user.id, recording1.id, recording1.projectId, { status: 'passed' });
+      await createDbRun(user.id, recording1.id, recording1.projectId, { status: 'passed' });
+      await createDbRun(user.id, recording2.id, recording2.projectId, { status: 'passed' });
 
       const response = await testApp.app.inject({
         method: 'GET',
@@ -213,7 +214,7 @@ describe('Runs Routes Integration', () => {
 
       // Create 5 runs
       for (let i = 0; i < 5; i++) {
-        await createDbRun(user.id, recording.id);
+        await createDbRun(user.id, recording.id, recording.projectId);
       }
 
       const response = await testApp.app.inject({
@@ -238,7 +239,7 @@ describe('Runs Routes Integration', () => {
       const user = await createUser({ email: 'get-run@example.com' });
       const token = await getAuthToken(user.email, user.plainPassword);
       const recording = await createRecording({ userId: user.id });
-      const run = await createDbRun(user.id, recording.id, { status: 'passed' });
+      const run = await createDbRun(user.id, recording.id, recording.projectId, { status: 'passed' });
 
       const response = await testApp.app.inject({
         method: 'GET',
@@ -277,7 +278,7 @@ describe('Runs Routes Integration', () => {
       const user = await createUser({ email: 'delete-run@example.com' });
       const token = await getAuthToken(user.email, user.plainPassword);
       const recording = await createRecording({ userId: user.id });
-      const run = await createDbRun(user.id, recording.id, { status: 'passed' });
+      const run = await createDbRun(user.id, recording.id, recording.projectId, { status: 'passed' });
 
       const response = await testApp.app.inject({
         method: 'DELETE',
@@ -305,7 +306,7 @@ describe('Runs Routes Integration', () => {
       const user = await createUser({ email: 'del-inprogress@example.com' });
       const token = await getAuthToken(user.email, user.plainPassword);
       const recording = await createRecording({ userId: user.id });
-      const run = await createDbRun(user.id, recording.id, { status: 'running' });
+      const run = await createDbRun(user.id, recording.id, recording.projectId, { status: 'running' });
 
       const response = await testApp.app.inject({
         method: 'DELETE',

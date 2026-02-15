@@ -37,17 +37,29 @@ export default async function globalSetup() {
     await db.execute(sql`SELECT 1`);
     console.log('✅ PostgreSQL connection successful');
 
+    // Clean up test database BEFORE running migrations
+    // This prevents migration failures when adding NOT NULL columns to tables with existing data
+    console.log('🧹 Cleaning up test database...');
+    try {
+      // Try full truncate with all tables including projects
+      await db.execute(sql`TRUNCATE TABLE users, api_tokens, projects, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries CASCADE`);
+    } catch {
+      // Projects table might not exist yet on first run
+      try {
+        await db.execute(sql`TRUNCATE TABLE users, api_tokens, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries CASCADE`);
+      } catch {
+        // Tables might not exist yet, that's OK
+        console.log('ℹ️ Tables do not exist yet, skipping truncation');
+      }
+    }
+    console.log('✅ Test database cleaned');
+
     // Run migrations to ensure tables exist
     console.log('🔄 Running database migrations...');
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const migrationsFolder = path.resolve(__dirname, '../../drizzle');
     await migrate(db, { migrationsFolder });
     console.log('✅ Migrations completed');
-
-    // Clean up test database before running tests
-    console.log('🧹 Cleaning up test database...');
-    await db.execute(sql`TRUNCATE TABLE users, api_tokens, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries CASCADE`);
-    console.log('✅ Test database cleaned');
 
     await closeTestDb();
   } catch (error) {

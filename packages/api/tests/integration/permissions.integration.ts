@@ -168,9 +168,10 @@ describe('Data Isolation & Permissions', () => {
   });
 
   describe('Runs Isolation', () => {
-    async function createDbRun(userId: string, recordingId: string) {
+    async function createDbRun(userId: string, recordingId: string, projectId: string) {
       const [run] = await testApp.db.insert(runs).values({
         userId,
+        projectId,
         recordingId,
         recordingName: 'Test Recording',
         recordingUrl: 'https://example.com',
@@ -188,7 +189,7 @@ describe('Data Isolation & Permissions', () => {
 
     it('should NOT allow User B to access User A run', async () => {
       const recordingA = await createRecording({ userId: userA.id });
-      const runA = await createDbRun(userA.id, recordingA.id);
+      const runA = await createDbRun(userA.id, recordingA.id, recordingA.projectId);
 
       const response = await testApp.app.inject({
         method: 'GET',
@@ -203,7 +204,7 @@ describe('Data Isolation & Permissions', () => {
 
     it('should NOT allow User B to delete User A run', async () => {
       const recordingA = await createRecording({ userId: userA.id });
-      const runA = await createDbRun(userA.id, recordingA.id);
+      const runA = await createDbRun(userA.id, recordingA.id, recordingA.projectId);
 
       const response = await testApp.app.inject({
         method: 'DELETE',
@@ -250,9 +251,9 @@ describe('Data Isolation & Permissions', () => {
       const recordingA = await createRecording({ userId: userA.id });
       const recordingB = await createRecording({ userId: userB.id });
 
-      await createDbRun(userA.id, recordingA.id);
-      await createDbRun(userA.id, recordingA.id);
-      await createDbRun(userB.id, recordingB.id);
+      await createDbRun(userA.id, recordingA.id, recordingA.projectId);
+      await createDbRun(userA.id, recordingA.id, recordingA.projectId);
+      await createDbRun(userB.id, recordingB.id, recordingB.projectId);
 
       // List as User A
       const responseA = await testApp.app.inject({

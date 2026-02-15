@@ -171,6 +171,7 @@ const DEFAULT_CONFIG: RecordingServiceConfig = {
  */
 export interface RecordingResponse {
   id: string;
+  projectId: string | null;
   name: string;
   url: string;
   description: string | null;
@@ -194,6 +195,7 @@ export interface RecordingDetailResponse extends RecordingResponse {
 function toResponse(recording: SafeRecording): RecordingDetailResponse {
   return {
     id: recording.id,
+    projectId: recording.projectId,
     name: recording.name,
     url: recording.url,
     description: recording.description,
@@ -215,6 +217,7 @@ function toResponse(recording: SafeRecording): RecordingDetailResponse {
 function summaryToResponse(recording: RecordingSummary): RecordingResponse {
   return {
     id: recording.id,
+    projectId: recording.projectId,
     name: recording.name,
     url: recording.url,
     description: recording.description,
