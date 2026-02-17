@@ -86,6 +86,7 @@ CREATE TABLE "runs" (
 	"error_action_id" varchar(50),
 	"triggered_by" varchar(50) DEFAULT 'manual' NOT NULL,
 	"schedule_id" uuid,
+	"parent_run_id" uuid,
 	"ci_metadata" text,
 	"deleted_at" timestamp with time zone,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
@@ -238,6 +239,7 @@ CREATE INDEX "runs_job_id_idx" ON "runs" USING btree ("job_id") WHERE "runs"."jo
 CREATE INDEX "runs_running_idx" ON "runs" USING btree ("status","started_at") WHERE "runs"."status" = 'running';--> statement-breakpoint
 CREATE INDEX "runs_created_at_idx" ON "runs" USING btree ("created_at");--> statement-breakpoint
 CREATE INDEX "runs_schedule_id_idx" ON "runs" USING btree ("schedule_id") WHERE "runs"."schedule_id" IS NOT NULL;--> statement-breakpoint
+CREATE INDEX "runs_parent_run_id_idx" ON "runs" USING btree ("parent_run_id","created_at") WHERE "runs"."deleted_at" IS NULL;--> statement-breakpoint
 CREATE INDEX "runs_deleted_at_idx" ON "runs" USING btree ("deleted_at") WHERE "runs"."deleted_at" IS NOT NULL;--> statement-breakpoint
 CREATE INDEX "run_actions_run_id_idx" ON "run_actions" USING btree ("run_id","action_index");--> statement-breakpoint
 CREATE INDEX "run_actions_failed_idx" ON "run_actions" USING btree ("run_id","status") WHERE "run_actions"."status" = 'failed';--> statement-breakpoint

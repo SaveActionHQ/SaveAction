@@ -52,3 +52,30 @@ export type {
   SafeSchedule,
   ScheduleSummary,
 } from './ScheduleRepository.js';
+
+export { TestSuiteRepository, DEFAULT_SUITE_NAME } from './TestSuiteRepository.js';
+export type {
+  TestSuiteCreateData,
+  TestSuiteUpdateData,
+  TestSuiteListFilters,
+  SafeTestSuite,
+  TestSuiteWithStats,
+} from './TestSuiteRepository.js';
+
+export { TestRepository, generateSlug } from './TestRepository.js';
+export type {
+  TestCreateData,
+  TestUpdateData,
+  TestLastRunUpdate,
+  TestListFilters,
+  SafeTest,
+  TestSummary,
+} from './TestRepository.js';
+
+export { RunBrowserResultRepository } from './RunBrowserResultRepository.js';
+export type {
+  BrowserResultCreateData,
+  BrowserResultUpdateData,
+  SafeBrowserResult,
+  BrowserResultSummary,
+} from './RunBrowserResultRepository.js';

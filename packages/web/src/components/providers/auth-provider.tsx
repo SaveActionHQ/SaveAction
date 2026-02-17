@@ -60,7 +60,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isLoading: false,
         isAuthenticated: false,
       });
-      router.push(`/login?redirect=${encodeURIComponent(pathname || '/dashboard')}&expired=true`);
+      router.push(`/login?redirect=${encodeURIComponent(pathname || '/projects')}&expired=true`);
     });
 
     return unsubscribe;
@@ -113,10 +113,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     if (!state.isAuthenticated && !isPublicRoute) {
       // Redirect to login if not authenticated and on protected route
-      router.replace(`/login?redirect=${encodeURIComponent(pathname || '/dashboard')}`);
+      router.replace(`/login?redirect=${encodeURIComponent(pathname || '/projects')}`);
     } else if (state.isAuthenticated && isAuthRoute) {
-      // Redirect to dashboard if authenticated and on login/register page
-      router.replace('/dashboard');
+      // Redirect to projects list if authenticated and on login/register page
+      router.replace('/projects');
     }
   }, [state.isAuthenticated, state.isLoading, pathname, router]);
 

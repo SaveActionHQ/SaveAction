@@ -348,7 +348,7 @@ describe('Schedule Routes', () => {
     it('should list schedules', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/api/schedules',
+        url: '/api/schedules?projectId=00000000-0000-0000-0000-000000000001',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -376,7 +376,7 @@ describe('Schedule Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/schedules?status=paused',
+        url: '/api/schedules?projectId=00000000-0000-0000-0000-000000000001&status=paused',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -388,7 +388,7 @@ describe('Schedule Routes', () => {
     it('should filter schedules by recording ID', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: `/api/schedules?recordingId=${mockSafeSchedule.recordingId}`,
+        url: `/api/schedules?projectId=00000000-0000-0000-0000-000000000001&recordingId=${mockSafeSchedule.recordingId}`,
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -417,7 +417,7 @@ describe('Schedule Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/schedules?page=2&limit=10',
+        url: '/api/schedules?projectId=00000000-0000-0000-0000-000000000001&page=2&limit=10',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -431,7 +431,7 @@ describe('Schedule Routes', () => {
     it('should sort schedules', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/api/schedules?sortBy=name&sortOrder=asc',
+        url: '/api/schedules?projectId=00000000-0000-0000-0000-000000000001&sortBy=name&sortOrder=asc',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -461,7 +461,7 @@ describe('Schedule Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/schedules',
+        url: '/api/schedules?projectId=00000000-0000-0000-0000-000000000001',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -939,7 +939,7 @@ describe('Schedule Routes', () => {
     it('should include pagination in list response', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/api/schedules',
+        url: '/api/schedules?projectId=00000000-0000-0000-0000-000000000001',
         headers: { authorization: 'Bearer valid-token' },
       });
 

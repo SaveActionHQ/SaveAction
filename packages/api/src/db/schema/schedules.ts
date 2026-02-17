@@ -13,6 +13,8 @@ import { sql } from 'drizzle-orm';
 import { users } from './users.js';
 import { projects } from './projects.js';
 import { recordings } from './recordings.js';
+import { tests } from './tests.js';
+import { testSuites } from './test-suites.js';
 
 /**
  * Schedule status enum
@@ -25,9 +27,20 @@ export const scheduleStatusEnum = pgEnum('schedule_status', [
 ]);
 
 /**
+ * Schedule target type enum - What to run
+ */
+export const scheduleTargetTypeEnum = pgEnum('schedule_target_type', [
+  'test', // Run a single test
+  'suite', // Run all tests in a suite
+  'project', // Run all tests in a project
+  'recording', // Legacy: run a recording
+]);
+
+/**
  * Schedules table - Cron-scheduled test runs
  *
  * Enterprise considerations:
+ * - Support for test/suite/project scheduling
  * - BullMQ repeatable job integration
  * - Flexible cron expressions (6-field for seconds support)
  * - Timezone-aware scheduling
@@ -49,15 +62,25 @@ export const schedules = pgTable(
       .references(() => users.id, { onDelete: 'cascade' }),
 
     // Project reference (required for organization)
-    // Denormalized from recording for direct querying
     projectId: uuid('project_id')
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
 
-    // What to run
-    recordingId: uuid('recording_id')
-      .notNull()
-      .references(() => recordings.id, { onDelete: 'cascade' }),
+    // What to run - LEGACY (nullable for new architecture)
+    recordingId: uuid('recording_id').references(() => recordings.id, { onDelete: 'cascade' }),
+
+    // NEW: Target type and ID for flexible scheduling
+    targetType: scheduleTargetTypeEnum('target_type').default('recording'),
+
+    // Test reference (for single test schedules)
+    testId: uuid('test_id').references(() => tests.id, {
+      onDelete: 'cascade',
+    }),
+
+    // Suite reference (for suite-level schedules)
+    suiteId: uuid('suite_id').references(() => testSuites.id, {
+      onDelete: 'cascade',
+    }),
 
     // Schedule metadata
     name: varchar('name', { length: 255 }).notNull(),
@@ -139,9 +162,24 @@ export const schedules = pgTable(
       .on(table.status, table.nextRunAt)
       .where(sql`${table.status} = 'active' AND ${table.deletedAt} IS NULL`),
 
-    // Recording's schedules
+    // Recording's schedules - LEGACY
     index('schedules_recording_id_idx')
       .on(table.recordingId)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Test's schedules - NEW
+    index('schedules_test_id_idx')
+      .on(table.testId)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Suite's schedules - NEW
+    index('schedules_suite_id_idx')
+      .on(table.suiteId)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Target type filtering - NEW
+    index('schedules_target_type_idx')
+      .on(table.projectId, table.targetType)
       .where(sql`${table.deletedAt} IS NULL`),
 
     // BullMQ job lookup
@@ -162,3 +200,4 @@ export const schedules = pgTable(
 export type Schedule = typeof schedules.$inferSelect;
 export type NewSchedule = typeof schedules.$inferInsert;
 export type ScheduleStatus = (typeof scheduleStatusEnum.enumValues)[number];
+export type ScheduleTargetType = (typeof scheduleTargetTypeEnum.enumValues)[number];

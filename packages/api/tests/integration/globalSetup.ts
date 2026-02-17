@@ -42,7 +42,7 @@ export default async function globalSetup() {
     console.log('🧹 Cleaning up test database...');
     try {
       // Try full truncate with all tables including projects
-      await db.execute(sql`TRUNCATE TABLE users, api_tokens, projects, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries CASCADE`);
+      await db.execute(sql`TRUNCATE TABLE users, api_tokens, projects, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries, test_suites, tests, run_browser_results CASCADE`);
     } catch {
       // Projects table might not exist yet on first run
       try {

@@ -20,6 +20,9 @@ export default defineConfig({
     './src/db/schema/run-actions.ts',
     './src/db/schema/schedules.ts',
     './src/db/schema/webhooks.ts',
+    './src/db/schema/test-suites.ts',
+    './src/db/schema/tests.ts',
+    './src/db/schema/run-browser-results.ts',
   ],
 
   // Output directory for migrations

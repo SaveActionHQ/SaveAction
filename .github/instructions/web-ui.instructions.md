@@ -165,9 +165,10 @@ Use Tailwind's default spacing scale consistently:
 │   (fixed)    │              (scrollable)                    │
 │              │                                               │
 │   • Dashboard│                                               │
-│   • Recordings│                                              │
+│   • Suites   │                                               │
 │   • Runs     │                                               │
 │   • Schedules│                                               │
+│   • Library  │                                               │
 │   • Settings │                                               │
 │              │                                               │
 ├──────────────┴──────────────────────────────────────────────┤
@@ -205,56 +206,52 @@ packages/web/
 │   │   ├── (auth)/             # Auth pages (login, register)
 │   │   │   ├── login/
 │   │   │   └── register/
-│   │   ├── (dashboard)/        # Protected dashboard routes
-│   │   │   ├── layout.tsx      # Dashboard shell
-│   │   │   ├── page.tsx        # Dashboard home
-│   │   │   ├── recordings/
-│   │   │   ├── runs/
-│   │   │   ├── schedules/
+│   │   ├── (global)/           # Global routes (project list, settings)
+│   │   │   ├── layout.tsx
+│   │   │   ├── projects/
 │   │   │   └── settings/
+│   │   ├── (project)/          # Project-scoped routes
+│   │   │   └── projects/[projectId]/
+│   │   │       ├── layout.tsx
+│   │   │       ├── page.tsx        # Project dashboard
+│   │   │       ├── library/        # Recording library
+│   │   │       ├── suites/         # Suite management
+│   │   │       ├── runs/           # Run history + detail
+│   │   │       ├── schedules/      # Schedule management
+│   │   │       └── settings/       # Project settings
 │   │   ├── layout.tsx          # Root layout
 │   │   ├── page.tsx            # Landing/redirect
 │   │   └── globals.css         # Global styles
 │   ├── components/
 │   │   ├── ui/                 # shadcn/ui components
 │   │   ├── layout/             # Layout components
-│   │   │   ├── Header.tsx
-│   │   │   ├── Sidebar.tsx
-│   │   │   ├── MobileNav.tsx
-│   │   │   └── ThemeToggle.tsx
-│   │   ├── recordings/         # Recording-specific components
-│   │   ├── runs/               # Run-specific components
-│   │   ├── schedules/          # Schedule-specific components
+│   │   │   ├── header.tsx
+│   │   │   ├── project-sidebar.tsx
+│   │   │   ├── global-sidebar.tsx
+│   │   │   ├── project-mobile-nav.tsx
+│   │   │   └── suite-tree-nav.tsx
+│   │   ├── projects/           # Project switcher
+│   │   ├── suites/             # Suite cards, dialogs
+│   │   ├── tests/              # Test config forms
+│   │   ├── runs/               # Run detail, actions table, SSE
+│   │   ├── schedules/          # Schedule management
+│   │   ├── settings/           # Profile, security, tokens
 │   │   └── shared/             # Shared components
-│   │       ├── DataTable.tsx
-│   │       ├── EmptyState.tsx
-│   │       ├── LoadingSkeleton.tsx
-│   │       ├── Pagination.tsx
-│   │       └── StatusBadge.tsx
-│   ├── hooks/                  # Custom React hooks
-│   │   ├── useAuth.ts
-│   │   ├── useRecordings.ts
-│   │   ├── useRuns.ts
-│   │   └── useTheme.ts
+│   │       ├── data-table.tsx
+│   │       ├── empty-state.tsx
+│   │       ├── error-boundary.tsx
+│   │       └── pagination.tsx
 │   ├── lib/                    # Utilities
 │   │   ├── api.ts              # API client (fetch wrapper)
-│   │   ├── auth.ts             # Auth utilities
-│   │   ├── utils.ts            # General utilities
-│   │   └── validations.ts      # Zod schemas
+│   │   └── utils.ts            # General utilities
 │   ├── providers/              # React context providers
-│   │   ├── AuthProvider.tsx
-│   │   ├── ThemeProvider.tsx
-│   │   └── QueryProvider.tsx
-│   └── types/                  # TypeScript types
-│       ├── api.ts
-│       ├── recording.ts
-│       ├── run.ts
-│       └── user.ts
+│   │   ├── auth-provider.tsx
+│   │   ├── project-provider.tsx
+│   │   ├── theme-provider.tsx
+│   │   └── toast-provider.tsx
 ├── public/
-│   ├── logo.svg
-│   └── favicon.ico
 ├── tailwind.config.ts
-├── next.config.js
+├── next.config.ts
 ├── tsconfig.json
 └── package.json
 ```

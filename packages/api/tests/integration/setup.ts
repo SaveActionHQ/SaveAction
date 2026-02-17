@@ -17,7 +17,7 @@ afterEach(async () => {
   // Clean up data between tests for isolation
   const db = await getTestDb();
   await db.execute(
-    sql`TRUNCATE TABLE users, api_tokens, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries CASCADE`
+    sql`TRUNCATE TABLE users, api_tokens, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries, projects, test_suites, tests, run_browser_results CASCADE`
   );
 });
 

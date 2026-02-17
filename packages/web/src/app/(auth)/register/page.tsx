@@ -72,7 +72,7 @@ export default function RegisterPage() {
 
     try {
       await register(formData.name, formData.email, formData.password);
-      router.push('/dashboard');
+      router.push('/projects');
     } catch (error) {
       if (error instanceof ApiClientError) {
         // Handle specific error codes

@@ -246,8 +246,16 @@ describe('RecordingService', () => {
     });
 
     describe('listRecordingsQuerySchema', () => {
-      it('should provide defaults for empty query', () => {
-        const result = listRecordingsQuerySchema.parse({});
+      const validProjectId = '00000000-0000-0000-0000-000000000001';
+
+      it('should require projectId', () => {
+        const result = listRecordingsQuerySchema.safeParse({});
+        expect(result.success).toBe(false);
+      });
+
+      it('should provide defaults for query with projectId', () => {
+        const result = listRecordingsQuerySchema.parse({ projectId: validProjectId });
+        expect(result.projectId).toBe(validProjectId);
         expect(result.page).toBe(1);
         expect(result.limit).toBe(20);
         expect(result.sortBy).toBe('updatedAt');
@@ -255,18 +263,18 @@ describe('RecordingService', () => {
       });
 
       it('should coerce string numbers', () => {
-        const result = listRecordingsQuerySchema.parse({ page: '2', limit: '50' });
+        const result = listRecordingsQuerySchema.parse({ projectId: validProjectId, page: '2', limit: '50' });
         expect(result.page).toBe(2);
         expect(result.limit).toBe(50);
       });
 
       it('should reject invalid sortBy', () => {
-        const result = listRecordingsQuerySchema.safeParse({ sortBy: 'invalid' });
+        const result = listRecordingsQuerySchema.safeParse({ projectId: validProjectId, sortBy: 'invalid' });
         expect(result.success).toBe(false);
       });
 
       it('should reject limit over 100', () => {
-        const result = listRecordingsQuerySchema.safeParse({ limit: 200 });
+        const result = listRecordingsQuerySchema.safeParse({ projectId: validProjectId, limit: 200 });
         expect(result.success).toBe(false);
       });
     });
@@ -401,6 +409,7 @@ describe('RecordingService', () => {
 
   describe('listRecordings', () => {
     const defaultQuery: ListRecordingsQuery = {
+      projectId: '00000000-0000-0000-0000-000000000001',
       page: 1,
       limit: 20,
       sortBy: 'updatedAt',

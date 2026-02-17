@@ -20,7 +20,7 @@ import type { Database } from '../db/index.js';
 export interface ScheduleCreateData {
   userId: string;
   projectId: string;
-  recordingId: string;
+  recordingId: string | null;
   name: string;
   description?: string;
   cronExpression: string;
@@ -119,7 +119,7 @@ export interface SafeSchedule {
   id: string;
   userId: string;
   projectId: string;
-  recordingId: string;
+  recordingId: string | null;
   name: string;
   description: string | null;
   cronExpression: string;
@@ -166,7 +166,7 @@ export interface ScheduleSummary {
   id: string;
   userId: string;
   projectId: string;
-  recordingId: string;
+  recordingId: string | null;
   name: string;
   cronExpression: string;
   timezone: string;
@@ -238,7 +238,7 @@ function toScheduleSummary(schedule: Schedule): ScheduleSummary {
     id: schedule.id,
     userId: schedule.userId,
     projectId: schedule.projectId,
-    recordingId: schedule.recordingId,
+    recordingId: schedule.recordingId ?? null,
     name: schedule.name,
     cronExpression: schedule.cronExpression,
     timezone: schedule.timezone,
@@ -335,6 +335,10 @@ export class ScheduleRepository {
 
     if (!filters.includeDeleted) {
       conditions.push(isNull(schedules.deletedAt));
+    }
+
+    if (filters.projectId) {
+      conditions.push(eq(schedules.projectId, filters.projectId));
     }
 
     if (filters.recordingId) {

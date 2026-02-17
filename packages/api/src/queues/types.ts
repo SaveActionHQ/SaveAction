@@ -16,17 +16,48 @@ export interface BaseJobData {
 }
 
 /**
+ * Run type for the job
+ */
+export type JobRunType = 'recording' | 'test' | 'suite';
+
+/**
  * Job data for test run execution.
+ *
+ * Supports three run types:
+ * - 'recording': Legacy single-recording run (uses recordingId)
+ * - 'test': Single test run with multi-browser support (uses testId)
+ * - 'suite': All tests in a suite (uses suiteId, spawns child jobs)
  */
 export interface TestRunJobData extends BaseJobData {
-  /** Recording ID from database */
-  recordingId: string;
   /** User who triggered the run */
   userId: string;
   /** Run ID in database (for status updates) */
   runId: string;
-  /** Browser to use */
+
+  /** Run type: recording (legacy), test, or suite */
+  runType?: JobRunType;
+
+  /** Recording ID from database (legacy recording runs) */
+  recordingId?: string;
+
+  /** Test ID for test-based runs */
+  testId?: string;
+
+  /** Suite ID for suite-level runs */
+  suiteId?: string;
+
+  /** Project ID (required for test/suite runs) */
+  projectId?: string;
+
+  /** Browser to use (legacy single-browser) */
   browser?: 'chromium' | 'firefox' | 'webkit';
+
+  /** Browsers to run (multi-browser test runs) */
+  browsers?: Array<'chromium' | 'firefox' | 'webkit'>;
+
+  /** Run browsers in parallel or sequentially */
+  parallelBrowsers?: boolean;
+
   /** Run in headless mode */
   headless?: boolean;
   /** Record video */
@@ -63,6 +94,21 @@ export interface ScheduledTestJobData extends BaseJobData {
 export type JobData = TestRunJobData | CleanupJobData | ScheduledTestJobData;
 
 /**
+ * Per-browser execution result within a test run.
+ */
+export interface BrowserRunResult {
+  browser: string;
+  browserResultId: string;
+  status: 'passed' | 'failed' | 'cancelled' | 'error';
+  duration: number;
+  actionsExecuted: number;
+  actionsFailed: number;
+  errorMessage?: string;
+  videoPath?: string;
+  screenshotPaths?: string[];
+}
+
+/**
  * Job result for test runs.
  */
 export interface TestRunJobResult {
@@ -75,6 +121,8 @@ export interface TestRunJobResult {
   videoPath?: string;
   /** Paths to captured screenshots */
   screenshotPaths?: string[];
+  /** Per-browser results (for multi-browser runs) */
+  browserResults?: BrowserRunResult[];
 }
 
 /**

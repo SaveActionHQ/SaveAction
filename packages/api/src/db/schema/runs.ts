@@ -12,6 +12,8 @@ import { sql } from 'drizzle-orm';
 import { users } from './users.js';
 import { projects } from './projects.js';
 import { recordings } from './recordings.js';
+import { tests } from './tests.js';
+import { testSuites } from './test-suites.js';
 
 /**
  * Run status enum - PostgreSQL native enum for type safety and performance
@@ -31,9 +33,22 @@ export const runStatusEnum = pgEnum('run_status', [
 export const browserEnum = pgEnum('browser_type', ['chromium', 'firefox', 'webkit']);
 
 /**
+ * Run type enum - What kind of run this is
+ */
+export const runTypeEnum = pgEnum('run_type', [
+  'test', // Single test run
+  'suite', // All tests in a suite
+  'project', // All tests in a project
+  'recording', // Legacy: single recording run
+]);
+
+/**
  * Runs table - Test execution history
  *
  * Enterprise considerations:
+ * - Support for test/suite/project runs
+ * - Browser results stored in run_browser_results table
+ * - Legacy recording support maintained
  * - Status enum for type safety
  * - BullMQ job tracking (job_id, queue_name)
  * - Full execution configuration stored
@@ -60,14 +75,34 @@ export const runs = pgTable(
       .notNull()
       .references(() => projects.id, { onDelete: 'cascade' }),
 
-    // Recording reference (nullable for deleted recordings)
+    // Recording reference (nullable for deleted recordings - LEGACY)
     recordingId: uuid('recording_id').references(() => recordings.id, {
       onDelete: 'set null',
     }),
 
     // Recording snapshot (name at time of run, for deleted recordings)
-    recordingName: varchar('recording_name', { length: 255 }).notNull(),
-    recordingUrl: varchar('recording_url', { length: 2048 }).notNull(),
+    recordingName: varchar('recording_name', { length: 255 }),
+    recordingUrl: varchar('recording_url', { length: 2048 }),
+
+    // NEW: Test/Suite references for new architecture
+    runType: runTypeEnum('run_type').default('recording'),
+
+    // Test reference (for single test runs)
+    testId: uuid('test_id').references(() => tests.id, {
+      onDelete: 'set null',
+    }),
+
+    // Suite reference (for suite-level runs)
+    suiteId: uuid('suite_id').references(() => testSuites.id, {
+      onDelete: 'set null',
+    }),
+
+    // Parent run reference (for child runs of a suite run)
+    parentRunId: uuid('parent_run_id'),
+
+    // Test snapshot (name at time of run, for deleted tests)
+    testName: varchar('test_name', { length: 255 }),
+    testSlug: varchar('test_slug', { length: 255 }),
 
     // Execution status
     status: runStatusEnum('status').notNull().default('queued'),
@@ -137,9 +172,29 @@ export const runs = pgTable(
       .on(table.projectId, table.createdAt)
       .where(sql`${table.deletedAt} IS NULL`),
 
-    // Recording's runs (recording detail view)
+    // Recording's runs (recording detail view) - LEGACY
     index('runs_recording_id_idx')
       .on(table.recordingId, table.createdAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Test's runs (test detail view) - NEW
+    index('runs_test_id_idx')
+      .on(table.testId, table.createdAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Suite's runs (suite runs history) - NEW
+    index('runs_suite_id_idx')
+      .on(table.suiteId, table.createdAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Parent run's children (suite run detail view)
+    index('runs_parent_run_id_idx')
+      .on(table.parentRunId, table.createdAt)
+      .where(sql`${table.deletedAt} IS NULL`),
+
+    // Run type filtering - NEW
+    index('runs_run_type_idx')
+      .on(table.projectId, table.runType)
       .where(sql`${table.deletedAt} IS NULL`),
 
     // Status filtering (find running/failed)
@@ -179,3 +234,4 @@ export type Run = typeof runs.$inferSelect;
 export type NewRun = typeof runs.$inferInsert;
 export type RunStatus = (typeof runStatusEnum.enumValues)[number];
 export type BrowserType = (typeof browserEnum.enumValues)[number];
+export type RunType = (typeof runTypeEnum.enumValues)[number];

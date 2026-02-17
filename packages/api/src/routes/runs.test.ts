@@ -44,6 +44,62 @@ const mockSafeRun = {
   deletedAt: null,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
+  runType: null as string | null,
+  testId: null as string | null,
+  suiteId: null as string | null,
+  testName: null as string | null,
+  testSlug: null as string | null,
+};
+
+// Mock test run data (for POST /runs/test)
+const TEST_UUID = '00000000-0000-0000-0000-000000000010';
+const SUITE_UUID = '00000000-0000-0000-0000-000000000020';
+const PROJECT_UUID = '00000000-0000-0000-0000-000000000030';
+
+const mockTestRun = {
+  ...mockSafeRun,
+  id: '550e8400-e29b-41d4-a716-446655440010',
+  runType: 'test',
+  testId: TEST_UUID,
+  testName: 'Login Flow Test',
+  testSlug: 'login-flow-test',
+  recordingId: null,
+  recordingName: null,
+  recordingUrl: null,
+};
+
+const mockSuiteRun = {
+  ...mockSafeRun,
+  id: '550e8400-e29b-41d4-a716-446655440020',
+  runType: 'suite',
+  suiteId: SUITE_UUID,
+  testId: null,
+  testName: null,
+  testSlug: null,
+  recordingId: null,
+  recordingName: null,
+  recordingUrl: null,
+};
+
+// Mock browser result data
+const mockBrowserResult = {
+  id: '550e8400-e29b-41d4-a716-446655440030',
+  runId: mockTestRun.id,
+  browser: 'chromium',
+  status: 'passed' as const,
+  durationMs: 5000,
+  actionsTotal: 10,
+  actionsExecuted: 10,
+  actionsFailed: 0,
+  actionsSkipped: 0,
+  errorMessage: null,
+  errorStack: null,
+  videoPath: null,
+  screenshotPaths: null,
+  startedAt: new Date('2026-01-01T00:00:00Z'),
+  completedAt: new Date('2026-01-01T00:00:05Z'),
+  createdAt: new Date('2026-01-01'),
+  updatedAt: new Date('2026-01-01'),
 };
 
 // Mock run action data (SafeRunAction type)
@@ -100,6 +156,12 @@ const createMockRunnerService = () => ({
   deleteRun: vi.fn().mockResolvedValue(undefined),
   restoreRun: vi.fn().mockResolvedValue({ ...mockSafeRun, deletedAt: null }),
   permanentlyDeleteRun: vi.fn().mockResolvedValue(undefined),
+  queueTestRun: vi.fn().mockResolvedValue(mockTestRun),
+  queueSuiteRun: vi.fn().mockResolvedValue({
+    suiteRun: mockSuiteRun,
+    testRuns: [mockTestRun],
+  }),
+  getBrowserResults: vi.fn().mockResolvedValue([mockBrowserResult]),
 });
 
 // Create mock run repository
@@ -133,6 +195,12 @@ vi.mock('../services/RunnerService.js', () => {
     listRunsQuerySchema: {
       parse: vi.fn((data: unknown) => data),
     },
+    queueTestRunSchema: {
+      parse: vi.fn((data: unknown) => data),
+    },
+    queueSuiteRunSchema: {
+      parse: vi.fn((data: unknown) => data),
+    },
   };
 });
 
@@ -140,6 +208,27 @@ vi.mock('../services/RunnerService.js', () => {
 vi.mock('../repositories/RunRepository.js', () => {
   return {
     RunRepository: vi.fn().mockImplementation(() => createMockRunRepository()),
+  };
+});
+
+// Mock additional repositories used by runs routes for test/suite runs
+vi.mock('../repositories/TestRepository.js', () => {
+  return {
+    TestRepository: vi.fn().mockImplementation(() => ({})),
+  };
+});
+
+vi.mock('../repositories/TestSuiteRepository.js', () => {
+  return {
+    TestSuiteRepository: vi.fn().mockImplementation(() => ({})),
+  };
+});
+
+vi.mock('../repositories/RunBrowserResultRepository.js', () => {
+  return {
+    RunBrowserResultRepository: vi.fn().mockImplementation(() => ({
+      getBrowsersByRunIds: vi.fn().mockResolvedValue(new Map()),
+    })),
   };
 });
 
@@ -286,7 +375,7 @@ describe('Run Routes', () => {
     it('should list runs', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: '/api/runs',
+        url: '/api/runs?projectId=00000000-0000-0000-0000-000000000001',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -314,7 +403,7 @@ describe('Run Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/runs?status=running',
+        url: '/api/runs?projectId=00000000-0000-0000-0000-000000000001&status=running',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -326,7 +415,7 @@ describe('Run Routes', () => {
     it('should filter runs by recording ID', async () => {
       const response = await app.inject({
         method: 'GET',
-        url: `/api/runs?recordingId=${mockSafeRun.recordingId}`,
+        url: `/api/runs?projectId=00000000-0000-0000-0000-000000000001&recordingId=${mockSafeRun.recordingId}`,
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -354,7 +443,7 @@ describe('Run Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/runs?page=2&limit=10',
+        url: '/api/runs?projectId=00000000-0000-0000-0000-000000000001&page=2&limit=10',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -380,7 +469,7 @@ describe('Run Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/runs',
+        url: '/api/runs?projectId=00000000-0000-0000-0000-000000000001',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -854,7 +943,7 @@ describe('Run Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/runs',
+        url: '/api/runs?projectId=00000000-0000-0000-0000-000000000001',
         headers: { authorization: 'Bearer invalid-token' },
       });
 
@@ -879,10 +968,389 @@ describe('Run Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/runs',
+        url: '/api/runs?projectId=00000000-0000-0000-0000-000000000001',
       });
 
       expect(response.statusCode).toBe(401);
+    });
+  });
+
+  describe('POST /api/runs/test', () => {
+    it('should queue a test run successfully', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/test',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          testId: TEST_UUID,
+          projectId: PROJECT_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.payload);
+      expect(body.success).toBe(true);
+      expect(body.data.id).toBe(mockTestRun.id);
+      expect(body.data.testId).toBe(TEST_UUID);
+      expect(body.data.testName).toBe('Login Flow Test');
+      expect(body.data.status).toBe('queued');
+    });
+
+    it('should queue a test run with custom browsers', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/test',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          testId: TEST_UUID,
+          projectId: PROJECT_UUID,
+          browsers: ['chromium', 'firefox'],
+          parallelBrowsers: false,
+          headless: false,
+          timeout: 60000,
+          triggeredBy: 'api',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      expect(mockService.queueTestRun).toHaveBeenCalledWith(
+        'user-123',
+        PROJECT_UUID,
+        expect.objectContaining({
+          testId: TEST_UUID,
+          browsers: ['chromium', 'firefox'],
+          parallelBrowsers: false,
+          headless: false,
+          timeout: 60000,
+          triggeredBy: 'api',
+        })
+      );
+    });
+
+    it('should return 400 when projectId is missing', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/test',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          testId: TEST_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('should return 400 when testId is invalid', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/test',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          testId: 'not-a-uuid',
+          projectId: PROJECT_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('should return 404 when test not found', async () => {
+      mockService.queueTestRun.mockRejectedValue(
+        new RunError('TEST_NOT_FOUND', 'Test not found', 404)
+      );
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/test',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          testId: TEST_UUID,
+          projectId: PROJECT_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('TEST_NOT_FOUND');
+    });
+
+    it('should return 403 when user is not authorized', async () => {
+      mockService.queueTestRun.mockRejectedValue(
+        new RunError('NOT_AUTHORIZED', 'Not authorized', 403)
+      );
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/test',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          testId: TEST_UUID,
+          projectId: PROJECT_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(403);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('NOT_AUTHORIZED');
+    });
+
+    it('should return 500 on unexpected error', async () => {
+      mockService.queueTestRun.mockRejectedValue(new Error('Queue unavailable'));
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/test',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          testId: TEST_UUID,
+          projectId: PROJECT_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(500);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('INTERNAL_ERROR');
+    });
+  });
+
+  describe('POST /api/runs/suite', () => {
+    it('should queue suite runs successfully', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/suite',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          suiteId: SUITE_UUID,
+          projectId: PROJECT_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = JSON.parse(response.payload);
+      expect(body.success).toBe(true);
+      expect(body.data.suiteRun.id).toBe(mockSuiteRun.id);
+      expect(body.data.suiteRun.suiteId).toBe(SUITE_UUID);
+      expect(body.data.suiteRun.status).toBe('queued');
+      expect(body.data.testRuns).toHaveLength(1);
+      expect(body.data.testRuns[0].id).toBe(mockTestRun.id);
+      expect(body.data.testRuns[0].testName).toBe('Login Flow Test');
+    });
+
+    it('should queue suite runs with custom options', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/suite',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          suiteId: SUITE_UUID,
+          projectId: PROJECT_UUID,
+          browsers: ['webkit'],
+          parallelBrowsers: true,
+          headless: true,
+          timeout: 120000,
+          triggeredBy: 'schedule',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      expect(mockService.queueSuiteRun).toHaveBeenCalledWith(
+        'user-123',
+        PROJECT_UUID,
+        expect.objectContaining({
+          suiteId: SUITE_UUID,
+          browsers: ['webkit'],
+          parallelBrowsers: true,
+          headless: true,
+          timeout: 120000,
+          triggeredBy: 'schedule',
+        })
+      );
+    });
+
+    it('should return 400 when projectId is missing', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/suite',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          suiteId: SUITE_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('should return 400 when suiteId is invalid', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/suite',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          suiteId: 'not-a-uuid',
+          projectId: PROJECT_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('should return 404 when suite not found', async () => {
+      mockService.queueSuiteRun.mockRejectedValue(
+        new RunError('SUITE_NOT_FOUND', 'Suite not found', 404)
+      );
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/suite',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          suiteId: SUITE_UUID,
+          projectId: PROJECT_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('SUITE_NOT_FOUND');
+    });
+
+    it('should return 400 when suite has no tests', async () => {
+      mockService.queueSuiteRun.mockRejectedValue(
+        new RunError('SUITE_EMPTY', 'Suite has no tests', 400)
+      );
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/suite',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          suiteId: SUITE_UUID,
+          projectId: PROJECT_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(400);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('SUITE_EMPTY');
+    });
+
+    it('should return 403 when user is not authorized', async () => {
+      mockService.queueSuiteRun.mockRejectedValue(
+        new RunError('NOT_AUTHORIZED', 'Not authorized', 403)
+      );
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/runs/suite',
+        headers: { authorization: 'Bearer valid-token' },
+        payload: {
+          suiteId: SUITE_UUID,
+          projectId: PROJECT_UUID,
+        },
+      });
+
+      expect(response.statusCode).toBe(403);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('NOT_AUTHORIZED');
+    });
+  });
+
+  describe('GET /api/runs/:id/browsers', () => {
+    it('should return browser results successfully', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockTestRun.id}/browsers`,
+        headers: { authorization: 'Bearer valid-token' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.payload);
+      expect(body.success).toBe(true);
+      expect(body.data).toHaveLength(1);
+      expect(body.data[0].browser).toBe('chromium');
+      expect(body.data[0].status).toBe('passed');
+      expect(body.data[0].runId).toBe(mockTestRun.id);
+    });
+
+    it('should return empty array when no browser results', async () => {
+      mockService.getBrowserResults.mockResolvedValue([]);
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockTestRun.id}/browsers`,
+        headers: { authorization: 'Bearer valid-token' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.payload);
+      expect(body.data).toHaveLength(0);
+    });
+
+    it('should return multiple browser results', async () => {
+      const firefoxResult = {
+        ...mockBrowserResult,
+        id: '550e8400-e29b-41d4-a716-446655440031',
+        browser: 'firefox',
+        status: 'failed' as const,
+        actionsFailed: 2,
+        errorMessage: 'Element not found',
+      };
+      mockService.getBrowserResults.mockResolvedValue([mockBrowserResult, firefoxResult]);
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockTestRun.id}/browsers`,
+        headers: { authorization: 'Bearer valid-token' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = JSON.parse(response.payload);
+      expect(body.data).toHaveLength(2);
+      expect(body.data[0].browser).toBe('chromium');
+      expect(body.data[1].browser).toBe('firefox');
+      expect(body.data[1].status).toBe('failed');
+    });
+
+    it('should return 404 when run not found', async () => {
+      mockService.getBrowserResults.mockRejectedValue(
+        new RunError('RUN_NOT_FOUND', 'Run not found', 404)
+      );
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockTestRun.id}/browsers`,
+        headers: { authorization: 'Bearer valid-token' },
+      });
+
+      expect(response.statusCode).toBe(404);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('RUN_NOT_FOUND');
+    });
+
+    it('should return 403 when user is not authorized', async () => {
+      mockService.getBrowserResults.mockRejectedValue(
+        new RunError('NOT_AUTHORIZED', 'Not authorized', 403)
+      );
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/runs/${mockTestRun.id}/browsers`,
+        headers: { authorization: 'Bearer valid-token' },
+      });
+
+      expect(response.statusCode).toBe(403);
+      const body = JSON.parse(response.payload);
+      expect(body.error.code).toBe('NOT_AUTHORIZED');
+    });
+
+    it('should return 400 for invalid run id', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/runs/not-a-uuid/browsers',
+        headers: { authorization: 'Bearer valid-token' },
+      });
+
+      expect(response.statusCode).toBe(400);
     });
   });
 
@@ -892,7 +1360,7 @@ describe('Run Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/runs',
+        url: '/api/runs?projectId=00000000-0000-0000-0000-000000000001',
         headers: { authorization: 'Bearer valid-token' },
       });
 

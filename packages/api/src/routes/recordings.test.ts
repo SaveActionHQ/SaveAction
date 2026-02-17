@@ -308,7 +308,7 @@ describe('Recording Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/recordings',
+        url: '/api/recordings?projectId=00000000-0000-0000-0000-000000000001',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -345,7 +345,7 @@ describe('Recording Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/recordings?page=2&limit=10',
+        url: '/api/recordings?projectId=00000000-0000-0000-0000-000000000001&page=2&limit=10',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -381,7 +381,7 @@ describe('Recording Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/recordings?search=login',
+        url: '/api/recordings?projectId=00000000-0000-0000-0000-000000000001&search=login',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -414,7 +414,7 @@ describe('Recording Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/recordings?sortBy=name&sortOrder=asc',
+        url: '/api/recordings?projectId=00000000-0000-0000-0000-000000000001&sortBy=name&sortOrder=asc',
         headers: { authorization: 'Bearer valid-token' },
       });
 

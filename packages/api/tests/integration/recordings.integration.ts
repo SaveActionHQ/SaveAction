@@ -111,13 +111,13 @@ describe('Recordings Routes Integration', () => {
       const token = await getAuthToken(user.email, user.plainPassword);
 
       // Create some recordings directly in DB
-      await createRecording({ userId: user.id, name: 'Recording 1' });
-      await createRecording({ userId: user.id, name: 'Recording 2' });
-      await createRecording({ userId: user.id, name: 'Recording 3' });
+      const recording1 = await createRecording({ userId: user.id, name: 'Recording 1' });
+      await createRecording({ userId: user.id, name: 'Recording 2', projectId: recording1.projectId });
+      await createRecording({ userId: user.id, name: 'Recording 3', projectId: recording1.projectId });
 
       const response = await testApp.app.inject({
         method: 'GET',
-        url: '/api/v1/recordings',
+        url: `/api/v1/recordings?projectId=${recording1.projectId}`,
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -136,15 +136,17 @@ describe('Recordings Routes Integration', () => {
       const user = await createUser({ email: 'paginate-rec@example.com' });
       const token = await getAuthToken(user.email, user.plainPassword);
 
-      // Create 5 recordings
-      for (let i = 0; i < 5; i++) {
-        await createRecording({ userId: user.id, name: `Recording ${i + 1}` });
+      // Create 5 recordings - first one to get projectId
+      const firstRecording = await createRecording({ userId: user.id, name: 'Recording 1' });
+      const projectId = firstRecording.projectId;
+      for (let i = 1; i < 5; i++) {
+        await createRecording({ userId: user.id, name: `Recording ${i + 1}`, projectId });
       }
 
       // Get first page
       const page1Response = await testApp.app.inject({
         method: 'GET',
-        url: '/api/v1/recordings?page=1&limit=2',
+        url: `/api/v1/recordings?projectId=${projectId}&page=1&limit=2`,
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -160,7 +162,7 @@ describe('Recordings Routes Integration', () => {
       // Get second page
       const page2Response = await testApp.app.inject({
         method: 'GET',
-        url: '/api/v1/recordings?page=2&limit=2',
+        url: `/api/v1/recordings?projectId=${projectId}&page=2&limit=2`,
         headers: {
           'Authorization': `Bearer ${token}`,
         },
@@ -176,13 +178,14 @@ describe('Recordings Routes Integration', () => {
       const user = await createUser({ email: 'filter-tag@example.com' });
       const token = await getAuthToken(user.email, user.plainPassword);
 
-      await createRecording({ userId: user.id, name: 'Smoke Test', tags: ['smoke'] });
-      await createRecording({ userId: user.id, name: 'Regression', tags: ['regression'] });
-      await createRecording({ userId: user.id, name: 'Both', tags: ['smoke', 'regression'] });
+      const smokeRecording = await createRecording({ userId: user.id, name: 'Smoke Test', tags: ['smoke'] });
+      const projectId = smokeRecording.projectId;
+      await createRecording({ userId: user.id, name: 'Regression', tags: ['regression'], projectId });
+      await createRecording({ userId: user.id, name: 'Both', tags: ['smoke', 'regression'], projectId });
 
       const response = await testApp.app.inject({
         method: 'GET',
-        url: '/api/v1/recordings?tags=smoke',
+        url: `/api/v1/recordings?projectId=${projectId}&tags=smoke`,
         headers: {
           'Authorization': `Bearer ${token}`,
         },

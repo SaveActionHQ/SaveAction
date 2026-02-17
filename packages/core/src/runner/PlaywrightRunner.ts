@@ -971,11 +971,12 @@ export class PlaywrightRunner {
         fs.mkdirSync(screenshotDir, { recursive: true });
       }
 
-      // Generate filename: {runId}-{actionIndex}-{actionId}.png
+      // Generate filename: {runId}-{browser}-{actionIndex}-{actionId}.png
       // Use timestamp as fallback if runId is not provided
       const runId = this.options.runId || `run-${Date.now()}`;
+      const browser = this.options.browser || 'chromium';
       const paddedIndex = String(actionIndex).padStart(3, '0');
-      const filename = `${runId}-${paddedIndex}-${action.id}.png`;
+      const filename = `${runId}-${browser}-${paddedIndex}-${action.id}.png`;
       const screenshotPath = path.join(screenshotDir, filename);
 
       // Capture screenshot

@@ -40,6 +40,9 @@ export const runActions = pgTable(
     actionType: varchar('action_type', { length: 50 }).notNull(), // click, input, etc.
     actionIndex: varchar('action_index', { length: 10 }).notNull(), // Execution order
 
+    // Browser identification (for multi-browser runs)
+    browser: varchar('browser', { length: 50 }), // chromium, firefox, webkit (null for legacy single-browser runs)
+
     // Execution result
     status: actionStatusEnum('status').notNull(),
 

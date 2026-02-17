@@ -136,7 +136,7 @@ export const updateRecordingSchema = z.object({
  * List recordings query schema
  */
 export const listRecordingsQuerySchema = z.object({
-  projectId: z.string().uuid().optional(),
+  projectId: z.string().uuid(),
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(20),
   search: z.string().max(255).optional(),

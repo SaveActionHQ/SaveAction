@@ -39,8 +39,8 @@ export interface DashboardStats {
  */
 export interface RecentRun {
   id: string;
-  recordingName: string;
-  recordingUrl: string;
+  recordingName: string | null;
+  recordingUrl: string | null;
   status: string;
   browser: string;
   durationMs: number | null;
@@ -54,8 +54,8 @@ export interface RecentRun {
 export interface UpcomingSchedule {
   id: string;
   name: string;
-  recordingId: string;
-  recordingName: string;
+  recordingId: string | null;
+  recordingName: string | null;
   cronExpression: string;
   nextRunAt: Date | null;
   totalRuns: number;

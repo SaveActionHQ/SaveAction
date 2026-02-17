@@ -135,6 +135,18 @@ export function createScheduledTestProcessor(options: ScheduledTestProcessorOpti
       }
 
       // 5. Verify recording exists
+      if (!schedule.recordingId) {
+        logger.error('Schedule has no recording ID', undefined, {
+          scheduleId,
+        });
+        return {
+          scheduleId,
+          runId: null,
+          status: 'error',
+          message: 'Schedule has no recording ID',
+        };
+      }
+
       const recording = await recordingRepository.findById(schedule.recordingId);
       if (!recording) {
         logger.error('Recording not found for schedule', undefined, {

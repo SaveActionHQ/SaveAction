@@ -13,6 +13,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/providers/toast-provider';
+import { useActiveProject } from '@/components/providers/project-provider';
 import { api, type Schedule, type RecordingListItem, type PaginatedResponse, ApiClientError } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -238,6 +239,7 @@ export function CreateScheduleDialog({
 }: CreateScheduleDialogProps) {
   const handleClose = () => onOpenChange(false);
   const { success, error: toastError } = useToast();
+  const activeProject = useActiveProject();
 
   // Form state
   const [name, setName] = useState('');
@@ -260,10 +262,10 @@ export function CreateScheduleDialog({
 
   // Load recordings when dialog opens
   useEffect(() => {
-    if (open) {
+    if (open && activeProject) {
       loadRecordings();
     }
-  }, [open]);
+  }, [open, activeProject]);
 
   // Reset form when dialog closes
   useEffect(() => {
@@ -281,10 +283,18 @@ export function CreateScheduleDialog({
   }, [open]);
 
   const loadRecordings = async () => {
+    if (!activeProject) {
+      setRecordings([]);
+      return;
+    }
+
     setIsLoadingRecordings(true);
     setRecordingsError(null);
     try {
-      const response: PaginatedResponse<RecordingListItem> = await api.listRecordings({ limit: 100 });
+      const response: PaginatedResponse<RecordingListItem> = await api.listRecordings({ 
+        projectId: activeProject.id,
+        limit: 100 
+      });
       setRecordings(response.data);
     } catch (err) {
       if (err instanceof ApiClientError) {
@@ -330,11 +340,17 @@ export function CreateScheduleDialog({
       return;
     }
 
+    if (!activeProject) {
+      toastError('No project selected. Please select a project first.');
+      return;
+    }
+
     const cronExpression = cronPreset === 'custom' ? customCron.trim() : cronPreset;
 
     setIsSubmitting(true);
     try {
       const schedule = await api.createSchedule({
+        projectId: activeProject.id,
         recordingId,
         name: name.trim(),
         cronExpression,

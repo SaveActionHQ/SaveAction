@@ -154,10 +154,12 @@ function formatTime(seconds: number): string {
 
 interface VideoPlayerProps {
   runId: string;
+  /** Optional browser name to show that browser's video */
+  browser?: string;
   className?: string;
 }
 
-export function VideoPlayer({ runId, className }: VideoPlayerProps) {
+export function VideoPlayer({ runId, browser, className }: VideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const progressRef = useRef<HTMLDivElement>(null);
@@ -172,7 +174,17 @@ export function VideoPlayer({ runId, className }: VideoPlayerProps) {
 
   // Video URL
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const browserParam = browser ? `&browser=${browser}` : '';
   const videoUrl = `${apiUrl}/api/v1/runs/${runId}/video`;
+
+  // Reset state when browser changes
+  useEffect(() => {
+    setIsLoading(true);
+    setError(null);
+    setIsPlaying(false);
+    setCurrentTime(0);
+    setDuration(0);
+  }, [browser]);
 
   // Hide controls after inactivity
   useEffect(() => {
@@ -284,7 +296,7 @@ export function VideoPlayer({ runId, className }: VideoPlayerProps) {
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `run-${runId}.webm`;
+      a.download = `run-${runId}${browser ? `-${browser}` : ''}.webm`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -330,7 +342,7 @@ export function VideoPlayer({ runId, className }: VideoPlayerProps) {
       <video
         ref={videoRef}
         className="w-full aspect-video"
-        src={`${videoUrl}?token=${api.getAccessToken()}`}
+        src={`${videoUrl}?token=${api.getAccessToken()}${browserParam}`}
         muted={isMuted}
         playsInline
         onLoadedMetadata={handleLoadedMetadata}

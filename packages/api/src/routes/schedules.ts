@@ -41,6 +41,7 @@ interface ScheduleRoutesOptions {
  * List schedules query params schema
  */
 const listSchedulesQuerySchema = z.object({
+  projectId: z.string().uuid(),
   page: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().positive().max(100).optional(),
   sortBy: z.enum(['createdAt', 'name', 'nextRunAt', 'status']).optional(),
@@ -216,6 +217,7 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
         querystring: {
           type: 'object',
           properties: {
+            projectId: { type: 'string', format: 'uuid' },
             page: { type: 'number' },
             limit: { type: 'number' },
             sortBy: { type: 'string', enum: ['createdAt', 'name', 'nextRunAt', 'status'] },
@@ -224,6 +226,7 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
             status: { type: 'string', enum: ['active', 'paused', 'disabled', 'expired'] },
             includeDeleted: { type: 'boolean' },
           },
+          required: ['projectId'],
         },
         response: {
           200: {
@@ -279,6 +282,7 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
         const result = await scheduleService.listSchedules(
           userId,
           {
+            projectId: query.projectId,
             recordingId: query.recordingId,
             status: query.status,
             includeDeleted: query.includeDeleted,

@@ -23,6 +23,8 @@ import recordingRoutes from './routes/recordings.js';
 import runRoutes from './routes/runs.js';
 import scheduleRoutes from './routes/schedules.js';
 import dashboardRoutes from './routes/dashboard.js';
+import suiteRoutes from './routes/suites.js';
+import testRoutes from './routes/tests.js';
 import { EmailService } from './services/EmailService.js';
 import type { Env } from './config/index.js';
 
@@ -230,6 +232,20 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
           await v1App.register(dashboardRoutes, {
             prefix: '/dashboard',
             db: app.db!,
+          });
+
+          // Test Suite routes (nested under projects)
+          await v1App.register(suiteRoutes, {
+            prefix: '/projects/:projectId/suites',
+            db: app.db!,
+            maxSuitesPerProject: 100,
+          });
+
+          // Test routes (nested under projects)
+          await v1App.register(testRoutes, {
+            prefix: '/projects/:projectId/tests',
+            db: app.db!,
+            maxTestsPerProject: 1000,
           });
         },
         { prefix: '/api/v1' }

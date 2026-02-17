@@ -90,13 +90,22 @@ export interface RecordingData {
 export interface Run {
   id: string;
   userId: string;
+  projectId: string;
   recordingId: string;
   recordingName?: string;
+  recordingUrl?: string;
+  runType?: 'test' | 'suite' | 'project' | 'recording';
+  testId?: string;
+  testName?: string;
+  suiteId?: string;
+  parentRunId?: string;
   status: 'queued' | 'running' | 'passed' | 'failed' | 'cancelled';
   browser: 'chromium' | 'firefox' | 'webkit';
+  browsers?: string[] | null;
   headless: boolean;
   videoEnabled: boolean;
   videoPath?: string;
+  screenshotEnabled?: boolean;
   duration?: number;
   durationMs?: number;
   actionsTotal?: number;
@@ -113,11 +122,36 @@ export interface Run {
   createdAt: string;
 }
 
+export type RunStatus = Run['status'];
+export type BrowserType = Run['browser'];
+
+export interface RunBrowserResult {
+  id: string;
+  runId: string;
+  testId: string;
+  browser: string;
+  status: 'pending' | 'running' | 'passed' | 'failed' | 'cancelled' | 'skipped';
+  durationMs?: number | null;
+  startedAt?: string | null;
+  completedAt?: string | null;
+  actionsTotal?: number | null;
+  actionsExecuted?: number | null;
+  actionsFailed?: number | null;
+  actionsSkipped?: number | null;
+  errorMessage?: string | null;
+  errorStack?: string | null;
+  errorActionId?: string | null;
+  videoPath?: string | null;
+  screenshotPath?: string | null;
+  createdAt: string;
+}
+
 export interface RunAction {
   id: string;
   actionId: string;
   actionType: string;
   actionIndex: number;
+  browser?: string;
   status: 'pending' | 'running' | 'success' | 'failed' | 'skipped';
   durationMs?: number;
   startedAt?: string;
@@ -153,6 +187,116 @@ export interface Schedule {
   nextRunAt?: string;
   createdAt: string;
   updatedAt?: string;
+}
+
+// Project Types
+export interface Project {
+  id: string;
+  name: string;
+  description?: string | null;
+  color?: string | null;
+  isDefault: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProjectRequest {
+  name: string;
+  description?: string;
+  color?: string;
+}
+
+export interface UpdateProjectRequest {
+  name?: string;
+  description?: string;
+  color?: string;
+}
+
+// Test Suite Types
+export interface TestSuite {
+  id: string;
+  projectId: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  displayOrder: number;
+  isDefault: boolean;
+  testCount?: number;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+export interface TestSuiteWithStats extends TestSuite {
+  testCount: number;
+  lastRunAt?: string | null;
+  passRate?: number | null;
+}
+
+export interface CreateTestSuiteRequest {
+  name: string;
+  description?: string;
+}
+
+export interface UpdateTestSuiteRequest {
+  name?: string;
+  description?: string;
+}
+
+// Test Types
+export type TestBrowser = 'chromium' | 'firefox' | 'webkit';
+
+export interface TestConfig {
+  headless: boolean;
+  video: boolean;
+  screenshot: 'on' | 'off' | 'only-on-failure';
+  timeout: number;
+  retries: number;
+  slowMo: number;
+  viewport?: {
+    width: number;
+    height: number;
+  };
+}
+
+export interface Test {
+  id: string;
+  projectId: string;
+  suiteId: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  recordingUrl?: string | null;
+  recordingData?: Record<string, unknown> | null;
+  actionCount: number;
+  browsers: TestBrowser[];
+  config: TestConfig;
+  status: 'active' | 'inactive' | 'archived';
+  displayOrder: number;
+  lastRunAt?: string | null;
+  lastRunStatus?: string | null;
+  createdAt: string;
+  updatedAt: string;
+  deletedAt?: string | null;
+}
+
+export interface CreateTestRequest {
+  name: string;
+  suiteId?: string;
+  description?: string;
+  recordingData: Record<string, unknown>;
+  recordingUrl?: string;
+  actionCount?: number;
+  browsers?: TestBrowser[];
+  config?: Partial<TestConfig>;
+}
+
+export interface UpdateTestRequest {
+  name?: string;
+  description?: string;
+  browsers?: TestBrowser[];
+  config?: Partial<TestConfig>;
+  status?: 'active' | 'inactive' | 'archived';
 }
 
 // API Token Types
@@ -257,7 +401,7 @@ export interface PaginatedResponse<T> {
 }
 
 // API Client Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 // Session expired callback type
 type SessionExpiredCallback = () => void;
@@ -546,13 +690,296 @@ class ApiClient {
   }
 
   // =====================
+  // Projects API
+  // =====================
+
+  /**
+   * List user's projects
+   */
+  async listProjects(params?: {
+    page?: number;
+    limit?: number;
+  }): Promise<PaginatedResponse<Project>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', params.page.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+
+    const query = searchParams.toString();
+    return this.request<PaginatedResponse<Project>>(
+      `/api/v1/projects${query ? `?${query}` : ''}`
+    );
+  }
+
+  /**
+   * Get a single project by ID
+   */
+  async getProject(id: string): Promise<Project> {
+    return this.request<Project>(`/api/v1/projects/${id}`);
+  }
+
+  /**
+   * Create a new project
+   */
+  async createProject(data: CreateProjectRequest): Promise<Project> {
+    return this.request<Project>('/api/v1/projects', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Update a project
+   */
+  async updateProject(id: string, data: UpdateProjectRequest): Promise<Project> {
+    return this.request<Project>(`/api/v1/projects/${id}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Delete a project
+   */
+  async deleteProject(id: string): Promise<void> {
+    return this.request<void>(`/api/v1/projects/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // =====================
+  // Test Suites API
+  // =====================
+
+  /**
+   * List test suites for a project
+   */
+  async listSuites(
+    projectId: string,
+    params?: {
+      page?: number;
+      limit?: number;
+      search?: string;
+      sortBy?: 'name' | 'displayOrder' | 'createdAt';
+      sortOrder?: 'asc' | 'desc';
+    }
+  ): Promise<PaginatedResponse<TestSuite>> {
+    const searchParams = new URLSearchParams();
+    if (params?.page) searchParams.set('page', params.page.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
+    if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+
+    const query = searchParams.toString();
+    return this.request<PaginatedResponse<TestSuite>>(
+      `/api/v1/projects/${projectId}/suites${query ? `?${query}` : ''}`
+    );
+  }
+
+  /**
+   * List all suites with stats (no pagination)
+   */
+  async listAllSuites(projectId: string): Promise<TestSuiteWithStats[]> {
+    return this.request<TestSuiteWithStats[]>(
+      `/api/v1/projects/${projectId}/suites/all`
+    );
+  }
+
+  /**
+   * Get a single test suite
+   */
+  async getSuite(projectId: string, suiteId: string): Promise<TestSuite> {
+    return this.request<TestSuite>(
+      `/api/v1/projects/${projectId}/suites/${suiteId}`
+    );
+  }
+
+  /**
+   * Create a new test suite
+   */
+  async createSuite(
+    projectId: string,
+    data: CreateTestSuiteRequest
+  ): Promise<TestSuite> {
+    return this.request<TestSuite>(
+      `/api/v1/projects/${projectId}/suites`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  /**
+   * Update a test suite
+   */
+  async updateSuite(
+    projectId: string,
+    suiteId: string,
+    data: UpdateTestSuiteRequest
+  ): Promise<TestSuite> {
+    return this.request<TestSuite>(
+      `/api/v1/projects/${projectId}/suites/${suiteId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  /**
+   * Delete a test suite
+   */
+  async deleteSuite(projectId: string, suiteId: string): Promise<void> {
+    return this.request<void>(
+      `/api/v1/projects/${projectId}/suites/${suiteId}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /**
+   * Reorder suites within a project
+   */
+  async reorderSuites(projectId: string, suiteIds: string[]): Promise<void> {
+    return this.request<void>(
+      `/api/v1/projects/${projectId}/suites/reorder`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ suiteIds }),
+      }
+    );
+  }
+
+  // =====================
+  // Tests API
+  // =====================
+
+  /**
+   * List tests for a project, optionally filtered by suite
+   */
+  async listTests(
+    projectId: string,
+    params?: {
+      suiteId?: string;
+      page?: number;
+      limit?: number;
+      search?: string;
+      status?: 'active' | 'inactive' | 'archived';
+      sortBy?: 'name' | 'displayOrder' | 'createdAt' | 'lastRunAt';
+      sortOrder?: 'asc' | 'desc';
+    }
+  ): Promise<PaginatedResponse<Test>> {
+    const searchParams = new URLSearchParams();
+    if (params?.suiteId) searchParams.set('suiteId', params.suiteId);
+    if (params?.page) searchParams.set('page', params.page.toString());
+    if (params?.limit) searchParams.set('limit', params.limit.toString());
+    if (params?.search) searchParams.set('search', params.search);
+    if (params?.status) searchParams.set('status', params.status);
+    if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
+    if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+
+    const query = searchParams.toString();
+    return this.request<PaginatedResponse<Test>>(
+      `/api/v1/projects/${projectId}/tests${query ? `?${query}` : ''}`
+    );
+  }
+
+  /**
+   * Get a single test
+   */
+  async getTest(projectId: string, testId: string): Promise<Test> {
+    return this.request<Test>(
+      `/api/v1/projects/${projectId}/tests/${testId}`
+    );
+  }
+
+  /**
+   * Create a new test
+   */
+  async createTest(
+    projectId: string,
+    data: CreateTestRequest
+  ): Promise<Test> {
+    return this.request<Test>(
+      `/api/v1/projects/${projectId}/tests`,
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  /**
+   * Update a test
+   */
+  async updateTest(
+    projectId: string,
+    testId: string,
+    data: UpdateTestRequest
+  ): Promise<Test> {
+    return this.request<Test>(
+      `/api/v1/projects/${projectId}/tests/${testId}`,
+      {
+        method: 'PUT',
+        body: JSON.stringify(data),
+      }
+    );
+  }
+
+  /**
+   * Delete a test
+   */
+  async deleteTest(projectId: string, testId: string): Promise<void> {
+    return this.request<void>(
+      `/api/v1/projects/${projectId}/tests/${testId}`,
+      { method: 'DELETE' }
+    );
+  }
+
+  /**
+   * Move tests to a different suite
+   */
+  async moveTests(
+    projectId: string,
+    testIds: string[],
+    targetSuiteId: string
+  ): Promise<void> {
+    return this.request<void>(
+      `/api/v1/projects/${projectId}/tests/move`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ testIds, targetSuiteId }),
+      }
+    );
+  }
+
+  /**
+   * Reorder tests within a suite
+   */
+  async reorderTests(
+    projectId: string,
+    suiteId: string,
+    testIds: string[]
+  ): Promise<void> {
+    return this.request<void>(
+      `/api/v1/projects/${projectId}/tests/suites/${suiteId}/reorder`,
+      {
+        method: 'PUT',
+        body: JSON.stringify({ testIds }),
+      }
+    );
+  }
+
+  // =====================
   // Recordings API
   // =====================
 
   /**
    * List recordings with pagination and filtering
+   * projectId is REQUIRED
    */
-  async listRecordings(params?: {
+  async listRecordings(params: {
+    projectId: string;
     page?: number;
     limit?: number;
     search?: string;
@@ -561,16 +988,16 @@ class ApiClient {
     sortOrder?: 'asc' | 'desc';
   }): Promise<PaginatedResponse<RecordingListItem>> {
     const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set('page', params.page.toString());
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-    if (params?.search) searchParams.set('search', params.search);
-    if (params?.tags?.length) searchParams.set('tags', params.tags.join(','));
-    if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
-    if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+    searchParams.set('projectId', params.projectId);
+    if (params.page) searchParams.set('page', params.page.toString());
+    if (params.limit) searchParams.set('limit', params.limit.toString());
+    if (params.search) searchParams.set('search', params.search);
+    if (params.tags?.length) searchParams.set('tags', params.tags.join(','));
+    if (params.sortBy) searchParams.set('sortBy', params.sortBy);
+    if (params.sortOrder) searchParams.set('sortOrder', params.sortOrder);
 
-    const query = searchParams.toString();
     return this.request<PaginatedResponse<RecordingListItem>>(
-      `/api/v1/recordings${query ? `?${query}` : ''}`
+      `/api/v1/recordings?${searchParams.toString()}`
     );
   }
 
@@ -585,6 +1012,7 @@ class ApiClient {
    * Create a new recording
    */
   async createRecording(data: {
+    projectId: string;
     name: string;
     description?: string;
     tags?: string[];
@@ -636,23 +1064,33 @@ class ApiClient {
 
   /**
    * List runs with pagination and filtering
+   * projectId is REQUIRED
    */
-  async listRuns(params?: {
+  async listRuns(params: {
+    projectId: string;
     page?: number;
     limit?: number;
+    testId?: string;
+    suiteId?: string;
+    parentRunId?: string;
+    runType?: 'test' | 'suite' | 'project' | 'recording';
     recordingId?: string;
     scheduleId?: string;
     status?: Run['status'];
   }): Promise<PaginatedResponse<Run>> {
     const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set('page', params.page.toString());
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-    if (params?.recordingId) searchParams.set('recordingId', params.recordingId);
-    if (params?.scheduleId) searchParams.set('scheduleId', params.scheduleId);
-    if (params?.status) searchParams.set('status', params.status);
+    searchParams.set('projectId', params.projectId);
+    if (params.page) searchParams.set('page', params.page.toString());
+    if (params.limit) searchParams.set('limit', params.limit.toString());
+    if (params.testId) searchParams.set('testId', params.testId);
+    if (params.suiteId) searchParams.set('suiteId', params.suiteId);
+    if (params.parentRunId) searchParams.set('parentRunId', params.parentRunId);
+    if (params.runType) searchParams.set('runType', params.runType);
+    if (params.recordingId) searchParams.set('recordingId', params.recordingId);
+    if (params.scheduleId) searchParams.set('scheduleId', params.scheduleId);
+    if (params.status) searchParams.set('status', params.status);
 
-    const query = searchParams.toString();
-    return this.request<PaginatedResponse<Run>>(`/api/v1/runs${query ? `?${query}` : ''}`);
+    return this.request<PaginatedResponse<Run>>(`/api/v1/runs?${searchParams.toString()}`);
   }
 
   /**
@@ -666,6 +1104,7 @@ class ApiClient {
    * Create a new run (execute a recording)
    */
   async createRun(data: {
+    projectId: string;
     recordingId: string;
     browser?: 'chromium' | 'firefox' | 'webkit';
     headless?: boolean;
@@ -680,11 +1119,49 @@ class ApiClient {
   }
 
   /**
+   * Queue a test run (multi-browser, uses saved test config)
+   */
+  async runTest(data: {
+    testId: string;
+    projectId: string;
+    browsers?: ('chromium' | 'firefox' | 'webkit')[];
+    headless?: boolean;
+    timeout?: number;
+    triggeredBy?: 'manual' | 'api' | 'schedule' | 'ci';
+  }): Promise<Run> {
+    return this.request<Run>('/api/v1/runs/test', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
+   * Queue runs for all tests in a suite
+   */
+  async runSuite(data: {
+    suiteId: string;
+    projectId: string;
+    browsers?: ('chromium' | 'firefox' | 'webkit')[];
+    headless?: boolean;
+    timeout?: number;
+    triggeredBy?: 'manual' | 'api' | 'schedule' | 'ci';
+  }): Promise<{
+    suiteRun: { id: string; suiteId: string; status: string };
+    testRuns: { id: string; testId: string; testName: string; status: string }[];
+  }> {
+    return this.request('/api/v1/runs/suite', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  /**
    * Cancel a running or queued run
    */
   async cancelRun(id: string): Promise<Run> {
     return this.request<Run>(`/api/v1/runs/${id}/cancel`, {
       method: 'POST',
+      body: JSON.stringify({}),
     });
   }
 
@@ -707,11 +1184,18 @@ class ApiClient {
   }
 
   /**
-   * Get action results for a run
+   * Get action results for a run, optionally filtered by browser
    */
-  async getRunActions(id: string): Promise<RunAction[]> {
-    const response = await this.request<RunAction[]>(`/api/v1/runs/${id}/actions`);
-    return response;
+  async getRunActions(id: string, browser?: string): Promise<RunAction[]> {
+    const params = browser ? `?browser=${browser}` : '';
+    return this.request<RunAction[]>(`/api/v1/runs/${id}/actions${params}`);
+  }
+
+  /**
+   * Get browser results for a multi-browser run
+   */
+  async getRunBrowserResults(id: string): Promise<RunBrowserResult[]> {
+    return this.request<RunBrowserResult[]>(`/api/v1/runs/${id}/browsers`);
   }
 
   // =====================
@@ -720,22 +1204,24 @@ class ApiClient {
 
   /**
    * List schedules with pagination
+   * projectId is REQUIRED
    */
-  async listSchedules(params?: {
+  async listSchedules(params: {
+    projectId: string;
     page?: number;
     limit?: number;
     recordingId?: string;
     status?: Schedule['status'];
   }): Promise<PaginatedResponse<Schedule>> {
     const searchParams = new URLSearchParams();
-    if (params?.page) searchParams.set('page', params.page.toString());
-    if (params?.limit) searchParams.set('limit', params.limit.toString());
-    if (params?.recordingId) searchParams.set('recordingId', params.recordingId);
-    if (params?.status) searchParams.set('status', params.status);
+    searchParams.set('projectId', params.projectId);
+    if (params.page) searchParams.set('page', params.page.toString());
+    if (params.limit) searchParams.set('limit', params.limit.toString());
+    if (params.recordingId) searchParams.set('recordingId', params.recordingId);
+    if (params.status) searchParams.set('status', params.status);
 
-    const query = searchParams.toString();
     return this.request<PaginatedResponse<Schedule>>(
-      `/api/v1/schedules${query ? `?${query}` : ''}`
+      `/api/v1/schedules?${searchParams.toString()}`
     );
   }
 
@@ -750,6 +1236,7 @@ class ApiClient {
    * Create a new schedule
    */
   async createSchedule(data: {
+    projectId: string;
     recordingId: string;
     name: string;
     cronExpression: string;
@@ -886,15 +1373,17 @@ class ApiClient {
   /**
    * Get dashboard data (stats, recent runs, upcoming schedules)
    */
-  async getDashboard(): Promise<DashboardData> {
-    return this.request<DashboardData>('/api/v1/dashboard');
+  async getDashboard(projectId: string): Promise<DashboardData> {
+    const params = new URLSearchParams({ projectId });
+    return this.request<DashboardData>(`/api/v1/dashboard?${params.toString()}`);
   }
 
   /**
    * Get dashboard statistics only
    */
-  async getDashboardStats(): Promise<DashboardStats> {
-    return this.request<DashboardStats>('/api/v1/dashboard/stats');
+  async getDashboardStats(projectId: string): Promise<DashboardStats> {
+    const params = new URLSearchParams({ projectId });
+    return this.request<DashboardStats>(`/api/v1/dashboard/stats?${params.toString()}`);
   }
 
   // =====================
