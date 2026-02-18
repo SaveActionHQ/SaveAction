@@ -3,12 +3,13 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Plus, Play, TestTube2 } from 'lucide-react';
+import { ArrowLeft, Plus, Play, TestTube2, CalendarClock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ConfirmDialog } from '@/components/ui/dialog';
 import { useToast } from '@/components/providers/toast-provider';
 import { TestCard, TestCardSkeleton } from '@/components/tests/test-card';
+import { CreateScheduleDialog } from '@/components/schedules/create-schedule-dialog';
 import { api, TestSuite, Test } from '@/lib/api';
 
 export default function SuiteDetailPage() {
@@ -24,6 +25,7 @@ export default function SuiteDetailPage() {
   const [deletingTest, setDeletingTest] = React.useState<Test | null>(null);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isRunning, setIsRunning] = React.useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = React.useState(false);
   const router = useRouter();
 
   const loadData = React.useCallback(async () => {
@@ -75,6 +77,9 @@ export default function SuiteDetailPage() {
       setTests((prev) => prev.filter((t) => t.id !== deletingTest.id));
       toast.success('Test deleted');
       setDeletingTest(null);
+      // Notify sidebar to refresh suite tree
+      const { refreshSidebar } = await import('@/lib/events');
+      refreshSidebar();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete test');
     } finally {
@@ -140,6 +145,14 @@ export default function SuiteDetailPage() {
         <div className="flex items-center gap-2">
           <Button
             variant="outline"
+            disabled={tests.length === 0}
+            onClick={() => setShowScheduleDialog(true)}
+          >
+            <CalendarClock className="mr-2 h-4 w-4" />
+            Schedule
+          </Button>
+          <Button
+            variant="outline"
             disabled={tests.length === 0 || isRunning}
             onClick={handleRunSuite}
           >
@@ -203,6 +216,17 @@ export default function SuiteDetailPage() {
         confirmLabel="Delete Test"
         variant="destructive"
         isLoading={isDeleting}
+      />
+
+      {/* Schedule Dialog */}
+      <CreateScheduleDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        onSuccess={() => {
+          setShowScheduleDialog(false);
+          router.push(`/projects/${projectId}/schedules`);
+        }}
+        initialSuiteId={suiteId}
       />
     </div>
   );

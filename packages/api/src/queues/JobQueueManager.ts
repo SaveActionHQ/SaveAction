@@ -306,14 +306,37 @@ export class JobQueueManager {
 
   /**
    * Remove a repeatable job.
+   * Must pass the same timezone and jobId used when creating the job,
+   * otherwise BullMQ cannot match the repeatable key.
    */
   async removeRepeatableJob(
     queueName: QueueName,
     jobName: string,
-    pattern: string
+    pattern: string,
+    options?: {
+      timezone?: string;
+      jobId?: string;
+    }
   ): Promise<boolean> {
     const queue = this.getQueue(queueName);
-    return queue.removeRepeatable(jobName, { pattern });
+    return queue.removeRepeatable(jobName, { pattern, tz: options?.timezone }, options?.jobId);
+  }
+
+  /**
+   * Remove ALL repeatable jobs from a queue.
+   * Useful for cleaning up stale/orphaned repeatable jobs.
+   */
+  async removeAllRepeatableJobs(queueName: QueueName): Promise<number> {
+    const queue = this.getQueue(queueName);
+    const repeatableJobs = await queue.getRepeatableJobs();
+    let removed = 0;
+
+    for (const job of repeatableJobs) {
+      const success = await queue.removeRepeatableByKey(job.key);
+      if (success) removed++;
+    }
+
+    return removed;
   }
 
   /**

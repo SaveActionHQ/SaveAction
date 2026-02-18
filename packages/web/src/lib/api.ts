@@ -170,12 +170,16 @@ export interface RunAction {
 export interface Schedule {
   id: string;
   userId?: string;
-  recordingId: string;
+  targetType: 'test' | 'suite' | 'recording';
+  testId?: string | null;
+  suiteId?: string | null;
+  recordingId?: string | null;
   name: string;
   cronExpression: string;
   timezone: string;
   status: 'active' | 'paused';
   browser?: 'chromium' | 'firefox' | 'webkit';
+  browsers?: ('chromium' | 'firefox' | 'webkit')[];
   headless?: boolean;
   recordVideo?: boolean;
   screenshotMode?: 'on-failure' | 'always' | 'never';
@@ -1194,20 +1198,22 @@ class ApiClient {
    */
   async createSchedule(data: {
     projectId: string;
-    recordingId: string;
+    targetType: 'test' | 'suite';
+    testId?: string;
+    suiteId: string;
     name: string;
     cronExpression: string;
     timezone?: string;
-    browser?: 'chromium' | 'firefox' | 'webkit';
+    browsers?: ('chromium' | 'firefox' | 'webkit')[];
     recordVideo?: boolean;
     screenshotMode?: 'on-failure' | 'always' | 'never';
   }): Promise<Schedule> {
-    // Backend expects browser/video/screenshot inside runConfig
-    const { browser, recordVideo, screenshotMode, ...rest } = data;
+    // Backend expects browsers/video/screenshot inside runConfig
+    const { browsers, recordVideo, screenshotMode, ...rest } = data;
     const payload: Record<string, unknown> = { ...rest };
-    if (browser !== undefined || recordVideo !== undefined || screenshotMode !== undefined) {
+    if (browsers !== undefined || recordVideo !== undefined || screenshotMode !== undefined) {
       payload.runConfig = {
-        ...(browser !== undefined && { browser }),
+        ...(browsers !== undefined && { browsers }),
         ...(recordVideo !== undefined && { recordVideo }),
         ...(screenshotMode !== undefined && { screenshotMode }),
       };
@@ -1227,17 +1233,17 @@ class ApiClient {
       name?: string;
       cronExpression?: string;
       timezone?: string;
-      browser?: 'chromium' | 'firefox' | 'webkit';
+      browsers?: ('chromium' | 'firefox' | 'webkit')[];
       recordVideo?: boolean;
       screenshotMode?: 'on-failure' | 'always' | 'never';
     }
   ): Promise<Schedule> {
-    // Backend expects browser/video/screenshot inside runConfig
-    const { browser, recordVideo, screenshotMode, ...rest } = data;
+    // Backend expects browsers/video/screenshot inside runConfig
+    const { browsers, recordVideo, screenshotMode, ...rest } = data;
     const payload: Record<string, unknown> = { ...rest };
-    if (browser !== undefined || recordVideo !== undefined || screenshotMode !== undefined) {
+    if (browsers !== undefined || recordVideo !== undefined || screenshotMode !== undefined) {
       payload.runConfig = {
-        ...(browser !== undefined && { browser }),
+        ...(browsers !== undefined && { browsers }),
         ...(recordVideo !== undefined && { recordVideo }),
         ...(screenshotMode !== undefined && { screenshotMode }),
       };

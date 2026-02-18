@@ -18,6 +18,9 @@ import type {
   ScheduleSummary,
 } from '../repositories/ScheduleRepository.js';
 import type { RecordingRepository } from '../repositories/RecordingRepository.js';
+import type { TestRepository } from '../repositories/TestRepository.js';
+import type { TestSuiteRepository } from '../repositories/TestSuiteRepository.js';
+import type { RunRepository } from '../repositories/RunRepository.js';
 import type { JobQueueManager } from '../queues/JobQueueManager.js';
 import type { ScheduledTestJobData } from '../queues/types.js';
 
@@ -46,6 +49,9 @@ export const ScheduleErrors = {
     403
   ),
   RECORDING_NOT_FOUND: new ScheduleError('Recording not found', 'RECORDING_NOT_FOUND', 404),
+  TEST_NOT_FOUND: new ScheduleError('Test not found', 'TEST_NOT_FOUND', 404),
+  SUITE_NOT_FOUND: new ScheduleError('Test suite not found', 'SUITE_NOT_FOUND', 404),
+  INVALID_TARGET: new ScheduleError('Invalid schedule target configuration', 'INVALID_TARGET', 400),
   INVALID_CRON: new ScheduleError('Invalid cron expression', 'INVALID_CRON', 400),
   INVALID_TIMEZONE: new ScheduleError('Invalid timezone', 'INVALID_TIMEZONE', 400),
   ALREADY_DELETED: new ScheduleError('Schedule is already deleted', 'ALREADY_DELETED', 400),
@@ -65,36 +71,54 @@ export const ScheduleErrors = {
 /**
  * Zod schema for schedule creation
  */
-export const createScheduleSchema = z.object({
-  recordingId: z.string().uuid(),
-  name: z.string().min(1).max(255),
-  description: z.string().max(1000).optional(),
-  cronExpression: z.string().min(9).max(100), // "* * * * *" minimum
-  timezone: z.string().max(100).optional(),
-  runConfig: z
-    .object({
-      browser: z.enum(['chromium', 'firefox', 'webkit']).optional(),
-      headless: z.boolean().optional(),
-      timeout: z.number().min(1000).max(600000).optional(),
-      viewport: z
-        .object({
-          width: z.number().min(100).max(4096),
-          height: z.number().min(100).max(4096),
-        })
-        .optional(),
-      retries: z.number().min(0).max(5).optional(),
-      environment: z.record(z.string()).optional(),
-      tags: z.array(z.string()).optional(),
-      recordVideo: z.boolean().optional(),
-      screenshotMode: z.enum(['on-failure', 'always', 'never']).optional(),
-    })
-    .optional(),
-  startsAt: z.string().datetime().optional(),
-  endsAt: z.string().datetime().optional(),
-  notifyOnFailure: z.boolean().optional(),
-  notifyOnSuccess: z.boolean().optional(),
-  notificationEmails: z.string().max(500).optional(),
-});
+export const createScheduleSchema = z
+  .object({
+    targetType: z.enum(['test', 'suite']),
+    testId: z.string().uuid().optional(),
+    suiteId: z.string().uuid(),
+    projectId: z.string().uuid(),
+    name: z.string().min(1).max(255),
+    description: z.string().max(1000).optional(),
+    cronExpression: z.string().min(9).max(100), // "* * * * *" minimum
+    timezone: z.string().max(100).optional(),
+    runConfig: z
+      .object({
+        browsers: z
+          .array(z.enum(['chromium', 'firefox', 'webkit']))
+          .min(1)
+          .optional(),
+        headless: z.boolean().optional(),
+        timeout: z.number().min(1000).max(600000).optional(),
+        viewport: z
+          .object({
+            width: z.number().min(100).max(4096),
+            height: z.number().min(100).max(4096),
+          })
+          .optional(),
+        retries: z.number().min(0).max(5).optional(),
+        environment: z.record(z.string()).optional(),
+        tags: z.array(z.string()).optional(),
+        recordVideo: z.boolean().optional(),
+        screenshotMode: z.enum(['on-failure', 'always', 'never']).optional(),
+      })
+      .optional(),
+    startsAt: z.string().datetime().optional(),
+    endsAt: z.string().datetime().optional(),
+    notifyOnFailure: z.boolean().optional(),
+    notifyOnSuccess: z.boolean().optional(),
+    notificationEmails: z.string().max(500).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.targetType === 'test') {
+        return !!data.testId && !!data.suiteId;
+      }
+      return !!data.suiteId;
+    },
+    {
+      message: 'testId is required when targetType is "test", suiteId is always required',
+    }
+  );
 
 /**
  * Zod schema for schedule update
@@ -106,7 +130,10 @@ export const updateScheduleSchema = z.object({
   timezone: z.string().max(100).optional(),
   runConfig: z
     .object({
-      browser: z.enum(['chromium', 'firefox', 'webkit']).optional(),
+      browsers: z
+        .array(z.enum(['chromium', 'firefox', 'webkit']))
+        .min(1)
+        .optional(),
       headless: z.boolean().optional(),
       timeout: z.number().min(1000).max(600000).optional(),
       viewport: z
@@ -147,9 +174,12 @@ export class ScheduleService {
 
   constructor(
     private readonly scheduleRepository: ScheduleRepository,
-    private readonly recordingRepository: RecordingRepository,
+    _recordingRepository: RecordingRepository,
+    private readonly testRepository: TestRepository,
+    private readonly testSuiteRepository: TestSuiteRepository,
     private readonly jobQueueManager?: JobQueueManager,
-    options?: ScheduleServiceOptions
+    options?: ScheduleServiceOptions,
+    private readonly runRepository?: RunRepository
   ) {
     this.maxSchedulesPerUser = options?.maxSchedulesPerUser ?? 50;
   }
@@ -224,13 +254,30 @@ export class ScheduleService {
       throw ScheduleErrors.INVALID_TIMEZONE;
     }
 
-    // Verify recording exists and belongs to user
-    const recording = await this.recordingRepository.findById(input.recordingId);
-    if (!recording) {
-      throw ScheduleErrors.RECORDING_NOT_FOUND;
+    // Validate target based on targetType
+    if (input.targetType === 'test') {
+      if (!input.testId) {
+        throw ScheduleErrors.INVALID_TARGET;
+      }
+      const test = await this.testRepository.findByIdAndUser(input.testId, userId);
+      if (!test) {
+        throw ScheduleErrors.TEST_NOT_FOUND;
+      }
+      // Verify test belongs to the specified suite
+      if (test.suiteId !== input.suiteId) {
+        throw ScheduleErrors.INVALID_TARGET;
+      }
     }
-    if (recording.userId !== userId) {
-      throw ScheduleErrors.NOT_AUTHORIZED;
+
+    // Always validate suite exists
+    const suite = await this.testSuiteRepository.findByIdAndUser(input.suiteId, userId);
+    if (!suite) {
+      throw ScheduleErrors.SUITE_NOT_FOUND;
+    }
+
+    // Verify suite belongs to the specified project
+    if (suite.projectId !== input.projectId) {
+      throw ScheduleErrors.INVALID_TARGET;
     }
 
     // Check max schedules limit
@@ -242,8 +289,10 @@ export class ScheduleService {
     // Create schedule in database
     const createData: ScheduleCreateData = {
       userId,
-      projectId: recording.projectId,
-      recordingId: input.recordingId,
+      projectId: input.projectId,
+      targetType: input.targetType,
+      testId: input.testId ?? null,
+      suiteId: input.suiteId,
       name: input.name,
       description: input.description,
       cronExpression: input.cronExpression,
@@ -388,12 +437,16 @@ export class ScheduleService {
       (input.cronExpression || input.timezone)
     ) {
       try {
-        // Remove old repeatable job
+        // Remove old repeatable job (must pass timezone + jobId to match BullMQ key)
         if (schedule.bullmqJobPattern) {
           await this.jobQueueManager.removeRepeatableJob(
             'scheduled-tests',
             'scheduled-run',
-            schedule.bullmqJobPattern
+            schedule.bullmqJobPattern,
+            {
+              timezone: schedule.timezone,
+              jobId: schedule.bullmqJobKey ?? undefined,
+            }
           );
         }
 
@@ -483,12 +536,16 @@ export class ScheduleService {
             schedule.timezone
           );
         } else {
-          // Remove repeatable job
+          // Remove repeatable job (must pass timezone + jobId to match BullMQ key)
           if (schedule.bullmqJobPattern) {
             await this.jobQueueManager.removeRepeatableJob(
               'scheduled-tests',
               'scheduled-run',
-              schedule.bullmqJobPattern
+              schedule.bullmqJobPattern,
+              {
+                timezone: schedule.timezone,
+                jobId: schedule.bullmqJobKey ?? undefined,
+              }
             );
           }
           updateData.bullmqJobKey = null;
@@ -523,20 +580,65 @@ export class ScheduleService {
       throw ScheduleErrors.NOT_AUTHORIZED;
     }
 
-    // Remove BullMQ job if exists
+    // Remove BullMQ repeatable job if exists (must pass timezone + jobId to match BullMQ key)
     if (this.jobQueueManager && schedule.bullmqJobPattern) {
       try {
         await this.jobQueueManager.removeRepeatableJob(
           'scheduled-tests',
           'scheduled-run',
-          schedule.bullmqJobPattern
+          schedule.bullmqJobPattern,
+          {
+            timezone: schedule.timezone,
+            jobId: schedule.bullmqJobKey ?? undefined,
+          }
         );
       } catch (error) {
         console.error('Failed to remove BullMQ repeatable job:', error);
       }
     }
 
+    // Cancel any pending/running runs triggered by this schedule
+    await this.cancelActiveRunsForSchedule(schedule.userId, scheduleId);
+
     await this.scheduleRepository.softDelete(scheduleId);
+  }
+
+  /**
+   * Cancel all queued/running runs for a schedule.
+   * Called when a schedule is deleted to prevent already-queued jobs from executing.
+   */
+  private async cancelActiveRunsForSchedule(userId: string, scheduleId: string): Promise<void> {
+    if (!this.runRepository) return;
+
+    try {
+      const { data: activeRuns } = await this.runRepository.findMany(
+        { userId, scheduleId, status: ['queued', 'running'] },
+        { page: 1, limit: 100 }
+      );
+
+      for (const run of activeRuns) {
+        // Try to remove from BullMQ queue if still queued
+        if (run.status === 'queued' && this.jobQueueManager) {
+          try {
+            // RunSummary doesn't have jobId; use run.id as jobId (they match)
+            const queue = this.jobQueueManager.getQueue('test-runs');
+            const job = await queue.getJob(run.id);
+            if (job) {
+              await job.remove();
+            }
+          } catch {
+            // Job may already be processing, continue with status update
+          }
+        }
+
+        await this.runRepository.update(run.id, {
+          status: 'cancelled',
+          completedAt: new Date(),
+        });
+      }
+    } catch (error) {
+      console.error('Failed to cancel active runs for schedule:', error);
+    }
   }
 
   /**
@@ -580,13 +682,17 @@ export class ScheduleService {
       throw ScheduleErrors.NOT_AUTHORIZED;
     }
 
-    // Remove BullMQ job if exists
+    // Remove BullMQ job if exists (must pass timezone + jobId to match BullMQ key)
     if (this.jobQueueManager && schedule.bullmqJobPattern) {
       try {
         await this.jobQueueManager.removeRepeatableJob(
           'scheduled-tests',
           'scheduled-run',
-          schedule.bullmqJobPattern
+          schedule.bullmqJobPattern,
+          {
+            timezone: schedule.timezone,
+            jobId: schedule.bullmqJobKey ?? undefined,
+          }
         );
       } catch (error) {
         console.error('Failed to remove BullMQ repeatable job:', error);
@@ -597,12 +703,23 @@ export class ScheduleService {
   }
 
   /**
-   * Sync all active schedules with BullMQ on startup
-   * Called when API server starts to ensure schedules are active
+   * Sync all active schedules with BullMQ on startup.
+   * First removes ALL existing repeatable jobs from the scheduled-tests queue
+   * to purge any stale/orphaned jobs, then re-adds only the active ones.
    */
   async syncSchedulesOnStartup(): Promise<{ synced: number; failed: number }> {
     if (!this.jobQueueManager) {
       return { synced: 0, failed: 0 };
+    }
+
+    // Purge all existing repeatable jobs to ensure clean state
+    try {
+      const removed = await this.jobQueueManager.removeAllRepeatableJobs('scheduled-tests');
+      if (removed > 0) {
+        console.log(`Purged ${removed} stale repeatable job(s) from scheduled-tests queue`);
+      }
+    } catch (error) {
+      console.error('Failed to purge stale repeatable jobs:', error);
     }
 
     const activeSchedules = await this.scheduleRepository.getActiveSchedules();

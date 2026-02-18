@@ -12,6 +12,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { onSidebarRefresh } from '@/lib/events';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api, type TestSuiteWithStats, type Test } from '@/lib/api';
@@ -66,6 +67,33 @@ function SuiteNode({ suite, projectId, isActive, pathname }: SuiteNodeProps) {
         });
     }
   }, [expanded, testsLoaded, suite.testCount, suite.id, projectId]);
+
+  // Silently refresh tests on navigation or sidebar refresh event
+  const refreshTests = React.useCallback(() => {
+    if (expanded && testsLoaded) {
+      api
+        .listTests(projectId, {
+          suiteId: suite.id,
+          limit: 50,
+          sortBy: 'displayOrder',
+          sortOrder: 'asc',
+        })
+        .then((res) => {
+          setTests(res.data);
+        })
+        .catch(() => {
+          // Silent — keep existing data on error
+        });
+    }
+  }, [expanded, testsLoaded, projectId, suite.id]);
+
+  React.useEffect(() => {
+    refreshTests();
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  React.useEffect(() => {
+    return onSidebarRefresh(refreshTests);
+  }, [refreshTests]);
 
   const handleToggle = (e: React.MouseEvent) => {
     e.preventDefault();
@@ -170,36 +198,37 @@ export function SuiteTreeNav({ projectId, collapsed }: SuiteTreeNavProps) {
   const [suites, setSuites] = React.useState<TestSuiteWithStats[]>([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  const hasLoadedRef = React.useRef(false);
 
-  React.useEffect(() => {
-    let cancelled = false;
-
-    const loadSuites = async () => {
-      try {
+  const loadSuites = React.useCallback(async () => {
+    try {
+      // Only show loading skeleton on initial load
+      if (!hasLoadedRef.current) {
         setLoading(true);
-        setError(null);
-        const data = await api.listAllSuites(projectId);
-        if (!cancelled) {
-          setSuites(data);
-        }
-      } catch (err) {
-        if (!cancelled) {
-          console.error('Failed to load suites:', err);
-          setError('Failed to load suites');
-        }
-      } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
       }
-    };
-
-    loadSuites();
-
-    return () => {
-      cancelled = true;
-    };
+      setError(null);
+      const data = await api.listAllSuites(projectId);
+      setSuites(data);
+      hasLoadedRef.current = true;
+    } catch (err) {
+      console.error('Failed to load suites:', err);
+      if (!hasLoadedRef.current) {
+        setError('Failed to load suites');
+      }
+    } finally {
+      setLoading(false);
+    }
   }, [projectId]);
+
+  // Fetch suites on mount and silently refresh on every navigation
+  React.useEffect(() => {
+    loadSuites();
+  }, [loadSuites, pathname]);
+
+  // Also refresh when a mutation event is emitted (delete, etc.)
+  React.useEffect(() => {
+    return onSidebarRefresh(loadSuites);
+  }, [loadSuites]);
 
   // Don't render tree when sidebar is collapsed
   if (collapsed) {

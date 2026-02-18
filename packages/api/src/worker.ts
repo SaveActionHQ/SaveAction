@@ -26,6 +26,12 @@ import { createTestRunProcessor } from './queues/testRunProcessor.js';
 import { createScheduledTestProcessor } from './queues/scheduledTestProcessor.js';
 import { createCleanupProcessor, runStartupCleanup } from './queues/cleanupProcessor.js';
 import { JobQueueManager } from './queues/JobQueueManager.js';
+import { ScheduleService } from './services/ScheduleService.js';
+import { ScheduleRepository } from './repositories/ScheduleRepository.js';
+import { RecordingRepository } from './repositories/RecordingRepository.js';
+import { TestRepository } from './repositories/TestRepository.js';
+import { TestSuiteRepository } from './repositories/TestSuiteRepository.js';
+import { RunRepository } from './repositories/RunRepository.js';
 import type {
   TestRunJobData,
   TestRunJobResult,
@@ -247,6 +253,23 @@ async function start(): Promise<void> {
     { jobId: 'cleanup-old-screenshots-daily' }
   );
   logger.info('Scheduled old-screenshots cleanup job (daily at 3:30 AM)');
+
+  // Sync active schedules with BullMQ (purges stale repeatable jobs first)
+  logger.info('Syncing active schedules with BullMQ...');
+  const scheduleService = new ScheduleService(
+    new ScheduleRepository(db),
+    new RecordingRepository(db),
+    new TestRepository(db),
+    new TestSuiteRepository(db),
+    jobQueueManager,
+    undefined,
+    new RunRepository(db)
+  );
+  const syncResult = await scheduleService.syncSchedulesOnStartup();
+  logger.info('Schedule sync completed', {
+    synced: syncResult.synced,
+    failed: syncResult.failed,
+  });
 
   // Create BullMQ workers
   logger.info('Creating BullMQ workers...');

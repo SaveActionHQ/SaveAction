@@ -15,6 +15,9 @@ const mockSafeSchedule: SafeSchedule = {
   id: '550e8400-e29b-41d4-a716-446655440000',
   userId: 'user-123',
   recordingId: '550e8400-e29b-41d4-a716-446655440001',
+  targetType: 'suite',
+  testId: null,
+  suiteId: '550e8400-e29b-41d4-a716-446655440010',
   name: 'Daily Test Run',
   description: 'Runs tests every day at 9 AM',
   cronExpression: '0 9 * * *',
@@ -24,7 +27,7 @@ const mockSafeSchedule: SafeSchedule = {
   endsAt: null,
   bullmqJobKey: 'schedule:550e8400',
   bullmqJobPattern: '0 9 * * *',
-  runConfig: { browser: 'chromium', headless: true },
+  runConfig: { browsers: ['chromium'], headless: true },
   maxConcurrent: 1,
   maxDailyRuns: null,
   runsToday: 0,
@@ -48,11 +51,16 @@ const mockSafeSchedule: SafeSchedule = {
 const mockScheduleSummary: ScheduleSummary = {
   id: mockSafeSchedule.id,
   userId: mockSafeSchedule.userId,
+  projectId: mockSafeSchedule.projectId,
   recordingId: mockSafeSchedule.recordingId,
+  targetType: 'suite',
+  testId: null,
+  suiteId: '550e8400-e29b-41d4-a716-446655440010',
   name: mockSafeSchedule.name,
   cronExpression: mockSafeSchedule.cronExpression,
   timezone: mockSafeSchedule.timezone,
   status: mockSafeSchedule.status,
+  runConfig: mockSafeSchedule.runConfig,
   nextRunAt: mockSafeSchedule.nextRunAt,
   lastRunAt: mockSafeSchedule.lastRunAt,
   lastRunStatus: mockSafeSchedule.lastRunStatus,
@@ -177,7 +185,9 @@ describe('Schedule Routes', () => {
         url: '/api/schedules',
         headers: { authorization: 'Bearer valid-token' },
         payload: {
-          recordingId: '550e8400-e29b-41d4-a716-446655440001',
+          targetType: 'suite',
+          suiteId: '550e8400-e29b-41d4-a716-446655440010',
+          projectId: '00000000-0000-0000-0000-000000000001',
           name: 'Daily Test Run',
           cronExpression: '0 9 * * *',
         },
@@ -198,13 +208,15 @@ describe('Schedule Routes', () => {
         url: '/api/schedules',
         headers: { authorization: 'Bearer valid-token' },
         payload: {
-          recordingId: '550e8400-e29b-41d4-a716-446655440001',
+          targetType: 'suite',
+          suiteId: '550e8400-e29b-41d4-a716-446655440010',
+          projectId: '00000000-0000-0000-0000-000000000001',
           name: 'Full Schedule',
           description: 'A fully configured schedule',
           cronExpression: '0 10 * * 1-5',
           timezone: 'America/New_York',
           runConfig: {
-            browser: 'firefox',
+            browsers: ['firefox'],
             headless: false,
             timeout: 60000,
             retries: 2,
@@ -221,7 +233,8 @@ describe('Schedule Routes', () => {
       expect(mockService.createSchedule).toHaveBeenCalledWith(
         'user-123',
         expect.objectContaining({
-          recordingId: '550e8400-e29b-41d4-a716-446655440001',
+          targetType: 'suite',
+          suiteId: '550e8400-e29b-41d4-a716-446655440010',
           name: 'Full Schedule',
           cronExpression: '0 10 * * 1-5',
           timezone: 'America/New_York',
@@ -231,7 +244,7 @@ describe('Schedule Routes', () => {
 
     it('should return 404 when recording not found', async () => {
       mockService.createSchedule.mockRejectedValue(
-        new ScheduleError('Recording not found', 'RECORDING_NOT_FOUND', 404)
+        new ScheduleError('Suite not found', 'SUITE_NOT_FOUND', 404)
       );
 
       const response = await app.inject({
@@ -239,7 +252,9 @@ describe('Schedule Routes', () => {
         url: '/api/schedules',
         headers: { authorization: 'Bearer valid-token' },
         payload: {
-          recordingId: '550e8400-e29b-41d4-a716-446655440099',
+          targetType: 'suite',
+          suiteId: '550e8400-e29b-41d4-a716-446655440099',
+          projectId: '00000000-0000-0000-0000-000000000001',
           name: 'Test',
           cronExpression: '0 9 * * *',
         },
@@ -247,7 +262,7 @@ describe('Schedule Routes', () => {
 
       expect(response.statusCode).toBe(404);
       const body = JSON.parse(response.payload);
-      expect(body.error.code).toBe('RECORDING_NOT_FOUND');
+      expect(body.error.code).toBe('SUITE_NOT_FOUND');
     });
 
     it('should return 400 for invalid cron expression', async () => {
@@ -260,7 +275,9 @@ describe('Schedule Routes', () => {
         url: '/api/schedules',
         headers: { authorization: 'Bearer valid-token' },
         payload: {
-          recordingId: '550e8400-e29b-41d4-a716-446655440001',
+          targetType: 'suite',
+          suiteId: '550e8400-e29b-41d4-a716-446655440010',
+          projectId: '00000000-0000-0000-0000-000000000001',
           name: 'Test',
           cronExpression: 'invalid cron',
         },
@@ -281,7 +298,9 @@ describe('Schedule Routes', () => {
         url: '/api/schedules',
         headers: { authorization: 'Bearer valid-token' },
         payload: {
-          recordingId: '550e8400-e29b-41d4-a716-446655440001',
+          targetType: 'suite',
+          suiteId: '550e8400-e29b-41d4-a716-446655440010',
+          projectId: '00000000-0000-0000-0000-000000000001',
           name: 'Test',
           cronExpression: '0 9 * * *',
           timezone: 'Invalid/Timezone',
@@ -303,7 +322,9 @@ describe('Schedule Routes', () => {
         url: '/api/schedules',
         headers: { authorization: 'Bearer valid-token' },
         payload: {
-          recordingId: '550e8400-e29b-41d4-a716-446655440001',
+          targetType: 'suite',
+          suiteId: '550e8400-e29b-41d4-a716-446655440010',
+          projectId: '00000000-0000-0000-0000-000000000001',
           name: 'Test',
           cronExpression: '0 9 * * *',
         },
@@ -330,7 +351,9 @@ describe('Schedule Routes', () => {
         method: 'POST',
         url: '/api/schedules',
         payload: {
-          recordingId: '550e8400-e29b-41d4-a716-446655440001',
+          targetType: 'suite',
+          suiteId: '550e8400-e29b-41d4-a716-446655440010',
+          projectId: '00000000-0000-0000-0000-000000000001',
           name: 'Test',
           cronExpression: '0 9 * * *',
         },
@@ -873,7 +896,9 @@ describe('Schedule Routes', () => {
         url: '/api/schedules',
         headers: { authorization: 'Bearer valid-token' },
         payload: {
-          recordingId: '550e8400-e29b-41d4-a716-446655440001',
+          targetType: 'suite',
+          suiteId: '550e8400-e29b-41d4-a716-446655440010',
+          projectId: '00000000-0000-0000-0000-000000000001',
           name: 'Test',
           cronExpression: '0 9 * * *',
         },
@@ -922,7 +947,7 @@ describe('Schedule Routes', () => {
 
       // Verify all expected fields are present
       expect(body.data).toHaveProperty('id');
-      expect(body.data).toHaveProperty('recordingId');
+      expect(body.data).toHaveProperty('targetType');
       expect(body.data).toHaveProperty('name');
       expect(body.data).toHaveProperty('cronExpression');
       expect(body.data).toHaveProperty('timezone');

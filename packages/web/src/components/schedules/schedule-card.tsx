@@ -17,6 +17,8 @@ import {
   Loader2,
   Hash,
   TrendingUp,
+  Layers,
+  FileText,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -124,6 +126,12 @@ export function ScheduleCard({
                 {schedule.name}
               </Link>
               <ScheduleStatusBadge status={schedule.status} size="sm" />
+              {schedule.targetType && schedule.targetType !== 'recording' && (
+                <Badge variant="outline" className="text-[10px] px-1.5 py-0 flex items-center gap-1">
+                  {schedule.targetType === 'suite' ? <Layers className="h-2.5 w-2.5" /> : <FileText className="h-2.5 w-2.5" />}
+                  {schedule.targetType === 'suite' ? 'Suite' : 'Test'}
+                </Badge>
+              )}
             </div>
             <p className="text-xs text-muted-foreground flex items-center gap-1.5">
               <Clock className="h-3 w-3 flex-shrink-0" />
@@ -192,8 +200,15 @@ export function ScheduleCard({
         <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
           {/* Browser */}
           <span className="flex items-center gap-1">
-            <BrowserIcon browser={schedule.browser || 'chromium'} className="h-3.5 w-3.5" />
-            {browserLabel(schedule.browser || 'chromium')}
+            {(schedule.browsers ?? (schedule.browser ? [schedule.browser] : ['chromium'])).map((b) => (
+              <BrowserIcon key={b} browser={b} className="h-3.5 w-3.5" />
+            ))}
+            {(schedule.browsers ?? (schedule.browser ? [schedule.browser] : ['chromium'])).length === 1 && (
+              <span>{browserLabel((schedule.browsers ?? (schedule.browser ? [schedule.browser] : ['chromium']))[0])}</span>
+            )}
+            {(schedule.browsers ?? (schedule.browser ? [schedule.browser] : ['chromium'])).length > 1 && (
+              <span>{(schedule.browsers ?? []).length} browsers</span>
+            )}
           </span>
 
           {/* Runs count */}

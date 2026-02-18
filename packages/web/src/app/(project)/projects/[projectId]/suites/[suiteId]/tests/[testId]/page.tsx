@@ -15,6 +15,7 @@ import {
   Maximize2,
   FileText,
   ExternalLink,
+  CalendarClock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,6 +25,7 @@ import { useToast } from '@/components/providers/toast-provider';
 import { api, type Test, type Run } from '@/lib/api';
 import { RunStatusBadge } from '@/components/runs/run-status-badge';
 import { BrowserIcon, browserLabel } from '@/components/runs/browser-result-cell';
+import { CreateScheduleDialog } from '@/components/schedules/create-schedule-dialog';
 import { formatRelativeTime as formatTime, formatDuration, cn } from '@/lib/utils';
 
 const BROWSER_LABELS: Record<string, string> = {
@@ -79,6 +81,7 @@ export default function TestDetailPage() {
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
   const [isRunning, setIsRunning] = React.useState(false);
+  const [showScheduleDialog, setShowScheduleDialog] = React.useState(false);
 
   const handleRunTest = React.useCallback(async () => {
     if (isRunning || !test) return;
@@ -211,6 +214,10 @@ export default function TestDetailPage() {
         </div>
         {!isLoading && (
           <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setShowScheduleDialog(true)}>
+              <CalendarClock className="mr-2 h-4 w-4" />
+              Schedule
+            </Button>
             <Button variant="outline" asChild>
               <Link href={`/projects/${projectId}/suites/${suiteId}/tests/${testId}/edit`}>
                 <Pencil className="mr-2 h-4 w-4" />
@@ -450,6 +457,18 @@ export default function TestDetailPage() {
           </Card>
         </>
       ) : null}
+
+      {/* Schedule Dialog */}
+      <CreateScheduleDialog
+        open={showScheduleDialog}
+        onOpenChange={setShowScheduleDialog}
+        onSuccess={() => {
+          setShowScheduleDialog(false);
+          router.push(`/projects/${projectId}/schedules`);
+        }}
+        initialSuiteId={suiteId}
+        initialTestId={testId}
+      />
     </div>
   );
 }

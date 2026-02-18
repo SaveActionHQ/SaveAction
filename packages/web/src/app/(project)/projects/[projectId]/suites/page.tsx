@@ -25,11 +25,13 @@ export default function SuitesPage() {
   const handleCreated = () => {
     setRefreshKey((k) => k + 1);
     toast.success('Test suite created');
+    import('@/lib/events').then(({ refreshSidebar }) => refreshSidebar());
   };
 
   const handleUpdated = () => {
     setRefreshKey((k) => k + 1);
     toast.success('Test suite updated');
+    import('@/lib/events').then(({ refreshSidebar }) => refreshSidebar());
   };
 
   const handleDelete = async () => {
@@ -40,6 +42,9 @@ export default function SuitesPage() {
       setRefreshKey((k) => k + 1);
       toast.success('Test suite deleted');
       setDeletingSuite(null);
+      // Notify sidebar to refresh suite tree
+      const { refreshSidebar } = await import('@/lib/events');
+      refreshSidebar();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to delete suite');
     } finally {

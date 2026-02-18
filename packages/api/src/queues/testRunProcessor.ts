@@ -17,6 +17,8 @@ import { RunRepository } from '../repositories/RunRepository.js';
 import { RecordingRepository } from '../repositories/RecordingRepository.js';
 import { RunBrowserResultRepository } from '../repositories/RunBrowserResultRepository.js';
 import { ScheduleRepository } from '../repositories/ScheduleRepository.js';
+import { TestRepository } from '../repositories/TestRepository.js';
+import { TestSuiteRepository } from '../repositories/TestSuiteRepository.js';
 import { ScheduleService } from '../services/ScheduleService.js';
 import { RunProgressPublisher } from '../services/RunProgressService.js';
 import {
@@ -85,7 +87,7 @@ class ProgressTrackingReporter implements Reporter {
     runRepository: RunRepository,
     progressPublisher?: RunProgressPublisher,
     browser?: string,
-    pageUrl?: string,
+    pageUrl?: string
   ) {
     this.runId = runId;
     this.runRepository = runRepository;
@@ -356,7 +358,14 @@ export function createTestRunProcessor(
   const recordingRepository = new RecordingRepository(db);
   const browserResultRepository = new RunBrowserResultRepository(db);
   const scheduleRepository = new ScheduleRepository(db);
-  const scheduleService = new ScheduleService(scheduleRepository, recordingRepository);
+  const testRepository = new TestRepository(db);
+  const testSuiteRepository = new TestSuiteRepository(db);
+  const scheduleService = new ScheduleService(
+    scheduleRepository,
+    recordingRepository,
+    testRepository,
+    testSuiteRepository
+  );
 
   // Create progress publisher if Redis is available
   const progressPublisher = redis ? new RunProgressPublisher(redis) : undefined;
@@ -430,7 +439,9 @@ export function createTestRunProcessor(
         actionsSkipped: totalActionsSkipped,
       });
 
-      console.log(`[Worker] Parent suite run ${parentRunId} completed with status: ${parentStatus}`);
+      console.log(
+        `[Worker] Parent suite run ${parentRunId} completed with status: ${parentStatus}`
+      );
     } catch (error) {
       console.error(`[Worker] Error updating parent suite run for child ${runId}:`, error);
     }
@@ -485,14 +496,15 @@ export function createTestRunProcessor(
       runRepository,
       progressPublisher,
       params.browser,
-      params.recordingUrl,
+      params.recordingUrl
     );
 
     // Build actions summary for SSE (so frontend knows all actions up front)
-    const actionsSummary = params.recordingData.actions?.map((a, i) => ({
-      id: a.id ?? `act_${(i + 1).toString().padStart(3, '0')}`,
-      type: a.type,
-    })) ?? [];
+    const actionsSummary =
+      params.recordingData.actions?.map((a, i) => ({
+        id: a.id ?? `act_${(i + 1).toString().padStart(3, '0')}`,
+        type: a.type,
+      })) ?? [];
 
     // Publish run started event
     await progressPublisher?.publishRunStarted({
@@ -577,7 +589,7 @@ export function createTestRunProcessor(
   async function processRecordingRun(
     job: Job<TestRunJobData>,
     abortController: AbortController,
-    cancellationCheckInterval: ReturnType<typeof setInterval>,
+    cancellationCheckInterval: ReturnType<typeof setInterval>
   ): Promise<TestRunJobResult> {
     const {
       runId,
@@ -658,9 +670,11 @@ export function createTestRunProcessor(
       if (result.actionResults.length > 0) {
         for (const action of result.actionResults) {
           if (action.screenshotPath) {
-            await runRepository.updateActionScreenshot(
-              runId, action.actionId, action.screenshotPath,
-            ).catch(() => { /* ignore */ });
+            await runRepository
+              .updateActionScreenshot(runId, action.actionId, action.screenshotPath)
+              .catch(() => {
+                /* ignore */
+              });
           }
         }
       }
@@ -752,7 +766,7 @@ export function createTestRunProcessor(
   async function processTestRun(
     job: Job<TestRunJobData>,
     abortController: AbortController,
-    cancellationCheckInterval: ReturnType<typeof setInterval>,
+    cancellationCheckInterval: ReturnType<typeof setInterval>
   ): Promise<TestRunJobResult> {
     const {
       runId,
@@ -805,24 +819,29 @@ export function createTestRunProcessor(
       const browserRunResults: BrowserRunResult[] = [];
 
       // Track action results per browser for saving to DB
-      const allBrowserActionResults: Map<string, Array<{
-        actionId: string;
-        actionType: string;
-        actionIndex: number;
-        status: 'success' | 'failed' | 'skipped';
-        durationMs: number;
-        startedAt: Date;
-        completedAt: Date;
-        selectorUsed?: string;
-        selectorValue?: string;
-        errorMessage?: string;
-        errorStack?: string;
-        screenshotPath?: string;
-      }>> = new Map();
+      const allBrowserActionResults: Map<
+        string,
+        Array<{
+          actionId: string;
+          actionType: string;
+          actionIndex: number;
+          status: 'success' | 'failed' | 'skipped';
+          durationMs: number;
+          startedAt: Date;
+          completedAt: Date;
+          selectorUsed?: string;
+          selectorValue?: string;
+          errorMessage?: string;
+          errorStack?: string;
+          screenshotPath?: string;
+        }>
+      > = new Map();
 
-      const executeBrowser = async (browser: 'chromium' | 'firefox' | 'webkit'): Promise<BrowserRunResult> => {
+      const executeBrowser = async (
+        browser: 'chromium' | 'firefox' | 'webkit'
+      ): Promise<BrowserRunResult> => {
         // Find the browser result row
-        const browserResult = browserResults.find(br => br.browser === browser);
+        const browserResult = browserResults.find((br) => br.browser === browser);
 
         // Mark browser result as running
         if (browserResult) {
@@ -936,8 +955,8 @@ export function createTestRunProcessor(
 
       // Calculate aggregate stats
       const totalDuration = Date.now() - startTime;
-      const allPassed = browserRunResults.every(r => r.status === 'passed');
-      const anyCancelled = browserRunResults.some(r => r.status === 'cancelled');
+      const allPassed = browserRunResults.every((r) => r.status === 'passed');
+      const anyCancelled = browserRunResults.some((r) => r.status === 'cancelled');
       const totalActionsExecuted = browserRunResults.reduce((sum, r) => sum + r.actionsExecuted, 0);
       const totalActionsFailed = browserRunResults.reduce((sum, r) => sum + r.actionsFailed, 0);
 
@@ -950,7 +969,7 @@ export function createTestRunProcessor(
         overallStatus = 'failed';
       }
 
-      const firstError = browserRunResults.find(r => r.errorMessage);
+      const firstError = browserRunResults.find((r) => r.errorMessage);
 
       // Update parent run
       await runRepository.update(runId, {
@@ -960,10 +979,10 @@ export function createTestRunProcessor(
         actionsTotal: actionCount * browsersToRun.length,
         actionsExecuted: totalActionsExecuted,
         actionsFailed: totalActionsFailed,
-        actionsSkipped: (actionCount * browsersToRun.length) - totalActionsExecuted,
+        actionsSkipped: actionCount * browsersToRun.length - totalActionsExecuted,
         errorMessage: firstError?.errorMessage,
-        videoPath: browserRunResults.find(r => r.videoPath)?.videoPath,
-        screenshotPaths: browserRunResults.flatMap(r => r.screenshotPaths ?? []),
+        videoPath: browserRunResults.find((r) => r.videoPath)?.videoPath,
+        screenshotPaths: browserRunResults.flatMap((r) => r.screenshotPaths ?? []),
       });
 
       // Action results are already persisted incrementally during execution.
@@ -972,9 +991,11 @@ export function createTestRunProcessor(
         if (actionResults && actionResults.length > 0) {
           for (const action of actionResults) {
             if (action.screenshotPath) {
-              await runRepository.updateActionScreenshot(
-                runId, action.actionId, action.screenshotPath,
-              ).catch(() => { /* ignore */ });
+              await runRepository
+                .updateActionScreenshot(runId, action.actionId, action.screenshotPath)
+                .catch(() => {
+                  /* ignore */
+                });
             }
           }
         }
@@ -994,7 +1015,7 @@ export function createTestRunProcessor(
         durationMs: totalDuration,
         actionsExecuted: totalActionsExecuted,
         actionsFailed: totalActionsFailed,
-        actionsSkipped: (actionCount * browsersToRun.length) - totalActionsExecuted,
+        actionsSkipped: actionCount * browsersToRun.length - totalActionsExecuted,
       });
 
       await job.updateProgress(100);

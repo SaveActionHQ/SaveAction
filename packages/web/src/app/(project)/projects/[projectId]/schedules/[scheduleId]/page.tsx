@@ -22,6 +22,8 @@ import {
   XCircle,
   BarChart3,
   Timer,
+  Layers,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -430,6 +432,15 @@ export default function ScheduleDetailPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div>
               <p className="text-sm text-muted-foreground flex items-center gap-1">
+                {schedule.targetType === 'suite' ? <Layers className="h-3.5 w-3.5" /> : <FileText className="h-3.5 w-3.5" />}
+                Target
+              </p>
+              <p className="font-medium mt-0.5 capitalize">
+                {schedule.targetType === 'suite' ? 'Entire Suite' : schedule.targetType === 'test' ? 'Individual Test' : 'Recording'}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm text-muted-foreground flex items-center gap-1">
                 <Calendar className="h-3.5 w-3.5" />
                 Schedule
               </p>
@@ -446,13 +457,14 @@ export default function ScheduleDetailPage() {
             </div>
             <div>
               <p className="text-sm text-muted-foreground">Browser</p>
-              <p className="font-medium mt-0.5 flex items-center gap-1.5">
-                <BrowserIcon
-                  browser={schedule.browser || 'chromium'}
-                  className="h-4 w-4"
-                />
-                {browserLabel(schedule.browser || 'chromium')}
-              </p>
+              <div className="font-medium mt-0.5 flex items-center gap-2 flex-wrap">
+                {(schedule.browsers ?? (schedule.browser ? [schedule.browser] : ['chromium'])).map((b) => (
+                  <span key={b} className="flex items-center gap-1">
+                    <BrowserIcon browser={b} className="h-4 w-4" />
+                    {browserLabel(b)}
+                  </span>
+                ))}
+              </div>
             </div>
             <div>
               <p className="text-sm text-muted-foreground flex items-center gap-1">
@@ -530,7 +542,7 @@ export default function ScheduleDetailPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Status</TableHead>
-                    <TableHead>Recording</TableHead>
+                    <TableHead>Test</TableHead>
                     <TableHead>Browser</TableHead>
                     <TableHead>Duration</TableHead>
                     <TableHead>Actions</TableHead>
@@ -553,12 +565,16 @@ export default function ScheduleDetailPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className="flex items-center gap-1.5">
-                          <BrowserIcon
-                            browser={run.browser}
-                            className="h-4 w-4"
-                          />
-                          {browserLabel(run.browser)}
+                        <span className="flex items-center gap-2 flex-wrap">
+                          {(run.browsers && run.browsers.length > 0
+                            ? run.browsers
+                            : [run.browser]
+                          ).map((b) => (
+                            <span key={b} className="flex items-center gap-1">
+                              <BrowserIcon browser={b} className="h-4 w-4" />
+                              {browserLabel(b)}
+                            </span>
+                          ))}
                         </span>
                       </TableCell>
                       <TableCell>

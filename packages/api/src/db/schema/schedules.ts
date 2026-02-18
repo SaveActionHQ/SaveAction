@@ -105,7 +105,7 @@ export const schedules = pgTable(
 
     // Execution configuration (stored as JSONB for flexibility)
     runConfig: jsonb('run_config').$type<{
-      browser?: 'chromium' | 'firefox' | 'webkit';
+      browsers?: ('chromium' | 'firefox' | 'webkit')[];
       headless?: boolean;
       timeout?: number;
       viewport?: { width: number; height: number };
