@@ -783,10 +783,7 @@ export class RunRepository {
    */
   async findActionsByRunId(runId: string, browser?: string): Promise<SafeRunAction[]> {
     if (browser) {
-      const conditions = [
-        eq(runActions.runId, runId),
-        eq(runActions.browser, browser),
-      ];
+      const conditions = [eq(runActions.runId, runId), eq(runActions.browser, browser)];
       const result = await this.db
         .select()
         .from(runActions)
@@ -837,12 +834,7 @@ export class RunRepository {
     const [result] = await this.db
       .select()
       .from(runActions)
-      .where(
-        and(
-          eq(runActions.runId, runId),
-          eq(runActions.actionId, actionId)
-        )
-      );
+      .where(and(eq(runActions.runId, runId), eq(runActions.actionId, actionId)));
 
     return result ? toSafeRunAction(result) : null;
   }
@@ -876,7 +868,20 @@ export class RunRepository {
    * Find all child run statuses for a parent run.
    * Used to determine when a suite run is complete.
    */
-  async findChildrenStatuses(parentRunId: string): Promise<Array<{ id: string; status: RunStatus; durationMs: string | null; actionsTotal: string | null; actionsExecuted: string | null; actionsFailed: string | null; actionsSkipped: string | null; errorMessage: string | null }>> {
+  async findChildrenStatuses(
+    parentRunId: string
+  ): Promise<
+    Array<{
+      id: string;
+      status: RunStatus;
+      durationMs: string | null;
+      actionsTotal: string | null;
+      actionsExecuted: string | null;
+      actionsFailed: string | null;
+      actionsSkipped: string | null;
+      errorMessage: string | null;
+    }>
+  > {
     const result = await this.db
       .select({
         id: runs.id,
@@ -889,12 +894,7 @@ export class RunRepository {
         errorMessage: runs.errorMessage,
       })
       .from(runs)
-      .where(
-        and(
-          eq(runs.parentRunId, parentRunId),
-          isNull(runs.deletedAt),
-        )
-      );
+      .where(and(eq(runs.parentRunId, parentRunId), isNull(runs.deletedAt)));
 
     return result;
   }
@@ -906,16 +906,34 @@ export class RunRepository {
   async updateActionScreenshot(
     runId: string,
     actionId: string,
-    screenshotPath: string,
+    screenshotPath: string
   ): Promise<void> {
     await this.db
       .update(runActions)
       .set({ screenshotPath })
-      .where(
-        and(
-          eq(runActions.runId, runId),
-          eq(runActions.actionId, actionId),
-        )
-      );
+      .where(and(eq(runActions.runId, runId), eq(runActions.actionId, actionId)));
+  }
+
+  /**
+   * Get run stats for a schedule (computed from actual run data).
+   * Used to provide accurate counts even when schedule counters are stale.
+   */
+  async getRunStatsForSchedule(
+    scheduleId: string
+  ): Promise<{ total: number; passed: number; failed: number }> {
+    const result = await this.db
+      .select({
+        total: sql<number>`count(*)::int`,
+        passed: sql<number>`count(*) filter (where ${runs.status} = 'passed')::int`,
+        failed: sql<number>`count(*) filter (where ${runs.status} = 'failed')::int`,
+      })
+      .from(runs)
+      .where(and(eq(runs.scheduleId, scheduleId), isNull(runs.deletedAt)));
+
+    return {
+      total: result[0]?.total ?? 0,
+      passed: result[0]?.passed ?? 0,
+      failed: result[0]?.failed ?? 0,
+    };
   }
 }

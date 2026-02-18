@@ -110,6 +110,14 @@ vi.mock('../services/ScheduleService.js', () => {
   };
 });
 
+// Mock RunRepository to provide getRunStatsForSchedule
+const mockGetRunStatsForSchedule = vi.fn().mockResolvedValue({ total: 10, passed: 8, failed: 2 });
+vi.mock('../repositories/RunRepository.js', () => ({
+  RunRepository: vi.fn().mockImplementation(() => ({
+    getRunStatsForSchedule: mockGetRunStatsForSchedule,
+  })),
+}));
+
 // Import after mocking
 import scheduleRoutes from './schedules.js';
 import { ScheduleService, ScheduleError } from '../services/ScheduleService.js';

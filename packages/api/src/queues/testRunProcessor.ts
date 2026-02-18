@@ -1018,6 +1018,12 @@ export function createTestRunProcessor(
         actionsSkipped: actionCount * browsersToRun.length - totalActionsExecuted,
       });
 
+      // Update schedule tracking if triggered by schedule
+      const completedRun = await runRepository.findById(runId);
+      if (completedRun?.scheduleId && (overallStatus === 'passed' || overallStatus === 'failed')) {
+        await scheduleService.updateAfterRun(completedRun.scheduleId, runId, overallStatus);
+      }
+
       await job.updateProgress(100);
 
       // Check if parent suite run should be completed
@@ -1066,6 +1072,14 @@ export function createTestRunProcessor(
           errorMessage,
           errorStack,
         });
+      }
+
+      // Update schedule tracking if triggered by schedule
+      if (!isCancelled) {
+        const failedRun = await runRepository.findById(runId);
+        if (failedRun?.scheduleId) {
+          await scheduleService.updateAfterRun(failedRun.scheduleId, runId, 'failed');
+        }
       }
 
       // Check if parent suite run should be completed

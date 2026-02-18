@@ -407,6 +407,9 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
         const userId = (request.user as { sub: string }).sub;
         const schedule = await scheduleService.getSchedule(userId, request.params.id);
 
+        // Compute accurate run stats from actual run data
+        const runStats = await runRepository.getRunStatsForSchedule(schedule.id);
+
         return reply.status(200).send({
           success: true,
           data: {
@@ -432,9 +435,9 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
             lastRunId: schedule.lastRunId,
             lastRunAt: schedule.lastRunAt?.toISOString() ?? null,
             lastRunStatus: schedule.lastRunStatus,
-            totalRuns: schedule.totalRuns,
-            successfulRuns: schedule.successfulRuns,
-            failedRuns: schedule.failedRuns,
+            totalRuns: runStats.total,
+            successfulRuns: runStats.passed,
+            failedRuns: runStats.failed,
             runsToday: schedule.runsToday,
             runsThisMonth: schedule.runsThisMonth,
             notifyOnFailure: schedule.notifyOnFailure,
