@@ -43,6 +43,7 @@ const sampleTest: SafeTest = {
   name: 'Login Test',
   description: 'Tests login flow',
   slug: 'login-test',
+  recordingId: null,
   recordingData: { id: 'rec_1', testName: 'Login', url: 'https://example.com', actions: [] },
   recordingUrl: 'https://example.com',
   actionCount: 5,
@@ -171,7 +172,7 @@ describe('TestService', () => {
   beforeEach(() => {
     mockTestRepo = createMockTestRepository();
     mockSuiteRepo = createMockSuiteRepository();
-    service = new TestService(mockTestRepo as any, mockSuiteRepo as any);
+    service = new TestService(mockTestRepo as any, mockSuiteRepo as any, undefined);
   });
 
   describe('Schema Validation', () => {
@@ -397,9 +398,9 @@ describe('TestService', () => {
         suiteId: NON_EXISTENT_ID,
       };
 
-      await expect(
-        service.createTest(USER_ID, PROJECT_ID, input)
-      ).rejects.toThrow('Target suite not found');
+      await expect(service.createTest(USER_ID, PROJECT_ID, input)).rejects.toThrow(
+        'Target suite not found'
+      );
     });
 
     it('should throw when suite belongs to different project', async () => {
@@ -414,9 +415,9 @@ describe('TestService', () => {
         suiteId: SUITE_ID,
       };
 
-      await expect(
-        service.createTest(USER_ID, PROJECT_ID, input)
-      ).rejects.toThrow('Target suite not found');
+      await expect(service.createTest(USER_ID, PROJECT_ID, input)).rejects.toThrow(
+        'Target suite not found'
+      );
     });
 
     it('should check name availability', async () => {
@@ -438,9 +439,7 @@ describe('TestService', () => {
         recordingData: {},
       };
 
-      await expect(
-        service.createTest(USER_ID, PROJECT_ID, input)
-      ).rejects.toThrow(TestError);
+      await expect(service.createTest(USER_ID, PROJECT_ID, input)).rejects.toThrow(TestError);
     });
 
     it('should enforce max tests limit', async () => {
@@ -451,9 +450,7 @@ describe('TestService', () => {
         recordingData: {},
       };
 
-      await expect(
-        service.createTest(USER_ID, PROJECT_ID, input)
-      ).rejects.toThrow(TestError);
+      await expect(service.createTest(USER_ID, PROJECT_ID, input)).rejects.toThrow(TestError);
     });
 
     it('should not include userId in response', async () => {
@@ -481,9 +478,7 @@ describe('TestService', () => {
     it('should throw NOT_FOUND when test does not exist', async () => {
       mockTestRepo.findByIdAndUser.mockResolvedValue(null);
 
-      await expect(
-        service.getTest(USER_ID, NON_EXISTENT_ID)
-      ).rejects.toThrow('Test not found');
+      await expect(service.getTest(USER_ID, NON_EXISTENT_ID)).rejects.toThrow('Test not found');
     });
   });
 
@@ -499,9 +494,9 @@ describe('TestService', () => {
     it('should throw when test not found by slug', async () => {
       mockTestRepo.findBySlug.mockResolvedValue(null);
 
-      await expect(
-        service.getTestBySlug(USER_ID, PROJECT_ID, NON_EXISTENT_ID)
-      ).rejects.toThrow('Test not found');
+      await expect(service.getTestBySlug(USER_ID, PROJECT_ID, NON_EXISTENT_ID)).rejects.toThrow(
+        'Test not found'
+      );
     });
 
     it('should throw when test belongs to different user', async () => {
@@ -510,9 +505,9 @@ describe('TestService', () => {
         userId: OTHER_USER_ID,
       });
 
-      await expect(
-        service.getTestBySlug(USER_ID, PROJECT_ID, 'login-test')
-      ).rejects.toThrow('Test not found');
+      await expect(service.getTestBySlug(USER_ID, PROJECT_ID, 'login-test')).rejects.toThrow(
+        'Test not found'
+      );
     });
   });
 
@@ -580,9 +575,9 @@ describe('TestService', () => {
       mockTestRepo.findByIdAndUser.mockResolvedValue(null);
 
       const input: UpdateTestRequest = { name: 'Test' };
-      await expect(
-        service.updateTest(USER_ID, NON_EXISTENT_ID, input)
-      ).rejects.toThrow('Test not found');
+      await expect(service.updateTest(USER_ID, NON_EXISTENT_ID, input)).rejects.toThrow(
+        'Test not found'
+      );
     });
 
     it('should verify target suite when moving', async () => {
@@ -602,9 +597,9 @@ describe('TestService', () => {
       mockSuiteRepo.findByIdAndUser.mockResolvedValue(null);
 
       const input: UpdateTestRequest = { suiteId: NON_EXISTENT_ID };
-      await expect(
-        service.updateTest(USER_ID, TEST_ID, input)
-      ).rejects.toThrow('Target suite not found');
+      await expect(service.updateTest(USER_ID, TEST_ID, input)).rejects.toThrow(
+        'Target suite not found'
+      );
     });
 
     it('should throw when target suite in different project', async () => {
@@ -614,38 +609,30 @@ describe('TestService', () => {
       });
 
       const input: UpdateTestRequest = { suiteId: SUITE_ID_2 };
-      await expect(
-        service.updateTest(USER_ID, TEST_ID, input)
-      ).rejects.toThrow('Target suite not found');
+      await expect(service.updateTest(USER_ID, TEST_ID, input)).rejects.toThrow(
+        'Target suite not found'
+      );
     });
 
     it('should check name availability when changing name', async () => {
       const input: UpdateTestRequest = { name: 'New Name' };
       await service.updateTest(USER_ID, TEST_ID, input);
 
-      expect(mockTestRepo.isNameAvailable).toHaveBeenCalledWith(
-        SUITE_ID,
-        'New Name',
-        TEST_ID
-      );
+      expect(mockTestRepo.isNameAvailable).toHaveBeenCalledWith(SUITE_ID, 'New Name', TEST_ID);
     });
 
     it('should throw when name is taken', async () => {
       mockTestRepo.isNameAvailable.mockResolvedValue(false);
 
       const input: UpdateTestRequest = { name: 'Existing Name' };
-      await expect(
-        service.updateTest(USER_ID, TEST_ID, input)
-      ).rejects.toThrow(TestError);
+      await expect(service.updateTest(USER_ID, TEST_ID, input)).rejects.toThrow(TestError);
     });
 
     it('should throw when update returns null', async () => {
       mockTestRepo.update.mockResolvedValue(null);
 
       const input: UpdateTestRequest = { description: 'Updated' };
-      await expect(
-        service.updateTest(USER_ID, TEST_ID, input)
-      ).rejects.toThrow('Test not found');
+      await expect(service.updateTest(USER_ID, TEST_ID, input)).rejects.toThrow('Test not found');
     });
   });
 
@@ -664,11 +651,7 @@ describe('TestService', () => {
       const result = await service.moveTests(USER_ID, PROJECT_ID, request);
 
       expect(result.movedCount).toBe(1);
-      expect(mockTestRepo.moveToSuite).toHaveBeenCalledWith(
-        [TEST_ID],
-        USER_ID,
-        SUITE_ID_2
-      );
+      expect(mockTestRepo.moveToSuite).toHaveBeenCalledWith([TEST_ID], USER_ID, SUITE_ID_2);
     });
 
     it('should throw when target suite not found', async () => {
@@ -679,9 +662,9 @@ describe('TestService', () => {
         targetSuiteId: NON_EXISTENT_ID,
       };
 
-      await expect(
-        service.moveTests(USER_ID, PROJECT_ID, request)
-      ).rejects.toThrow('Target suite not found');
+      await expect(service.moveTests(USER_ID, PROJECT_ID, request)).rejects.toThrow(
+        'Target suite not found'
+      );
     });
 
     it('should throw when target suite in different project', async () => {
@@ -695,9 +678,9 @@ describe('TestService', () => {
         targetSuiteId: SUITE_ID_2,
       };
 
-      await expect(
-        service.moveTests(USER_ID, PROJECT_ID, request)
-      ).rejects.toThrow('Target suite not found');
+      await expect(service.moveTests(USER_ID, PROJECT_ID, request)).rejects.toThrow(
+        'Target suite not found'
+      );
     });
   });
 
@@ -707,20 +690,20 @@ describe('TestService', () => {
 
       await service.reorderTests(USER_ID, SUITE_ID, request);
 
-      expect(mockTestRepo.reorder).toHaveBeenCalledWith(
-        USER_ID,
-        SUITE_ID,
-        [TEST_ID_1, TEST_ID_2, TEST_ID_3]
-      );
+      expect(mockTestRepo.reorder).toHaveBeenCalledWith(USER_ID, SUITE_ID, [
+        TEST_ID_1,
+        TEST_ID_2,
+        TEST_ID_3,
+      ]);
     });
 
     it('should throw when suite not found', async () => {
       mockSuiteRepo.findByIdAndUser.mockResolvedValue(null);
 
       const request = { testIds: [TEST_ID_1] };
-      await expect(
-        service.reorderTests(USER_ID, NON_EXISTENT_ID, request)
-      ).rejects.toThrow('Target suite not found');
+      await expect(service.reorderTests(USER_ID, NON_EXISTENT_ID, request)).rejects.toThrow(
+        'Target suite not found'
+      );
     });
   });
 
@@ -734,17 +717,13 @@ describe('TestService', () => {
     it('should throw when test not found', async () => {
       mockTestRepo.findByIdAndUser.mockResolvedValue(null);
 
-      await expect(
-        service.deleteTest(USER_ID, NON_EXISTENT_ID)
-      ).rejects.toThrow('Test not found');
+      await expect(service.deleteTest(USER_ID, NON_EXISTENT_ID)).rejects.toThrow('Test not found');
     });
 
     it('should throw when softDelete returns false', async () => {
       mockTestRepo.softDelete.mockResolvedValue(false);
 
-      await expect(
-        service.deleteTest(USER_ID, TEST_ID)
-      ).rejects.toThrow('Test not found');
+      await expect(service.deleteTest(USER_ID, TEST_ID)).rejects.toThrow('Test not found');
     });
   });
 

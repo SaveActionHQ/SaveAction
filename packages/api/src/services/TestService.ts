@@ -18,6 +18,11 @@ import type {
   TestSummary,
 } from '../repositories/TestRepository.js';
 import type { TestSuiteRepository } from '../repositories/TestSuiteRepository.js';
+import type {
+  RecordingRepository,
+  RecordingCreateData,
+} from '../repositories/RecordingRepository.js';
+import type { RecordingData } from '../db/schema/recordings.js';
 import type { BrowserType, TestConfig } from '../db/schema/tests.js';
 import { DEFAULT_TEST_CONFIG } from '../db/schema/tests.js';
 
@@ -52,11 +57,7 @@ export const TestErrors = {
     'INVALID_RECORDING_DATA',
     400
   ),
-  INVALID_BROWSERS: new TestError(
-    'At least one browser must be selected',
-    'INVALID_BROWSERS',
-    400
-  ),
+  INVALID_BROWSERS: new TestError('At least one browser must be selected', 'INVALID_BROWSERS', 400),
 } as const;
 
 /**
@@ -89,6 +90,7 @@ export const createTestSchema = z.object({
   name: z.string().min(1).max(255),
   description: z.string().max(2000).optional().nullable(),
   suiteId: z.string().uuid().optional(), // Defaults to default suite
+  recordingId: z.string().uuid().optional().nullable(), // Existing library recording
   recordingData: z.record(z.unknown()),
   recordingUrl: z.string().url().max(2048).optional().nullable(),
   actionCount: z.number().int().min(0).optional(),
@@ -103,6 +105,7 @@ export const updateTestSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   description: z.string().max(2000).optional().nullable(),
   suiteId: z.string().uuid().optional(),
+  recordingId: z.string().uuid().optional().nullable(),
   recordingData: z.record(z.unknown()).optional(),
   recordingUrl: z.string().url().max(2048).optional().nullable(),
   actionCount: z.number().int().min(0).optional(),
@@ -119,7 +122,10 @@ export const listTestsQuerySchema = z.object({
   suiteId: z.string().uuid().optional(),
   search: z.string().max(255).optional(),
   status: z.string().optional(),
-  sortBy: z.enum(['name', 'displayOrder', 'createdAt', 'lastRunAt']).optional().default('displayOrder'),
+  sortBy: z
+    .enum(['name', 'displayOrder', 'createdAt', 'lastRunAt'])
+    .optional()
+    .default('displayOrder'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('asc'),
   includeDeleted: z.coerce.boolean().optional().default(false),
 });
@@ -167,6 +173,7 @@ export interface TestResponse {
   name: string;
   description: string | null;
   slug: string;
+  recordingId: string | null;
   recordingData: Record<string, unknown>;
   recordingUrl: string | null;
   actionCount: number;
@@ -211,6 +218,7 @@ function toResponse(test: SafeTest): TestResponse {
     name: test.name,
     description: test.description,
     slug: test.slug,
+    recordingId: test.recordingId,
     recordingData: test.recordingData,
     recordingUrl: test.recordingUrl,
     actionCount: test.actionCount,
@@ -256,6 +264,7 @@ export class TestService {
   constructor(
     private readonly testRepository: TestRepository,
     private readonly testSuiteRepository: TestSuiteRepository,
+    private readonly recordingRepository?: RecordingRepository,
     config?: Partial<TestServiceConfig>
   ) {
     this.config = { ...DEFAULT_SERVICE_CONFIG, ...config };
@@ -309,12 +318,37 @@ export class TestService {
       throw TestErrors.NAME_TAKEN;
     }
 
+    // Auto-create recording in library if not already linked to one
+    let recordingId = validatedData.recordingId || null;
+    if (!recordingId && this.recordingRepository) {
+      try {
+        const recData = validatedData.recordingData as Record<string, unknown>;
+        const recordingCreateData: RecordingCreateData = {
+          userId,
+          projectId,
+          name: (recData.testName as string) || validatedData.name,
+          url: (recData.url as string) || validatedData.recordingUrl || '',
+          description: null,
+          originalId: (recData.id as string) || null,
+          tags: [],
+          data: recData as unknown as RecordingData,
+          schemaVersion: (recData.version as string) || '1.0.0',
+        };
+        const libraryRecording = await this.recordingRepository.create(recordingCreateData);
+        recordingId = libraryRecording.id;
+      } catch {
+        // Non-critical: if library creation fails, still create the test
+        // The recording data is stored inline on the test as a snapshot
+      }
+    }
+
     const createData: TestCreateData = {
       userId,
       projectId,
       suiteId,
       name: validatedData.name,
       description: validatedData.description || null,
+      recordingId,
       recordingData: validatedData.recordingData,
       recordingUrl: validatedData.recordingUrl || null,
       actionCount: validatedData.actionCount ?? 0,
@@ -342,11 +376,7 @@ export class TestService {
   /**
    * Get a test by slug within a project
    */
-  async getTestBySlug(
-    userId: string,
-    projectId: string,
-    slug: string
-  ): Promise<TestResponse> {
+  async getTestBySlug(userId: string, projectId: string, slug: string): Promise<TestResponse> {
     const test = await this.testRepository.findBySlug(projectId, slug);
 
     if (!test) {
@@ -447,11 +477,16 @@ export class TestService {
     if (validatedData.name !== undefined) updateData.name = validatedData.name;
     if (validatedData.description !== undefined) updateData.description = validatedData.description;
     if (validatedData.suiteId !== undefined) updateData.suiteId = validatedData.suiteId;
-    if (validatedData.recordingData !== undefined) updateData.recordingData = validatedData.recordingData;
-    if (validatedData.recordingUrl !== undefined) updateData.recordingUrl = validatedData.recordingUrl;
+    if (validatedData.recordingId !== undefined) updateData.recordingId = validatedData.recordingId;
+    if (validatedData.recordingData !== undefined)
+      updateData.recordingData = validatedData.recordingData;
+    if (validatedData.recordingUrl !== undefined)
+      updateData.recordingUrl = validatedData.recordingUrl;
     if (validatedData.actionCount !== undefined) updateData.actionCount = validatedData.actionCount;
-    if (validatedData.browsers !== undefined) updateData.browsers = validatedData.browsers as BrowserType[];
-    if (validatedData.config !== undefined) updateData.config = validatedData.config as Partial<TestConfig>;
+    if (validatedData.browsers !== undefined)
+      updateData.browsers = validatedData.browsers as BrowserType[];
+    if (validatedData.config !== undefined)
+      updateData.config = validatedData.config as Partial<TestConfig>;
 
     const updated = await this.testRepository.update(testId, userId, updateData);
     if (!updated) {
@@ -495,11 +530,7 @@ export class TestService {
   /**
    * Reorder tests within a suite
    */
-  async reorderTests(
-    userId: string,
-    suiteId: string,
-    request: ReorderTestsRequest
-  ): Promise<void> {
+  async reorderTests(userId: string, suiteId: string, request: ReorderTestsRequest): Promise<void> {
     const validatedData = reorderTestsSchema.parse(request);
 
     // Verify suite exists

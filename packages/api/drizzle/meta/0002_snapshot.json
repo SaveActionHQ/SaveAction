@@ -1,6 +1,6 @@
 {
-  "id": "1c720270-f15a-4d06-a5e3-2f23ae72f1cd",
-  "prevId": "46aeece3-fa7c-46de-bee9-880a470001ad",
+  "id": "5a48c2a5-6c98-464c-a449-956c2f9723ef",
+  "prevId": "1c720270-f15a-4d06-a5e3-2f23ae72f1cd",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -879,6 +879,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "parent_run_id": {
+          "name": "parent_run_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "test_name": {
           "name": "test_name",
           "type": "varchar(255)",
@@ -1192,6 +1198,28 @@
           "method": "btree",
           "with": {}
         },
+        "runs_parent_run_id_idx": {
+          "name": "runs_parent_run_id_idx",
+          "columns": [
+            {
+              "expression": "parent_run_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"runs\".\"deleted_at\" IS NULL",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
         "runs_run_type_idx": {
           "name": "runs_run_type_idx",
           "columns": [
@@ -1429,6 +1457,12 @@
           "type": "varchar(10)",
           "primaryKey": false,
           "notNull": true
+        },
+        "browser": {
+          "name": "browser",
+          "type": "varchar(50)",
+          "primaryKey": false,
+          "notNull": false
         },
         "status": {
           "name": "status",
@@ -2802,6 +2836,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "recording_id": {
+          "name": "recording_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
         "name": {
           "name": "name",
           "type": "varchar(255)",
@@ -2851,7 +2891,7 @@
           "type": "jsonb",
           "primaryKey": false,
           "notNull": true,
-          "default": "'{\"headless\":true,\"video\":false,\"screenshot\":\"only-on-failure\",\"timeout\":30000,\"retries\":0,\"slowMo\":0}'::jsonb"
+          "default": "'{\"headless\":true,\"video\":false,\"screenshot\":\"only-on-failure\",\"timeout\":30000,\"retries\":0,\"slowMo\":0,\"parallelBrowsers\":true}'::jsonb"
         },
         "display_order": {
           "name": "display_order",
@@ -3059,6 +3099,19 @@
             "id"
           ],
           "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "tests_recording_id_recordings_id_fk": {
+          "name": "tests_recording_id_recordings_id_fk",
+          "tableFrom": "tests",
+          "tableTo": "recordings",
+          "columnsFrom": [
+            "recording_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
           "onUpdate": "no action"
         }
       },

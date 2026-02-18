@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload, Library, FileJson } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +12,21 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/providers/toast-provider';
 import { BrowserSelector } from '@/components/tests/browser-selector';
 import { TestConfigForm } from '@/components/tests/test-config-form';
-import { api, type Test, type TestBrowser, type TestConfig } from '@/lib/api';
+import { RecordingUpload } from '@/components/tests/recording-upload';
+import { RecordingSearchSelect, type SelectedRecording } from '@/components/tests/recording-search-select';
+import { api, type Test, type TestBrowser, type TestConfig, type Recording } from '@/lib/api';
+import { cn } from '@/lib/utils';
+
+type RecordingChangeMode = 'none' | 'upload' | 'library';
+
+interface RecordingInfo {
+  data: Record<string, unknown>;
+  name: string;
+  url: string;
+  actionCount: number;
+  version: string;
+  viewport?: { width: number; height: number };
+}
 
 export default function EditTestPage() {
   const params = useParams();
@@ -33,6 +47,13 @@ export default function EditTestPage() {
   const [config, setConfig] = React.useState<Partial<TestConfig>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+
+  // Recording change state
+  const [changeMode, setChangeMode] = React.useState<RecordingChangeMode>('none');
+  const [uploadedRecording, setUploadedRecording] = React.useState<RecordingInfo | null>(null);
+  const [libraryRecording, setLibraryRecording] = React.useState<SelectedRecording | null>(null);
+  const [libraryRecordingData, setLibraryRecordingData] = React.useState<Record<string, unknown> | null>(null);
+  const [isLoadingRecording, setIsLoadingRecording] = React.useState(false);
 
   // Load test data
   React.useEffect(() => {
@@ -55,6 +76,32 @@ export default function EditTestPage() {
     load();
   }, [projectId, testId]);
 
+  // Handle library recording selection
+  const handleLibraryChange = async (selected: SelectedRecording | null) => {
+    setLibraryRecording(selected);
+    setLibraryRecordingData(null);
+
+    if (selected) {
+      setIsLoadingRecording(true);
+      try {
+        const full: Recording = await api.getRecording(selected.id);
+        setLibraryRecordingData(full.data as unknown as Record<string, unknown>);
+      } catch {
+        setError('Failed to load recording data from library');
+        setLibraryRecording(null);
+      } finally {
+        setIsLoadingRecording(false);
+      }
+    }
+  };
+
+  const cancelRecordingChange = () => {
+    setChangeMode('none');
+    setUploadedRecording(null);
+    setLibraryRecording(null);
+    setLibraryRecordingData(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name.trim()) {
@@ -66,12 +113,25 @@ export default function EditTestPage() {
     setError(null);
 
     try {
-      await api.updateTest(projectId, testId, {
+      const updateData: Record<string, unknown> = {
         name: name.trim(),
         description: description.trim() || undefined,
         browsers,
         config: config as Partial<TestConfig>,
-      });
+      };
+
+      // Include recording change if user swapped
+      if (changeMode === 'upload' && uploadedRecording) {
+        updateData.recordingData = uploadedRecording.data;
+        updateData.actionCount = uploadedRecording.actionCount;
+        updateData.recordingId = null; // Clear library link
+      } else if (changeMode === 'library' && libraryRecording && libraryRecordingData) {
+        updateData.recordingData = libraryRecordingData;
+        updateData.actionCount = libraryRecording.actionCount;
+        updateData.recordingId = libraryRecording.id;
+      }
+
+      await api.updateTest(projectId, testId, updateData);
       toast.success('Test updated');
       router.push(`/projects/${projectId}/suites/${suiteId}/tests/${testId}`);
     } catch (err) {
@@ -179,6 +239,126 @@ export default function EditTestPage() {
             </CardContent>
           </Card>
 
+          {/* Recording */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Recording</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {changeMode === 'none' ? (
+                <>
+                  {/* Current recording info */}
+                  <div className="flex items-center gap-3 rounded-lg border bg-muted/30 p-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted shrink-0">
+                      <FileJson className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">Current recording</p>
+                      <p className="text-xs text-muted-foreground">
+                        {test?.actionCount ?? 0} actions
+                        {test?.recordingId && (
+                          <span className="ml-1.5 inline-flex items-center gap-1 text-primary">
+                            <Library className="h-3 w-3" /> Linked to library
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </div>
+                  {/* Change buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setChangeMode('upload')}
+                      disabled={isSubmitting}
+                    >
+                      <Upload className="h-3.5 w-3.5 mr-1.5" />
+                      Upload New
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setChangeMode('library')}
+                      disabled={isSubmitting}
+                    >
+                      <Library className="h-3.5 w-3.5 mr-1.5" />
+                      From Library
+                    </Button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  {/* Source toggle */}
+                  <div className="flex gap-2 rounded-lg bg-muted p-1">
+                    <button
+                      type="button"
+                      className={cn(
+                        'flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                        changeMode === 'upload'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                      onClick={() => setChangeMode('upload')}
+                      disabled={isSubmitting}
+                    >
+                      <Upload className="h-4 w-4" />
+                      Upload File
+                    </button>
+                    <button
+                      type="button"
+                      className={cn(
+                        'flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                        changeMode === 'library'
+                          ? 'bg-background text-foreground shadow-sm'
+                          : 'text-muted-foreground hover:text-foreground'
+                      )}
+                      onClick={() => setChangeMode('library')}
+                      disabled={isSubmitting}
+                    >
+                      <Library className="h-4 w-4" />
+                      From Library
+                    </button>
+                  </div>
+
+                  {changeMode === 'upload' ? (
+                    <RecordingUpload
+                      value={uploadedRecording}
+                      onChange={setUploadedRecording}
+                      disabled={isSubmitting}
+                    />
+                  ) : (
+                    <div className="space-y-2">
+                      <RecordingSearchSelect
+                        projectId={projectId}
+                        value={libraryRecording}
+                        onChange={handleLibraryChange}
+                        disabled={isSubmitting || isLoadingRecording}
+                        label=""
+                      />
+                      {isLoadingRecording && (
+                        <p className="text-xs text-muted-foreground animate-pulse">
+                          Loading recording data…
+                        </p>
+                      )}
+                    </div>
+                  )}
+
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={cancelRecordingChange}
+                    disabled={isSubmitting}
+                  >
+                    Cancel change
+                  </Button>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Browsers */}
           <Card>
             <CardHeader>
@@ -217,7 +397,7 @@ export default function EditTestPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" isLoading={isSubmitting}>
+            <Button type="submit" isLoading={isSubmitting} disabled={isLoadingRecording}>
               Save Changes
             </Button>
           </div>

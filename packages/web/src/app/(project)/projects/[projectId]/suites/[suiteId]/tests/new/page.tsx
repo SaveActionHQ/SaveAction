@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Upload, Library } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -12,7 +12,11 @@ import { useToast } from '@/components/providers/toast-provider';
 import { BrowserSelector } from '@/components/tests/browser-selector';
 import { TestConfigForm, DEFAULT_TEST_CONFIG } from '@/components/tests/test-config-form';
 import { RecordingUpload } from '@/components/tests/recording-upload';
-import { api, type TestBrowser, type TestConfig } from '@/lib/api';
+import { RecordingSearchSelect, type SelectedRecording } from '@/components/tests/recording-search-select';
+import { api, type TestBrowser, type TestConfig, type Recording } from '@/lib/api';
+import { cn } from '@/lib/utils';
+
+type RecordingSource = 'upload' | 'library';
 
 interface RecordingInfo {
   data: Record<string, unknown>;
@@ -32,26 +36,69 @@ export default function NewTestPage() {
 
   const [name, setName] = React.useState('');
   const [description, setDescription] = React.useState('');
-  const [recording, setRecording] = React.useState<RecordingInfo | null>(null);
+  const [recordingSource, setRecordingSource] = React.useState<RecordingSource>('library');
+  const [uploadedRecording, setUploadedRecording] = React.useState<RecordingInfo | null>(null);
+  const [libraryRecording, setLibraryRecording] = React.useState<SelectedRecording | null>(null);
+  const [libraryRecordingData, setLibraryRecordingData] = React.useState<Record<string, unknown> | null>(null);
   const [browsers, setBrowsers] = React.useState<TestBrowser[]>(['chromium']);
   const [config, setConfig] = React.useState<Partial<TestConfig>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
+  const [isLoadingRecording, setIsLoadingRecording] = React.useState(false);
 
-  // Auto-fill name from recording
-  const handleRecordingChange = (info: RecordingInfo | null) => {
-    setRecording(info);
+  // Auto-fill name from uploaded recording
+  const handleUploadChange = (info: RecordingInfo | null) => {
+    setUploadedRecording(info);
     if (info && !name) {
       setName(info.name);
     }
   };
 
+  // Handle library recording selection
+  const handleLibraryChange = async (selected: SelectedRecording | null) => {
+    setLibraryRecording(selected);
+    setLibraryRecordingData(null);
+
+    if (selected) {
+      // Auto-fill name
+      if (!name) {
+        setName(selected.name);
+      }
+      // Fetch full recording data
+      setIsLoadingRecording(true);
+      try {
+        const full: Recording = await api.getRecording(selected.id);
+        setLibraryRecordingData(full.data as unknown as Record<string, unknown>);
+      } catch {
+        setError('Failed to load recording data from library');
+        setLibraryRecording(null);
+      } finally {
+        setIsLoadingRecording(false);
+      }
+    }
+  };
+
+  // Switch recording source and clear the other
+  const switchSource = (source: RecordingSource) => {
+    setRecordingSource(source);
+    setError(null);
+  };
+
+  const hasRecording =
+    recordingSource === 'upload'
+      ? !!uploadedRecording
+      : !!libraryRecording && !!libraryRecordingData;
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!recording) {
-      setError('Please upload a recording file');
+    if (!hasRecording) {
+      setError(
+        recordingSource === 'upload'
+          ? 'Please upload a recording file'
+          : 'Please select a recording from the library'
+      );
       return;
     }
     if (!name.trim()) {
@@ -64,12 +111,24 @@ export default function NewTestPage() {
 
     try {
       const mergedConfig = { ...DEFAULT_TEST_CONFIG, ...config };
+
+      const recordingData =
+        recordingSource === 'upload'
+          ? uploadedRecording!.data
+          : libraryRecordingData!;
+
+      const actionCount =
+        recordingSource === 'upload'
+          ? uploadedRecording!.actionCount
+          : libraryRecording!.actionCount;
+
       const test = await api.createTest(projectId, {
         name: name.trim(),
         suiteId,
         description: description.trim() || undefined,
-        recordingData: recording.data,
-        actionCount: recording.actionCount,
+        recordingData,
+        recordingId: recordingSource === 'library' ? libraryRecording!.id : undefined,
+        actionCount,
         browsers,
         config: mergedConfig,
       });
@@ -92,7 +151,7 @@ export default function NewTestPage() {
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Add New Test</h1>
           <p className="text-muted-foreground">
-            Upload a recording and configure test settings
+            Upload a recording or select one from the library
           </p>
         </div>
       </div>
@@ -107,14 +166,64 @@ export default function NewTestPage() {
         {/* Step 1: Recording */}
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">1. Upload Recording</CardTitle>
+            <CardTitle className="text-base">1. Recording</CardTitle>
           </CardHeader>
-          <CardContent>
-            <RecordingUpload
-              value={recording}
-              onChange={handleRecordingChange}
-              disabled={isSubmitting}
-            />
+          <CardContent className="space-y-4">
+            {/* Source toggle */}
+            <div className="flex gap-2 rounded-lg bg-muted p-1">
+              <button
+                type="button"
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  recordingSource === 'library'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+                onClick={() => switchSource('library')}
+                disabled={isSubmitting}
+              >
+                <Library className="h-4 w-4" />
+                From Library
+              </button>
+              <button
+                type="button"
+                className={cn(
+                  'flex flex-1 items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium transition-colors',
+                  recordingSource === 'upload'
+                    ? 'bg-background text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground'
+                )}
+                onClick={() => switchSource('upload')}
+                disabled={isSubmitting}
+              >
+                <Upload className="h-4 w-4" />
+                Upload File
+              </button>
+            </div>
+
+            {/* Content based on source */}
+            {recordingSource === 'library' ? (
+              <div className="space-y-2">
+                <RecordingSearchSelect
+                  projectId={projectId}
+                  value={libraryRecording}
+                  onChange={handleLibraryChange}
+                  disabled={isSubmitting || isLoadingRecording}
+                  label=""
+                />
+                {isLoadingRecording && (
+                  <p className="text-xs text-muted-foreground animate-pulse">
+                    Loading recording data…
+                  </p>
+                )}
+              </div>
+            ) : (
+              <RecordingUpload
+                value={uploadedRecording}
+                onChange={handleUploadChange}
+                disabled={isSubmitting}
+              />
+            )}
           </CardContent>
         </Card>
 
@@ -204,7 +313,7 @@ export default function NewTestPage() {
           >
             Cancel
           </Button>
-          <Button type="submit" isLoading={isSubmitting}>
+          <Button type="submit" isLoading={isSubmitting} disabled={isLoadingRecording}>
             Create Test
           </Button>
         </div>

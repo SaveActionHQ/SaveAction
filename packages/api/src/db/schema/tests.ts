@@ -13,6 +13,7 @@ import { sql } from 'drizzle-orm';
 import { users } from './users.js';
 import { projects } from './projects.js';
 import { testSuites } from './test-suites.js';
+import { recordings } from './recordings.js';
 
 /**
  * Test configuration type - Saved run settings
@@ -84,6 +85,11 @@ export const tests = pgTable(
     suiteId: uuid('suite_id')
       .notNull()
       .references(() => testSuites.id, { onDelete: 'cascade' }),
+
+    // Library recording reference (nullable - for traceability back to library)
+    // When a test is created, the recording is also stored in the recordings table.
+    // recording_data is a frozen snapshot for execution; recordingId links to the library entry.
+    recordingId: uuid('recording_id').references(() => recordings.id, { onDelete: 'set null' }),
 
     // Test metadata
     name: varchar('name', { length: 255 }).notNull(),

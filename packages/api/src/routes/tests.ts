@@ -19,6 +19,7 @@ import {
 } from '../services/TestService.js';
 import { TestRepository } from '../repositories/TestRepository.js';
 import { TestSuiteRepository } from '../repositories/TestSuiteRepository.js';
+import { RecordingRepository } from '../repositories/RecordingRepository.js';
 import type { Database } from '../db/index.js';
 import { z } from 'zod';
 
@@ -75,7 +76,8 @@ const testRoutes: FastifyPluginAsync<TestRoutesOptions> = async (fastify, option
   // Create repositories and service
   const testRepository = new TestRepository(db);
   const testSuiteRepository = new TestSuiteRepository(db);
-  const testService = new TestService(testRepository, testSuiteRepository, {
+  const recordingRepository = new RecordingRepository(db);
+  const testService = new TestService(testRepository, testSuiteRepository, recordingRepository, {
     maxTestsPerProject,
   });
 
@@ -110,6 +112,7 @@ const testRoutes: FastifyPluginAsync<TestRoutesOptions> = async (fastify, option
             name: { type: 'string', minLength: 1, maxLength: 255 },
             description: { type: 'string', maxLength: 2000, nullable: true },
             suiteId: { type: 'string', format: 'uuid' },
+            recordingId: { type: 'string', format: 'uuid', nullable: true },
             recordingData: { type: 'object' },
             recordingUrl: { type: 'string', format: 'uri', maxLength: 2048, nullable: true },
             actionCount: { type: 'integer', minimum: 0 },

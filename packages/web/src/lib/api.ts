@@ -266,6 +266,7 @@ export interface Test {
   name: string;
   slug: string;
   description?: string | null;
+  recordingId?: string | null;
   recordingUrl?: string | null;
   recordingData?: Record<string, unknown> | null;
   actionCount: number;
@@ -284,6 +285,7 @@ export interface CreateTestRequest {
   name: string;
   suiteId?: string;
   description?: string;
+  recordingId?: string;
   recordingData: Record<string, unknown>;
   recordingUrl?: string;
   actionCount?: number;
@@ -294,6 +296,10 @@ export interface CreateTestRequest {
 export interface UpdateTestRequest {
   name?: string;
   description?: string;
+  recordingId?: string | null;
+  recordingData?: Record<string, unknown>;
+  recordingUrl?: string;
+  actionCount?: number;
   browsers?: TestBrowser[];
   config?: Partial<TestConfig>;
   status?: 'active' | 'inactive' | 'archived';
@@ -705,9 +711,7 @@ class ApiClient {
     if (params?.limit) searchParams.set('limit', params.limit.toString());
 
     const query = searchParams.toString();
-    return this.request<PaginatedResponse<Project>>(
-      `/api/v1/projects${query ? `?${query}` : ''}`
-    );
+    return this.request<PaginatedResponse<Project>>(`/api/v1/projects${query ? `?${query}` : ''}`);
   }
 
   /**
@@ -780,34 +784,24 @@ class ApiClient {
    * List all suites with stats (no pagination)
    */
   async listAllSuites(projectId: string): Promise<TestSuiteWithStats[]> {
-    return this.request<TestSuiteWithStats[]>(
-      `/api/v1/projects/${projectId}/suites/all`
-    );
+    return this.request<TestSuiteWithStats[]>(`/api/v1/projects/${projectId}/suites/all`);
   }
 
   /**
    * Get a single test suite
    */
   async getSuite(projectId: string, suiteId: string): Promise<TestSuite> {
-    return this.request<TestSuite>(
-      `/api/v1/projects/${projectId}/suites/${suiteId}`
-    );
+    return this.request<TestSuite>(`/api/v1/projects/${projectId}/suites/${suiteId}`);
   }
 
   /**
    * Create a new test suite
    */
-  async createSuite(
-    projectId: string,
-    data: CreateTestSuiteRequest
-  ): Promise<TestSuite> {
-    return this.request<TestSuite>(
-      `/api/v1/projects/${projectId}/suites`,
-      {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }
-    );
+  async createSuite(projectId: string, data: CreateTestSuiteRequest): Promise<TestSuite> {
+    return this.request<TestSuite>(`/api/v1/projects/${projectId}/suites`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   /**
@@ -818,36 +812,29 @@ class ApiClient {
     suiteId: string,
     data: UpdateTestSuiteRequest
   ): Promise<TestSuite> {
-    return this.request<TestSuite>(
-      `/api/v1/projects/${projectId}/suites/${suiteId}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }
-    );
+    return this.request<TestSuite>(`/api/v1/projects/${projectId}/suites/${suiteId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   /**
    * Delete a test suite
    */
   async deleteSuite(projectId: string, suiteId: string): Promise<void> {
-    return this.request<void>(
-      `/api/v1/projects/${projectId}/suites/${suiteId}`,
-      { method: 'DELETE' }
-    );
+    return this.request<void>(`/api/v1/projects/${projectId}/suites/${suiteId}`, {
+      method: 'DELETE',
+    });
   }
 
   /**
    * Reorder suites within a project
    */
   async reorderSuites(projectId: string, suiteIds: string[]): Promise<void> {
-    return this.request<void>(
-      `/api/v1/projects/${projectId}/suites/reorder`,
-      {
-        method: 'PUT',
-        body: JSON.stringify({ suiteIds }),
-      }
-    );
+    return this.request<void>(`/api/v1/projects/${projectId}/suites/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ suiteIds }),
+    });
   }
 
   // =====================
@@ -888,86 +875,56 @@ class ApiClient {
    * Get a single test
    */
   async getTest(projectId: string, testId: string): Promise<Test> {
-    return this.request<Test>(
-      `/api/v1/projects/${projectId}/tests/${testId}`
-    );
+    return this.request<Test>(`/api/v1/projects/${projectId}/tests/${testId}`);
   }
 
   /**
    * Create a new test
    */
-  async createTest(
-    projectId: string,
-    data: CreateTestRequest
-  ): Promise<Test> {
-    return this.request<Test>(
-      `/api/v1/projects/${projectId}/tests`,
-      {
-        method: 'POST',
-        body: JSON.stringify(data),
-      }
-    );
+  async createTest(projectId: string, data: CreateTestRequest): Promise<Test> {
+    return this.request<Test>(`/api/v1/projects/${projectId}/tests`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   }
 
   /**
    * Update a test
    */
-  async updateTest(
-    projectId: string,
-    testId: string,
-    data: UpdateTestRequest
-  ): Promise<Test> {
-    return this.request<Test>(
-      `/api/v1/projects/${projectId}/tests/${testId}`,
-      {
-        method: 'PUT',
-        body: JSON.stringify(data),
-      }
-    );
+  async updateTest(projectId: string, testId: string, data: UpdateTestRequest): Promise<Test> {
+    return this.request<Test>(`/api/v1/projects/${projectId}/tests/${testId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    });
   }
 
   /**
    * Delete a test
    */
   async deleteTest(projectId: string, testId: string): Promise<void> {
-    return this.request<void>(
-      `/api/v1/projects/${projectId}/tests/${testId}`,
-      { method: 'DELETE' }
-    );
+    return this.request<void>(`/api/v1/projects/${projectId}/tests/${testId}`, {
+      method: 'DELETE',
+    });
   }
 
   /**
    * Move tests to a different suite
    */
-  async moveTests(
-    projectId: string,
-    testIds: string[],
-    targetSuiteId: string
-  ): Promise<void> {
-    return this.request<void>(
-      `/api/v1/projects/${projectId}/tests/move`,
-      {
-        method: 'PUT',
-        body: JSON.stringify({ testIds, targetSuiteId }),
-      }
-    );
+  async moveTests(projectId: string, testIds: string[], targetSuiteId: string): Promise<void> {
+    return this.request<void>(`/api/v1/projects/${projectId}/tests/move`, {
+      method: 'PUT',
+      body: JSON.stringify({ testIds, targetSuiteId }),
+    });
   }
 
   /**
    * Reorder tests within a suite
    */
-  async reorderTests(
-    projectId: string,
-    suiteId: string,
-    testIds: string[]
-  ): Promise<void> {
-    return this.request<void>(
-      `/api/v1/projects/${projectId}/tests/suites/${suiteId}/reorder`,
-      {
-        method: 'PUT',
-        body: JSON.stringify({ testIds }),
-      }
-    );
+  async reorderTests(projectId: string, suiteId: string, testIds: string[]): Promise<void> {
+    return this.request<void>(`/api/v1/projects/${projectId}/tests/suites/${suiteId}/reorder`, {
+      method: 'PUT',
+      body: JSON.stringify({ testIds }),
+    });
   }
 
   // =====================
