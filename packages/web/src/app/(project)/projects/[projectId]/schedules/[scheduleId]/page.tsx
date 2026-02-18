@@ -67,6 +67,7 @@ export default function ScheduleDetailPage() {
 
   // Runs state
   const [runs, setRuns] = useState<Run[]>([]);
+  const [childRunsMap, setChildRunsMap] = useState<Map<string, Run[]>>(new Map());
   const [runsLoading, setRunsLoading] = useState(true);
   const [runsPagination, setRunsPagination] = useState({
     page: 1,
@@ -104,6 +105,9 @@ export default function ScheduleDetailPage() {
     }
   }, [scheduleId]);
 
+  // Whether this schedule targets a suite (show only parent suite runs)
+  const isSuiteSchedule = schedule?.targetType === 'suite';
+
   const fetchRuns = useCallback(
     async (page = 1) => {
       try {
@@ -113,6 +117,8 @@ export default function ScheduleDetailPage() {
           scheduleId,
           page,
           limit: runsPagination.limit,
+          // For suite schedules, only fetch parent suite runs (not child test runs)
+          ...(isSuiteSchedule ? { runType: 'suite' as const } : {}),
         });
         setRuns(response.data);
         setRunsPagination({
@@ -121,13 +127,34 @@ export default function ScheduleDetailPage() {
           total: response.pagination.total,
           totalPages: response.pagination.totalPages,
         });
+
+        // For suite schedules, fetch child runs for each parent to show summary
+        if (isSuiteSchedule && response.data.length > 0) {
+          const childMap = new Map<string, Run[]>();
+          await Promise.all(
+            response.data.map(async (parentRun) => {
+              try {
+                const childResponse = await api.listRuns({
+                  projectId,
+                  parentRunId: parentRun.id,
+                  runType: 'test',
+                  limit: 100,
+                });
+                childMap.set(parentRun.id, childResponse.data);
+              } catch {
+                childMap.set(parentRun.id, []);
+              }
+            })
+          );
+          setChildRunsMap(childMap);
+        }
       } catch (err) {
         console.error('Failed to fetch runs:', err);
       } finally {
         setRunsLoading(false);
       }
     },
-    [projectId, scheduleId, runsPagination.limit]
+    [projectId, scheduleId, runsPagination.limit, isSuiteSchedule]
   );
 
   useEffect(() => {
@@ -542,91 +569,127 @@ export default function ScheduleDetailPage() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Status</TableHead>
-                    <TableHead>Test</TableHead>
+                    <TableHead>Name</TableHead>
                     <TableHead>Browser</TableHead>
                     <TableHead>Duration</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{isSuiteSchedule ? 'Tests' : 'Actions'}</TableHead>
                     <TableHead>Started</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {runs.map((run) => (
-                    <TableRow key={run.id}>
-                      <TableCell>
-                        <RunStatusBadge status={run.status} size="sm" />
-                      </TableCell>
-                      <TableCell>
-                        <span className="font-medium">
-                          {truncate(
-                            run.testName || run.recordingName || 'Unnamed',
-                            30
-                          )}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <span className="flex items-center gap-2 flex-wrap">
-                          {(run.browsers && run.browsers.length > 0
-                            ? run.browsers
-                            : [run.browser]
-                          ).map((b) => (
-                            <span key={b} className="flex items-center gap-1">
-                              <BrowserIcon browser={b} className="h-4 w-4" />
-                              {browserLabel(b)}
+                  {runs.map((run) => {
+                    // For suite runs, compute child test summary
+                    const childRuns = isSuiteSchedule ? childRunsMap.get(run.id) ?? [] : [];
+                    const childTotal = childRuns.length;
+                    const childPassed = childRuns.filter((r) => r.status === 'passed').length;
+                    const childFailed = childRuns.filter((r) => r.status === 'failed').length;
+                    const childRunning = childRuns.filter((r) => r.status === 'running' || r.status === 'queued').length;
+                    const childDuration = childRuns.reduce((sum, r) => sum + (r.durationMs ?? 0), 0);
+                    // For suite runs, show the schedule's configured browsers
+                    const displayBrowsers = isSuiteSchedule
+                      ? (schedule?.browsers ?? [run.browser])
+                      : (run.browsers && run.browsers.length > 0 ? run.browsers : [run.browser]);
+
+                    return (
+                      <TableRow key={run.id}>
+                        <TableCell>
+                          <RunStatusBadge status={run.status} size="sm" />
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {isSuiteSchedule && <Layers className="h-3.5 w-3.5 text-muted-foreground shrink-0" />}
+                            <span className="font-medium">
+                              {truncate(
+                                run.testName || run.recordingName || 'Unnamed',
+                                30
+                              )}
                             </span>
-                          ))}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        {run.durationMs ? formatDuration(run.durationMs) : '-'}
-                      </TableCell>
-                      <TableCell>
-                        {run.actionsExecuted != null &&
-                        run.actionsTotal != null ? (
-                          <span
-                            className={
-                              run.actionsFailed && run.actionsFailed > 0
-                                ? 'text-red-600'
-                                : ''
-                            }
-                          >
-                            {run.actionsExecuted}/{run.actionsTotal}
-                            {run.actionsFailed && run.actionsFailed > 0
-                              ? ` (${run.actionsFailed} failed)`
-                              : ''}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <span className="flex items-center gap-2 flex-wrap">
+                            {displayBrowsers.map((b) => (
+                              <span key={b} className="flex items-center gap-1">
+                                <BrowserIcon browser={b} className="h-4 w-4" />
+                                {browserLabel(b)}
+                              </span>
+                            ))}
                           </span>
-                        ) : (
-                          '-'
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {formatRelativeTime(run.createdAt)}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link
-                              href={`/projects/${projectId}/runs/${run.id}`}
-                            >
-                              <Eye className="h-4 w-4" />
-                            </Link>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setRunToDelete(run)}
-                            disabled={deletingRunId === run.id}
-                          >
-                            {deletingRunId === run.id ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
+                        </TableCell>
+                        <TableCell>
+                          {isSuiteSchedule
+                            ? (childDuration > 0 ? formatDuration(childDuration) : (childRunning > 0 ? '...' : '-'))
+                            : (run.durationMs ? formatDuration(run.durationMs) : '-')}
+                        </TableCell>
+                        <TableCell>
+                          {isSuiteSchedule ? (
+                            childTotal > 0 ? (
+                              <span className="flex items-center gap-1.5 text-sm">
+                                <span className="font-medium">{childTotal} tests</span>
+                                <span className="text-muted-foreground">·</span>
+                                {childPassed > 0 && (
+                                  <span className="text-emerald-600">{childPassed} passed</span>
+                                )}
+                                {childFailed > 0 && (
+                                  <span className="text-red-600">{childFailed} failed</span>
+                                )}
+                                {childRunning > 0 && (
+                                  <span className="text-blue-600">{childRunning} running</span>
+                                )}
+                              </span>
                             ) : (
-                              <Trash2 className="h-4 w-4 text-destructive" />
-                            )}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                              <span className="text-muted-foreground">-</span>
+                            )
+                          ) : (
+                            run.actionsExecuted != null &&
+                            run.actionsTotal != null ? (
+                              <span
+                                className={
+                                  run.actionsFailed && run.actionsFailed > 0
+                                    ? 'text-red-600'
+                                    : ''
+                                }
+                              >
+                                {run.actionsExecuted}/{run.actionsTotal}
+                                {run.actionsFailed && run.actionsFailed > 0
+                                  ? ` (${run.actionsFailed} failed)`
+                                  : ''}
+                              </span>
+                            ) : (
+                              '-'
+                            )
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {formatRelativeTime(run.createdAt)}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link
+                                href={`/projects/${projectId}/runs/${run.id}`}
+                              >
+                                <Eye className="h-4 w-4" />
+                              </Link>
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setRunToDelete(run)}
+                              disabled={deletingRunId === run.id}
+                            >
+                              {deletingRunId === run.id ? (
+                                <Loader2 className="h-4 w-4 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-4 w-4 text-destructive" />
+                              )}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
 

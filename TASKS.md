@@ -1,6 +1,6 @@
 # SaveAction Platform - Task Tracker
 
-**Last Updated:** February 4, 2026
+**Last Updated:** January 23, 2026
 
 > This file tracks all development tasks across the SaveAction platform.
 > Copy task title and description to create GitHub issues.
@@ -105,23 +105,6 @@
 - **Labels:** `testing`, `integration`
 - **Description:** Add real browser integration tests for PlaywrightRunner and ElementLocator. Launch actual Chromium instance, execute actions against local test HTML fixtures. Test: click, input, navigation, scroll actions with real DOM. 43 integration tests covering: click actions (6), input actions (5), select actions (2), scroll actions (2), complex workflows (3), error handling (2), browser options (2), selector strategies (22). Run separately with `pnpm run test:integration` in packages/core.
 
-### ✅ DONE - Screenshot Capture on Failure
-
-- **Package:** @saveaction/core
-- **Priority:** P1
-- **Labels:** `feature`, `runner`, `enhancement`
-- **Completed:** 2026-02-02
-- **Description:** Implemented automatic screenshot capture with configurable modes. Features:
-  - Added `screenshotDir?: string` and `screenshotMode?: 'on-failure' | 'always' | 'never'` to RunOptions
-  - `captureScreenshot()` method in PlaywrightRunner saves screenshots on failure or always (configurable)
-  - Screenshots saved as `run-{timestamp}-{actionIndex}-{actionId}.png`
-  - `ActionResult.screenshotPath` returns path to captured screenshot
-  - Safe capture with try/catch - doesn't throw if page is closed
-  - CLI options added: `--screenshot`, `--screenshot-mode <mode>`, `--screenshot-dir <path>`
-  - 22 unit tests for screenshot capture logic
-  - 8 integration tests for browser screenshot capture
-  - Manual end-to-end verification: 22/22 actions captured successfully
-
 ---
 
 ## Phase 2: CLI Tool (@saveaction/cli)
@@ -193,68 +176,68 @@
 
 ## Phase 3: REST API (@saveaction/api)
 
-### ✅ DONE - Development Environment Setup
+### ⏳ TODO - Development Environment Setup
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `setup`, `dx`
-- **Description:** Create docker-compose.dev.yml with PostgreSQL 16 and Redis 7 for local development. Include volume mounts for data persistence, health checks, and default credentials. Developers run `docker compose -f docker-compose.dev.yml up` then `pnpm dev` for API with hot reload. Add scripts to package.json: `dev:services` (start containers), `dev:api` (start API). Added `.env.example` with environment variable template.
+- **Description:** Create docker-compose.dev.yml with PostgreSQL 16 and Redis 7 for local development. Include volume mounts for data persistence, health checks, and default credentials. Developers run `docker compose -f docker-compose.dev.yml up` then `pnpm dev` for API with hot reload. Add scripts to package.json: `dev:services` (start containers), `dev:api` (start API).
 
-### ✅ DONE - Setup API Package
+### ⏳ TODO - Setup API Package
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `setup`
-- **Description:** Initialize Fastify server package with TypeScript. Configured environment variables with Zod validation (NODE_ENV, API_PORT, DATABASE_URL, REDIS_URL, JWT secrets). Implemented CORS with configurable origins. Created global error handler using `fastify-plugin` for proper encapsulation breaking - handles ApiError, ZodError, Fastify validation errors, 404s, and generic errors with standardized JSON format `{ error: { code, message, details?, requestId? } }`. Added health check endpoint at `/api/health`. Includes 61 unit tests covering env validation, error handling, and app functionality.
+- **Description:** Initialize Fastify server package. Configure TypeScript, environment variables, CORS, error handling middleware.
 
-### ✅ DONE - Redis Setup
+### ⏳ TODO - Redis Setup
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `setup`, `infrastructure`
-- **Description:** Added Redis support using ioredis client with connection pooling. Implemented `RedisClient` wrapper with: connection management, exponential backoff retry strategy, graceful shutdown, health checks, and convenience methods for common operations (get/set/del, hashes, sets, pub/sub). Created Fastify plugin `redisConnectionPlugin` using `fastify-plugin` for global availability. Added comprehensive health check endpoints: `/api/health/detailed` (service status), `/api/health/live` (Kubernetes liveness), `/api/health/ready` (Kubernetes readiness). Redis already configured in docker-compose.dev.yml. Includes 53 new unit tests (114 total API tests).
+- **Description:** Add Redis for rate limiting, session management, job queues, and caching. Use ioredis client with connection pooling. Required for @fastify/rate-limit in production. Add Redis health check endpoint. Configure in docker-compose.yml.
 
-### ✅ DONE - BullMQ Job Queue
+### ⏳ TODO - BullMQ Job Queue
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `feature`, `infrastructure`
-- **Description:** Implemented BullMQ for job queues with three queue types: `test-runs` (concurrency 5), `cleanup` (concurrency 1), `scheduled-tests` (concurrency 3). Features: `JobQueueManager` class for centralized queue management, persistent jobs that survive restart, retry with exponential backoff (1s→2s→4s for test-runs), job prioritization support, concurrency control per queue. Created `bullmqConnectionPlugin` Fastify plugin with separate Redis connection (no keyPrefix for BullMQ compatibility). Queue status exposed via `/api/queues/status` endpoint and included in `/api/health/detailed`. Supports repeatable jobs for scheduled tasks (cron patterns). Graceful shutdown with configurable timeout. Includes 40 new unit tests (154 total API tests).
+- **Description:** Implement BullMQ for job queues (run execution, scheduled tests, cleanup jobs). Replace node-cron with BullMQ repeatable jobs for schedules. Features: persistent jobs (survive restart), retry with exponential backoff, job prioritization, concurrency control. Queue status exposed via API for Web UI.
 
-### ✅ DONE - Database Schema Setup
+### ⏳ TODO - Database Schema Setup
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `database`
-- **Description:** Created PostgreSQL database schema with Drizzle ORM. Tables: users, api_tokens, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries (8 total). Features: UUID primary keys (gen_random_uuid), soft deletes with deleted_at, audit timestamps, PostgreSQL enums (run_status, browser_type, action_status, schedule_status, webhook_event, webhook_status). Indexes: partial indexes for soft delete filtering, GIN indexes on JSONB columns (recordings.data, recordings.tags), case-insensitive email unique constraint. Foreign keys with proper cascade rules. BullMQ integration columns in runs and schedules tables. Auto-migration on server startup via database plugin. Includes 9 unit tests.
+- **Description:** Create PostgreSQL database schema with Drizzle ORM. Tables: users, api_tokens, recordings, runs, run_actions, schedules, webhooks. Write migrations.
 
-### ✅ DONE - User Authentication
+### ⏳ TODO - User Authentication
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `feature`, `auth`
-- **Description:** Implemented complete user authentication system with JWT. Features: user registration (POST /api/auth/register) with email/password validation (min 8 chars, uppercase, lowercase, number), login (POST /api/auth/login) with account lockout (5 attempts → 15 min lock), logout (POST /api/auth/logout), token refresh (POST /api/auth/refresh) with cookie and body support, get current user (GET /api/auth/me), change password (POST /api/auth/change-password). Password hashing with bcrypt (12 rounds). JWT access tokens (15 min expiry), refresh tokens (7 days, httpOnly cookie). Auth middleware with `fastify.authenticate` decorator. Components: AuthService, UserRepository, JWT plugin, Zod validation schemas. 66 new unit tests (AuthService: 23, UserRepository: 21, types: 22).
+- **Description:** Implement user registration, login (JWT), logout. Password hashing with bcrypt. Auth middleware for protected routes.
 
-### ✅ DONE - Password Reset Flow
+### ⏳ TODO - Password Reset Flow
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `auth`
-- **Description:** Implemented forgot password flow with email service integration. POST /api/auth/forgot-password generates JWT reset token (1hr expiry) and sends email via nodemailer/SMTP. Returns generic success to prevent email enumeration. POST /api/auth/reset-password validates token and updates password with bcrypt. EmailService created with HTML email templates, SMTP configuration via environment variables (SMTP_HOST, SMTP_PORT, SMTP_SECURE, SMTP_USER, SMTP_PASS, SMTP_FROM, APP_BASE_URL). Development mode creates ethereal test accounts. 28 new unit tests (EmailService: 17, AuthService reset methods: 11). API docs updated.
+- **Description:** Implement forgot password flow. POST /api/auth/forgot-password sends email with reset link (JWT token with 1hr expiry). POST /api/auth/reset-password validates token and updates password. Requires email service integration (nodemailer + SMTP or SendGrid).
 
-### ✅ DONE - JWT Refresh Token
+### ⏳ TODO - JWT Refresh Token
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `auth`, `security`
-- **Description:** Implemented as part of User Authentication. Access token: 15min expiry. Refresh token: 7 days, stored in httpOnly cookie. POST /api/auth/refresh issues new access and refresh tokens (rotation). Cookie options: httpOnly, secure (production), sameSite: strict, path: /api/auth.
+- **Description:** Implement refresh token rotation. Access token: 15min expiry. Refresh token: 7 days, stored in httpOnly cookie. POST /api/auth/refresh issues new access token. Prevents users from being logged out during active sessions.
 
-### ✅ DONE - Change Password
+### ⏳ TODO - Change Password
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `feature`, `auth`
-- **Description:** Implemented POST /api/auth/change-password endpoint. Requires valid access token (authenticated). Verifies current password with bcrypt.compare before allowing change. Returns 401 PASSWORD_MISMATCH if current password is wrong. New password validated with same requirements as registration.
+- **Description:** Implement PUT /api/auth/password endpoint. Requires current password verification before allowing change. Rate limit to 3 attempts per hour. Invalidate all existing sessions/refresh tokens after password change.
 
 ### ⏳ TODO - Email Verification (Optional)
 
@@ -263,68 +246,75 @@
 - **Labels:** `feature`, `auth`, `security`
 - **Description:** Optional email verification on registration. Send verification email with JWT token (24hr expiry). POST /api/auth/verify-email validates token. Resend verification endpoint with rate limiting. Note: Often unnecessary for self-hosted deployments where users are trusted internal employees.
 
-### ✅ DONE - Account Lockout (Brute Force Protection)
+### ⏳ TODO - Account Lockout (Brute Force Protection)
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `security`, `auth`
-- **Description:** Implemented Redis-based account lockout with LockoutService. Lock account after 5 failed login attempts. Lockout duration: 15 minutes (exponential backoff on repeated lockouts - doubles each time, max 24 hours). Track failed attempts in Redis with TTL for auto-expiry. Auto-unlocks when TTL expires. Event system for logging lockout events (failed_attempt, lockout, unlock, manual_unlock). Backward compatible - AuthService uses LockoutService if provided, falls back to DB-based tracking. 32 tests added (27 for LockoutService, 5 for AuthService integration).
+- **Description:** Lock account after 5 failed login attempts. Lockout duration: 15 minutes (exponential backoff on repeated lockouts). Track failed attempts in Redis with TTL for auto-expiry. Auto-unlocks when TTL expires. Log lockout events for monitoring.
 
-### ✅ DONE - API Token Management
+### ⏳ TODO - API Token Management
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `auth`
-- **Description:** Implemented API token management with ApiTokenService and ApiTokenRepository. Token format: `sa_live_<64 hex chars>` (SHA-256 hashed for storage). Supports 8 scopes: recordings:read/write, runs:read/execute, schedules:read/write, webhooks:read/write. Features: token creation with configurable expiration, validation with usage tracking, listing (all/active), revocation with reason, scope checking utilities. Limit of 10 active tokens per user. 89 tests added (34 for types, 22 for repository, 33 for service). HTTP routes: POST /api/tokens (create), GET /api/tokens (list), GET /api/tokens/:id, POST /api/tokens/:id/revoke, DELETE /api/tokens/:id.
+- **Description:** Implement API token generation, listing, revocation. Token format: `sa_live_<random>`. Support scopes for permissions.
 
-### ✅ DONE - Recordings CRUD API
+### ⏳ TODO - Recordings CRUD API
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `feature`, `api`
-- **Description:** Implemented full recording CRUD with RecordingRepository (Drizzle ORM), RecordingService (Zod validation, business logic), and HTTP routes. Endpoints: POST /api/recordings (upload with 10MB limit, duplicate check), GET /api/recordings (list with pagination, search, tag filtering, sorting), GET /api/recordings/tags (user's tags), GET /api/recordings/:id (full data), GET /api/recordings/:id/export (JSON download for CLI), PUT /api/recordings/:id, DELETE /api/recordings/:id (soft delete), POST /api/recordings/:id/restore, DELETE /api/recordings/:id/permanent. 102 new tests (28 repository, 51 service, 23 routes). Total: 506 tests passing.
+- **Description:** Implement recording endpoints: POST /api/recordings (upload), GET /api/recordings (list), GET /api/recordings/:id, PUT /api/recordings/:id, DELETE /api/recordings/:id.
 
-### ✅ DONE - Recording Export for CLI
+### ⏳ TODO - Recording Export for CLI
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `api`, `ci-cd`
-- **Description:** Implemented GET /api/recordings/:id/export endpoint to download recording JSON for CLI execution. Added tag filtering to GET /api/recordings?tags=smoke,login. Essential for CI/CD integration.
+- **Description:** Implement GET /api/recordings/:id/export endpoint to download recording JSON for CLI execution. Add GET /api/recordings?tag=<tag> to filter recordings by tag. Essential for CI/CD integration.
 
-### ✅ DONE - Runs API & Runner Service
+### ⏳ TODO - Runs API
 
 - **Package:** @saveaction/api
 - **Priority:** P0
-- **Labels:** `feature`, `api`, `service`
-- **Description:** Implemented complete run execution system with production-scale worker architecture. **Components:** 1) RunRepository - database CRUD for runs and run_actions tables with 44 unit tests, 2) RunnerService - integrates @saveaction/core PlaywrightRunner with 50 unit tests, 3) HTTP Routes - POST /api/runs (queue execution), GET /api/runs (list with pagination/filtering), GET /api/runs/:id (details), GET /api/runs/:id/actions (action results), POST /api/runs/:id/cancel, POST /api/runs/:id/retry, DELETE /api/runs/:id with 35 tests. **Worker Architecture:** Separate worker process (worker.ts) for test execution - API server handles HTTP only, worker processes BullMQ jobs with Playwright. Workers scale independently (WORKER_CONCURRENCY env var, default 3). Single `pnpm dev` command runs both via concurrently. Structured JSON logging with LOG_LEVEL support. Manual testing verified: 3 concurrent runs executed successfully. **Documentation:** docs/RUNS_API.md, docs/WORKER_ARCHITECTURE.md.
+- **Labels:** `feature`, `api`
+- **Description:** Implement run endpoints: POST /api/runs (execute), GET /api/runs (list), GET /api/runs/:id (details), GET /api/runs/:id/actions, GET /api/runs/:id/video, DELETE /api/runs/:id.
 
-### ✅ DONE - Run Cancellation
+### ⏳ TODO - Run Cancellation
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `api`
-- **Description:** Implemented POST /api/runs/:id/cancel endpoint. Cancels queued jobs via BullMQ job.remove(), cancels running jobs by setting status to 'cancelled' (browser cleanup via PlaywrightRunner context.close()). Returns 400 INVALID_RUN_STATUS if run already completed. Partial results (actions executed before cancel) are preserved. Tested as part of runs.test.ts (35 tests).
+- **Description:** Implement POST /api/runs/:id/cancel to stop running tests. Kill browser process, update status to "cancelled", save partial results. Essential when users trigger wrong test or test gets stuck.
 
-### ✅ DONE - Soft Deletes (Recordings)
+### ⏳ TODO - Soft Deletes
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `feature`, `database`
-- **Description:** Recordings table has soft deletes with deleted_at column. DELETE /api/v1/recordings/:id sets deleted_at (soft delete). POST /api/v1/recordings/:id/restore restores soft-deleted recordings. DELETE /api/v1/recordings/:id/permanent performs hard delete. Runs table soft deletes will be implemented with Runs API. Background job for permanent deletion after 30 days is a future enhancement.
+- **Description:** Add deleted_at column to recordings and runs tables. DELETE endpoints set deleted_at instead of hard delete. Add trash/restore functionality. Background job permanently deletes after 30 days. Allows users to recover accidentally deleted items.
 
-### ✅ DONE - API Versioning
+### ⏳ TODO - API Versioning
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `api`, `architecture`
-- **Description:** All API endpoints (except health/infrastructure) use `/api/v1/` prefix. Versioned routes: `/api/v1/auth/*`, `/api/v1/tokens/*`, `/api/v1/recordings/*`, `/api/v1/runs/*`. Unversioned routes: `/api/health/*`, `/api/queues/*` (infrastructure). Uses Fastify's nested `register()` with prefix option for clean grouping. Cookie paths updated to `/api/v1/auth`. Documentation updated.
+- **Description:** Use /api/v1/ prefix for all endpoints from the start. Allows future breaking changes without affecting existing integrations. Document versioning policy in API docs.
 
-### ✅ DONE - Schedules API
+### ⏳ TODO - Runner Service
+
+- **Package:** @saveaction/api
+- **Priority:** P0
+- **Labels:** `feature`, `service`
+- **Description:** Build RunnerService that integrates @saveaction/core. Execute tests, save results to database, store videos/screenshots, handle errors gracefully.
+
+### ⏳ TODO - Schedules API
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `feature`, `api`
-- **Description:** Implemented schedule endpoints: POST /api/v1/schedules, GET /api/v1/schedules, GET /api/v1/schedules/:id, PUT /api/v1/schedules/:id, DELETE /api/v1/schedules/:id (soft delete), POST /api/v1/schedules/:id/toggle (active/paused), POST /api/v1/schedules/:id/restore, DELETE /api/v1/schedules/:id/permanent. Uses BullMQ repeatable jobs for cron execution. Features: cron validation with cron-parser v5, timezone support, run counters, notification settings, soft delete/restore. ScheduleRepository and ScheduleService with 77 unit tests.
+- **Description:** Implement schedule endpoints: POST /api/schedules, GET /api/schedules, PUT /api/schedules/:id, DELETE /api/schedules/:id, POST /api/schedules/:id/toggle. Use BullMQ repeatable jobs for cron execution (replaces node-cron). Schedules persist across restarts.
 
 ### ⏳ TODO - Webhooks API
 
@@ -333,94 +323,75 @@
 - **Labels:** `feature`, `api`
 - **Description:** Implement webhook endpoints and delivery. Events: run.completed, run.failed, recording.uploaded. HMAC signature verification.
 
-### ✅ DONE - Health Check Endpoints
+### ⏳ TODO - Health Check Endpoints
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `feature`, `api`
-- **Description:** Implemented comprehensive health check endpoints. GET /api/health (basic), GET /api/health/detailed (API, PostgreSQL, Redis, BullMQ status with latency), GET /api/health/live (Kubernetes liveness probe), GET /api/health/ready (Kubernetes readiness probe - checks DB and Redis). Queue status at GET /api/queues/status. Implemented as part of Redis Setup and BullMQ Job Queue tasks.
+- **Description:** Implement GET /api/health with checks for: API server, PostgreSQL connection, Redis connection, BullMQ workers. Return detailed status for each service. Support /api/health/live (liveness) and /api/health/ready (readiness) for Kubernetes.
 
-### ✅ DONE - OpenAPI Documentation (Swagger)
+### ⏳ TODO - OpenAPI Documentation (Swagger)
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `docs`, `api`, `dx`
-- **Completed:** 2026-02-01
 - **Description:** Add @fastify/swagger and @fastify/swagger-ui for auto-generated API documentation. Generate OpenAPI 3.0 spec from route schemas (Zod → JSON Schema). Expose interactive docs at /api/docs. Include authentication examples and error response schemas.
-- **Implementation:**
-  - Installed @fastify/swagger@8 and @fastify/swagger-ui@4 (Fastify 4.x compatible)
-  - Created swagger plugin with OpenAPI 3.0.3 spec at `packages/api/src/plugins/swagger.ts`
-  - Swagger UI available at `/api/docs`, JSON spec at `/api/docs/json`
-  - Configured security schemes: bearerAuth (JWT), apiToken (sa_live_* tokens)
-  - Added component schemas: Error, User, Recording, Run, Schedule, Pagination
-  - Auto-tags routes based on path (e.g., /api/recordings → "Recordings")
-  - Added schema tags to health check endpoints for better organization
-  - Tests: skipSwagger option prevents swagger registration during tests
 
-### ✅ DONE - Security Headers
+### ⏳ TODO - Security Headers
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `security`
-- **Description:** Implemented @fastify/helmet@11.1.1 for comprehensive security headers. Features: Content-Security-Policy (strict default-src 'none' for API, relaxed for Swagger UI with script-src/style-src/img-src), X-Frame-Options: DENY, X-Content-Type-Options: nosniff, X-XSS-Protection: 0 (modern recommendation), Referrer-Policy: strict-origin-when-cross-origin, Cross-Origin-Opener-Policy: same-origin, Cross-Origin-Resource-Policy: same-origin. HSTS enabled only in production. Created helmet.ts plugin with options for isProduction, enableHsts, swaggerPrefix. Integrated in app.ts with skipHelmet test option.
+- **Description:** Add @fastify/helmet for security headers: Content-Security-Policy, X-Frame-Options, X-Content-Type-Options, Strict-Transport-Security. Configure CSP for API (strict) and adjust for swagger-ui. Document header configuration for nginx reverse proxy.
 
-### ✅ DONE - API Rate Limiting
-
-- **Package:** @saveaction/api
-- **Priority:** P1
-- **Labels:** `security`
-- **Description:** Implemented @fastify/rate-limit@9.1.0 with Redis store for distributed deployments. Rate limits: 100 req/min (unauthenticated global), 200 req/min (authenticated users), 20 req/min (auth endpoints - anti-brute-force). Headers: X-RateLimit-Limit, X-RateLimit-Remaining, X-RateLimit-Reset. Excludes health check and documentation endpoints. Falls back to in-memory store when Redis unavailable. Created rateLimit.ts plugin with configurable limits per tier. Integrated in app.ts after Redis connection with skipRateLimit test option.
-
-### ✅ DONE - CSRF Protection
+### ⏳ TODO - API Rate Limiting
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `security`
-- **Description:** Implemented @fastify/csrf-protection@6.4.1 with double-submit cookie pattern. Protects cookie-based auth routes: /api/v1/auth/refresh, /api/v1/auth/logout, /api/v1/auth/change-password. GET /api/v1/auth/csrf endpoint returns token and sets _csrf cookie. Client must include token in X-CSRF-Token header for protected requests. API tokens (Bearer sa_live_*, sa_test_*) are exempt - they're CSRF-immune. Cookie settings: path=/api, httpOnly=false (for JS access), sameSite=strict, secure=true in production. Created csrf.ts plugin. Integrated in app.ts with skipCsrf test option.
+- **Description:** Implement rate limiting with @fastify/rate-limit using Redis store (required for multi-instance deployments). Default: 100 requests/minute per IP. Higher limits for authenticated users. Separate limits for auth endpoints (stricter) vs general API.
 
-### ✅ DONE - Input Sanitization & Validation
+### ⏳ TODO - CSRF Protection
+
+- **Package:** @saveaction/api
+- **Priority:** P1
+- **Labels:** `security`
+- **Description:** Implement CSRF protection for cookie-based authentication (refresh tokens). Use @fastify/csrf-protection or double-submit cookie pattern. Exempt API token authentication (Bearer tokens are CSRF-immune). Required because refresh tokens use httpOnly cookies.
+
+### ⏳ TODO - Input Sanitization & Validation
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `security`
-- **Description:** Implemented Zod validation in RecordingService for all recording uploads. Validates: recording structure (id, testName, url, viewport, actions array), 10MB size limit (TOO_LARGE error), duplicate originalId detection (DUPLICATE_ORIGINAL_ID error), URL format, action structure. Tags validated as string arrays. Name limited to 255 chars. All malformed recordings rejected with VALIDATION_FAILED error. Implemented as part of Recordings CRUD API.
+- **Description:** Sanitize all recording JSON before storing/executing. Validate recording name, tags, URL fields against XSS/injection. Whitelist allowed action types. Limit file upload size (e.g., 10MB max). Reject malformed recordings.
 
-### ✅ DONE - Run Timeout, Cleanup & Concurrency
+### ⏳ TODO - Run Timeout & Cleanup
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `stability`, `service`
-- **Description:** Implemented cleanup infrastructure for orphaned runs and video files. Created `cleanupProcessor.ts` BullMQ processor that handles three cleanup types: orphaned-runs (marks timed-out runs as failed), old-videos (deletes videos older than retention period), and expired-tokens (no-op since JWT tokens are stateless). Added startup cleanup hook in `worker.ts` that immediately cleans orphaned runs on worker restart. Scheduled recurring cleanup jobs: orphaned-runs cleanup hourly (cron: `0 * * * *`), old-videos cleanup daily at 3 AM (cron: `0 3 * * *`). Video cleanup respects retention period (default 30 days), skips active runs, handles both .webm and .mp4 formats. Default run timeout is 10 minutes. Cleanup worker runs with concurrency 1 to avoid conflicts. Added 17 unit tests covering all cleanup scenarios. **Branch:** feat/cleanup-jobs
+- **Description:** Implement run timeout (kill after 10 minutes). Background job to mark orphaned "running" runs as "failed" on API restart. Cleanup orphaned video files. Ensure browser processes are killed on timeout/crash.
 
-### ✅ DONE - Structured Logging (Basic)
+### ⏳ TODO - Concurrent Run Limit & Queue
+
+- **Package:** @saveaction/api
+- **Priority:** P1
+- **Labels:** `stability`, `service`
+- **Description:** Use BullMQ for run queue with concurrency limit (e.g., max 5 concurrent runs). Additional runs queued automatically with status "queued". BullMQ handles job distribution across workers. Prevents server crash from too many simultaneous browser instances.
+
+### ⏳ TODO - Structured Logging
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `observability`, `devops`
-- **Description:** Fastify uses pino by default. Configured: JSON structured logging in production, pino-pretty in development, LOG_LEVEL environment variable (debug/info/warn/error), request ID tracing via genReqId (crypto.randomUUID), request logging with URL and method in errorHandler. **Future enhancement:** Add user ID, recording ID, run ID to log context for better debugging.
+- **Description:** Implement structured JSON logging with pino. Add request ID tracing for debugging. Log level configuration (debug/info/warn/error). Include user ID, recording ID, run ID in log context.
 
-### ✅ DONE - Video/Screenshot Storage & Cleanup
+### ⏳ TODO - Video/Screenshot Storage & Cleanup
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `storage`, `devops`
-- **Description:** Implemented storage strategy for videos and screenshots with local filesystem configurable via VIDEO_STORAGE_PATH and SCREENSHOT_STORAGE_PATH environment variables (defaults: ./storage/videos and ./storage/screenshots). Background cleanup jobs run daily at 3:00 AM (videos) and 3:30 AM (screenshots) with 30-day retention. Cleanup processor skips active runs and handles orphaned files gracefully. S3-compatible storage support deferred to P3 - not needed for MVP.
-
-### ✅ DONE - Screenshot Serving Endpoint
-
-- **Package:** @saveaction/api
-- **Priority:** P1
-- **Labels:** `feature`, `api`
-- **Depends On:** Core - Screenshot Capture on Failure
-- **Description:** Implemented API endpoint to serve screenshot files for the web UI gallery:
-  - GET /api/v1/runs/:id/actions/:actionId/screenshot - serves screenshot file
-  - JWT authentication via query parameter (like video endpoint) for `<img>` tag compatibility
-  - CORS headers (Access-Control-Allow-Origin, Cross-Origin-Resource-Policy) for cross-origin image loading
-  - Content-Type: image/png header with Cache-Control: private, max-age=3600
-  - Proper 404 responses with distinct error codes: ACTION_NOT_FOUND, SCREENSHOT_NOT_FOUND, SCREENSHOT_FILE_NOT_FOUND
-  - Added `findActionByRunIdAndActionId` method to RunRepository
-  - Updated testRunProcessor to pass screenshot options to PlaywrightRunner and save paths to run_actions.screenshot_path
-  - Unit tests (6 new tests) covering auth, 404 cases, token via query param
+- **Description:** Define storage strategy for videos and screenshots. Local filesystem with configurable path (Docker volume in production). Background job to cleanup old files (e.g., delete after 30 days). Optional S3-compatible storage support for scalability.
 
 ### ⏳ TODO - External Run Reports (Future)
 
@@ -429,53 +400,40 @@
 - **Labels:** `feature`, `api`, `ci-cd`, `backlog`
 - **Description:** Implement POST /api/runs/external to accept run results from external CLI executions. Store CI metadata (commit, branch, workflow). NOT needed for MVP - build when customers request centralized reporting across multiple repos or flaky test analytics.
 
-### ✅ DONE - Environment Validation
+### ⏳ TODO - Environment Validation
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `setup`, `dx`
-- **Description:** Implemented Zod validation in config/env.ts. parseEnv() validates all environment variables with descriptive errors. validateProductionEnv() checks required production vars (DATABASE_URL, REDIS_URL, JWT_SECRET, JWT_REFRESH_SECRET). Fails fast on startup with clear error messages. Implemented as part of Setup API Package task.
+- **Description:** Validate required environment variables on startup using Zod. Required: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET, etc. Fail fast with clear error messages if missing or invalid.
 
-### ✅ DONE - Standardized Error Response Format
+### ⏳ TODO - Standardized Error Response Format
 
 - **Package:** @saveaction/api
 - **Priority:** P0
 - **Labels:** `api`, `dx`
-- **Description:** Implemented ApiError class with consistent format: `{ error: { code, message, details?, requestId? } }`. Global error handler (errorHandler plugin) converts all errors (ApiError, ZodError, Fastify validation, 404s) to standard format. Errors factory with common errors (badRequest, unauthorized, notFound, etc.). Request ID included via Fastify genReqId. Implemented as part of Setup API Package task.
+- **Description:** Define consistent error response format across all endpoints: `{ error: { code: string, message: string, details?: object } }`. Implement via Fastify error handler. Include request ID for debugging.
 
-### ✅ DONE - Graceful Shutdown
+### ⏳ TODO - Graceful Shutdown
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `stability`, `devops`
-- **Description:** Implemented SIGTERM/SIGINT signal handlers in server.ts. Calls app.close() which triggers Fastify's onClose hooks. Redis client disconnects gracefully. JobQueueManager.shutdown() closes all queues and workers with configurable timeout (default 30s). Database connections closed via Drizzle. Logs shutdown progress. Implemented across server.ts, RedisClient, and JobQueueManager.
+- **Description:** Handle SIGTERM/SIGINT signals for zero-downtime deployments. Stop accepting new requests, wait for running tests to complete (with timeout), close database connections, then exit cleanly.
 
-### ✅ DONE - API Integration Tests
+### ⏳ TODO - API Integration Tests
 
 - **Package:** @saveaction/api
 - **Priority:** P1
 - **Labels:** `testing`
-- **Completed:** 2026-02-01
-- **Description:** Integration tests for all API routes using Vitest + Fastify inject(). Tests cover: auth flows (register, login, logout, refresh, password reset), recordings CRUD (create, read, update, delete, restore, export, tags), runs API (create, list, get, cancel, retry, delete), schedules API (create, list, get, update, toggle, delete), API tokens (create, list, revoke). Uses real PostgreSQL and Redis via docker-compose.dev.yml. Test helpers: createTestApp(), createUser(), createRecording(), truncateTables(). 792 API tests total with 80%+ route coverage.
+- **Description:** Write integration tests for all API routes using Vitest + supertest or Fastify inject(). Test auth flows, CRUD operations, permissions, error cases. Target 80%+ route coverage.
 
-### ✅ DONE - Real-time Run Progress (SSE)
+### ⏳ TODO - Real-time Run Progress (SSE)
 
 - **Package:** @saveaction/api
 - **Priority:** P2
 - **Labels:** `feature`, `api`
-- **Completed:** 2026-02-01
-- **Description:** Implement Server-Sent Events (SSE) endpoint to stream run progress in real-time. GET /api/v1/runs/:id/progress/stream returns event stream with action start/success/error events during test execution. SSE chosen over WebSocket: simpler, one-direction (server→client), no library needed, firewall-friendly. Required for Phase 4 Web UI live progress display.
-- **Implementation:**
-  - Created `RunProgressService.ts` with `RunProgressPublisher` class for publishing events via Redis pub/sub
-  - Event types: `run:started`, `action:started`, `action:success`, `action:failed`, `action:skipped`, `run:completed`, `run:error`
-  - Modified `testRunProcessor.ts` with `ProgressTrackingReporter` that publishes events during test execution
-  - Worker publishes events as actions execute (fire-and-forget to not block test execution)
-  - SSE endpoint in runs routes subscribes to Redis channel and streams events to client
-  - Auto-closes stream on `run:completed` or `run:error` events
-  - Returns completed event immediately if run already finished
-  - Keepalive comments every 30 seconds to prevent connection timeout
-  - 10-minute safety timeout for long-running tests
-  - 23 unit tests for RunProgressService
+- **Description:** Implement Server-Sent Events (SSE) endpoint to stream run progress in real-time. GET /api/runs/:id/progress/stream returns event stream with action start/success/error events during test execution. SSE chosen over WebSocket: simpler, one-direction (server→client), no library needed, firewall-friendly. Required for Phase 4 Web UI live progress display.
 
 ---
 
@@ -485,41 +443,33 @@
 > fetching recordings from the self-hosted platform instead of managing JSON files manually.
 > **Requires Phase 3 API to be completed first.**
 
-### ✅ DONE - API Connection Support
+### ⏳ TODO - API Connection Support
 
 - **Package:** @saveaction/cli
 - **Priority:** P1
 - **Labels:** `feature`, `cli`, `ci-cd`
-- **Completed:** 2026-02-01
 - **Description:** Add `--api-url` and `--api-token` options to connect CLI to SaveAction platform. Support environment variables: `SAVEACTION_API_URL`, `SAVEACTION_API_TOKEN`. Validate connection on startup.
-- **Implementation:** Created PlatformClient service class with testConnection(), fetchRecording(), listRecordings(), fetchRecordingsByTags() methods. Environment variable fallback for API URL and token. 29 unit tests for PlatformClient.
 
-### ✅ DONE - Fetch Recordings from Platform
-
-- **Package:** @saveaction/cli
-- **Priority:** P1
-- **Labels:** `feature`, `cli`, `ci-cd`
-- **Completed:** 2026-02-01
-- **Description:** Add `--recording-id <id>` to run specific recording from platform. Support `--tag <tag>` to run all recordings with a tag (e.g., `--tag smoke`). Multiple tags supported with comma separation.
-- **Implementation:** Updated run command to support `--recording-id` and `--tag` options. Fetches from GET /api/v1/recordings/:id/export and GET /api/v1/recordings?tags=. Supports running multiple recordings sequentially when using --tag. File argument now optional when using platform options.
-
-### ✅ DONE - Base URL Override
+### ⏳ TODO - Fetch Recordings from Platform
 
 - **Package:** @saveaction/cli
 - **Priority:** P1
 - **Labels:** `feature`, `cli`, `ci-cd`
-- **Completed:** 2026-02-01
-- **Description:** Add `--base-url <url>` option to override the starting URL in recordings. Essential for testing different environments (staging, production) with same recording. Example: `saveaction run --tag smoke --base-url https://staging.myapp.com`
-- **Implementation:** Replaces base URL in recording.url and all action URLs while preserving paths and query strings. Works with both local files and platform recordings.
+- **Description:** Add `--from-platform` flag to fetch recordings from API instead of local file. Support `--recording-id <id>` to run specific recording. Support `--tag <tag>` to run all recordings with a tag (e.g., `--tag smoke`).
 
-### ✅ DONE - CI Environment Detection
+### ⏳ TODO - Base URL Override
+
+- **Package:** @saveaction/cli
+- **Priority:** P1
+- **Labels:** `feature`, `cli`, `ci-cd`
+- **Description:** Add `--base-url <url>` option to override the starting URL in recordings. Essential for testing different environments (staging, production) with same recording. Example: `saveaction run --from-platform --tag smoke --base-url https://staging.myapp.com`
+
+### ⏳ TODO - CI Environment Detection
 
 - **Package:** @saveaction/cli
 - **Priority:** P2
 - **Labels:** `feature`, `cli`, `ci-cd`
-- **Completed:** 2026-02-01
 - **Description:** Auto-detect CI environment (GitHub Actions, GitLab CI, Jenkins). Capture metadata: commit SHA, branch name, workflow name, PR number. Include in run results for traceability.
-- **Implementation:** Created CIDetector class supporting 8 CI providers (GitHub Actions, GitLab CI, Jenkins, CircleCI, Azure Pipelines, Travis CI, Bitbucket Pipelines, TeamCity) plus generic CI detection. Captures 11 metadata fields (commit, branch, pr, workflow, buildNumber, buildUrl, repository, actor, event). Integrated into run command with automatic console output and JSON `ci` field.
 
 ### ⏳ TODO - Report Results to Platform (Future)
 
@@ -532,125 +482,61 @@
 
 ## Phase 4: Web Dashboard (@saveaction/web)
 
-### ✅ DONE - Setup Next.js App
+### ⏳ TODO - Setup Next.js App
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `setup`
-- **Completed:** 2026-02-01
 - **Description:** Initialize Next.js 15 with App Router. Setup Tailwind CSS, install shadcn/ui components, configure environment variables.
-- **Implementation:** Initialized Next.js 16.1.6 with App Router, TypeScript, Tailwind CSS v4, brand color #5D5FEF. Created UI components (Button, Input, Label, Card, Badge, Avatar, Skeleton, ThemeToggle). Created layout components (Logo, Sidebar, Header, MobileNav). Setup light/dark theme with next-themes (GitHub-inspired dark mode). Environment variables configured via .env.local.
 
-### ✅ DONE - Auth Pages
+### ⏳ TODO - Auth Pages
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
-- **Completed:** 2026-02-01
 - **Description:** Build login and register pages. JWT handling, protected routes, auth context/hooks.
-- **Implementation:** Created login and register pages with form validation, password strength indicator. Built AuthProvider context with JWT token management, automatic token refresh, protected route handling. Created API client service (lib/api.ts) with type-safe methods for all endpoints. Auth state persists in localStorage with httpOnly refresh token cookie support.
 
-### ✅ DONE - Dashboard Layout
+### ⏳ TODO - Dashboard Layout
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
-- **Completed:** 2026-02-01
 - **Description:** Build dashboard layout with sidebar navigation, header, and responsive design. Navigation: Recordings, Runs, Schedules, Settings.
-- **Implementation:** Created dashboard layout with collapsible sidebar, header with user menu and logout. Mobile-responsive with slide-out navigation. User info displayed from auth context. Loading skeleton during auth check. Theme toggle in header.
 
-### ✅ DONE - Recording Upload UI
+### ⏳ TODO - Recording Upload UI
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
-- **Completed:** 2026-02-01
 - **Description:** Build drag-and-drop upload component with react-dropzone. Validate JSON client-side, show preview before upload, tag management.
-- **Implementation:** Created RecordingUpload component with react-dropzone for drag-and-drop file uploads. Client-side JSON validation with Zod schema (structure, required fields, action types). Preview displays test name, URL, viewport, action count before upload. Tag management with add/remove functionality. Toast notifications for success/error feedback. Integrated into recordings page as modal dialog.
 
-### ✅ DONE - Recordings List Page
+### ⏳ TODO - Recordings List Page
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
-- **Completed:** 2026-02-01
 - **Description:** Build recordings list with paginated table. Search by name, filter by tags, sort by date. Quick actions: run, delete, duplicate.
-- **Implementation:** Created RecordingsList component with paginated data table. Features: search by name, tag filtering dropdown, sortable columns (name, created date). Quick actions: Run (queues BullMQ job with toast feedback), Delete (confirmation dialog, soft delete), Duplicate (copies recording with '(Copy)' suffix). Created reusable components: DataTable, Pagination, EmptyState, ConfirmDialog. Added ToastProvider for app-wide notifications. Proper error handling with ApiClientError.
 
-### ✅ DONE - Run Execution UI
+### ⏳ TODO - Run Execution UI
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
-- **Completed:** 2026-02-02
 - **Description:** Build run trigger form: browser selection, headless toggle, video recording option. Real-time progress updates with action-by-action log.
-- **Implementation:**
-  - Created RunExecutionDialog component with browser selection (Chromium/Firefox/WebKit)
-  - Video recording toggle (sends `videoEnabled` to API)
-  - Real-time SSE progress streaming with action-by-action log
-  - Auto-scroll to follow current running action
-  - Status indicators for pending/running/success/failed actions
-  - Error display with details on failure
-  - Integrated into recordings list "Run" quick action
 
-### ✅ DONE - Run Results Page
+### ⏳ TODO - Run Results Page
 
 - **Package:** @saveaction/web
 - **Priority:** P0
 - **Labels:** `feature`, `ui`
-- **Completed:** 2026-02-02
 - **Description:** Build run details page: status, duration, action results table, error details, video playback, screenshots gallery.
-- **Implementation:**
-  - Created `/runs/[id]` page with full run details
-  - Status badge with icons (passed/failed/running/queued/cancelled)
-  - Duration, browser, headless mode, video enabled display
-  - Action results table with status, duration, error messages
-  - Video player component with play/pause, progress, fullscreen, download
-  - Video streaming via `GET /api/v1/runs/:id/video` with JWT token auth (query param for video element)
-  - CORS headers for cross-origin video streaming
-  - Cancel/Retry/Delete actions with confirmation dialogs
-  - Screenshots gallery with lightbox (see Screenshots Gallery task)
 
-### ✅ DONE - Screenshots Gallery
-
-- **Package:** @saveaction/web
-- **Priority:** P2
-- **Labels:** `feature`, `ui`, `enhancement`
-- **Depends On:** Core - Screenshot Capture on Failure, API - Screenshot Serving Endpoint
-- **Completed:** 2026-02-02
-- **Description:** Built screenshot gallery component for run results page with all features:
-  - Thumbnail grid showing screenshots for all captured actions
-  - Responsive grid layout (2-6 columns based on screen size)
-  - Lightbox/modal view with full-size screenshot on click
-  - Keyboard navigation (arrow keys, Escape to close)
-  - Zoom controls (50%-400%) with pan support when zoomed
-  - Thumbnail strip in lightbox for quick navigation
-  - Screenshot indicator icon (📷) in actions table for rows with screenshots
-  - Click indicator to scroll to gallery section
-  - Intersection Observer for lazy loading thumbnails
-  - Download button in lightbox with proper filename
-  - Comprehensive error handling for failed/missing screenshots
-  - Failed actions highlighted with red border
-  - Error message display for failed actions in lightbox
-  - Uses `GET /api/v1/runs/:id/actions/:actionId/screenshot?token=` endpoint
-
-### ✅ DONE - Settings Pages
+### ⏳ TODO - Settings Pages
 
 - **Package:** @saveaction/web
 - **Priority:** P1
 - **Labels:** `feature`, `ui`
-- **Completed:** 2026-02-09
 - **Description:** Build settings pages: API token management (generate, list, revoke), webhook configuration, user profile.
-- **Implementation:**
-  - Created tabbed settings page at `/settings` with Profile, API Tokens, and Security tabs
-  - Profile tab: Edit display name, view account details (ID, status, member since, email verification)
-  - API Tokens tab: List tokens with scopes, create new tokens with scope selection and expiry, copy token on creation, revoke/delete tokens
-  - Security tab: Change password form with validation, password strength indicator, security tips
-  - Added `PATCH /api/v1/auth/me` endpoint for profile updates
-  - Created reusable Tabs and Select UI components
-  - Fixed header dropdown (removed Profile link, kept Settings and Logout)
-  - Fixed mobile nav menu opening, removed search bar and notification icon
-  - All features fully functional with proper error handling and toast notifications
 
 ### ⏳ TODO - Platform E2E Tests
 
@@ -658,23 +544,6 @@
 - **Priority:** P2
 - **Labels:** `testing`, `e2e`
 - **Description:** End-to-end tests for the full platform using Playwright Test. Test user flows: login → upload recording → trigger run → view results. Test against real API and Web UI (docker-compose test environment). Cover critical paths: auth flow, recording CRUD, run execution, real-time progress. Run in CI on main branch merges (slower, full stack required).
-
----
-
-## Phase 4.5: Projects & Organization
-
-> **Design Document:** [PROJECTS_SUITES_PLAN.md](./PROJECTS_SUITES_PLAN.md)  
-> **Status:** Planning complete, implementation not started  
-> **Goal:** Progressive complexity - simple by default, powerful when needed
-
-**Summary:** Add optional hierarchy (Projects → Suites → Recordings) for enterprise users while keeping the simple flat structure for personal use. Default project created automatically, suites are optional groupings.
-
-**Phases:**
-- 4.5.1: Projects (database, API, UI) - 2-3 days
-- 4.5.2: Suites (folders, run suite, schedule suite) - 3-4 days  
-- 4.5.3: Environments (base URL override) - Future
-
-When ready to implement, detailed tasks will be extracted from the plan document.
 
 ---
 
@@ -769,19 +638,19 @@ When ready to implement, detailed tasks will be extracted from the plan document
 
 ## Documentation
 
-### ✅ DONE - CLI Documentation
+### ⏳ TODO - CLI Documentation
 
 - **Package:** docs
 - **Priority:** P1
 - **Labels:** `docs`
-- **Description:** CLI documentation spread across multiple files: README.md (quick start, all commands with examples), docs/INFO_COMMAND.md (384 lines - detailed info command docs), docs/VALIDATE_COMMAND.md (344 lines - validation docs), docs/JSON_OUTPUT.md (267 lines - JSON output format). Covers all commands, options, and examples.
+- **Description:** Write CLI.md with all commands, options, examples, and configuration file reference.
 
-### ✅ DONE - API Documentation
+### ⏳ TODO - API Documentation
 
 - **Package:** docs
 - **Priority:** P1
 - **Labels:** `docs`
-- **Description:** Comprehensive API documentation in docs/API.md (1201 lines). Covers: getting started, environment variables, infrastructure (tech stack, architecture), database schema (all 8 tables), health endpoints, queue status, authentication (register, login, logout, refresh, change password, forgot/reset password), API tokens (CRUD, scopes, validation), Recordings API (all endpoints with examples). docs/API_PACKAGE.md (259 lines) provides package overview. OpenAPI/Swagger auto-generation is separate task.
+- **Description:** Write API.md with OpenAPI/Swagger spec, authentication guide, all endpoints, code examples (curl, JavaScript, Python).
 
 ### ⏳ TODO - Architecture Documentation
 
@@ -849,88 +718,17 @@ When ready to implement, detailed tasks will be extracted from the plan document
 
 | Phase                            | Total  | Done   | Skipped | Todo   |
 | -------------------------------- | ------ | ------ | ------- | ------ |
-| Phase 1: Core                    | 13     | 13     | 0       | 0      |
+| Phase 1: Core                    | 12     | 12     | 0       | 0      |
 | Phase 2: CLI                     | 9      | 7      | 2       | 0      |
-| Phase 3: API                     | 33     | 29     | 0       | 4      |
-| Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
-| Phase 4: Web                     | 10     | 9      | 0       | 1      |
-| Phase 4.5: Projects & Org        | -      | -      | -       | -      |
+| Phase 3: API                     | 41     | 0      | 0       | 41     |
+| Phase 3.5: CLI Platform (CI/CD)  | 5      | 0      | 0       | 5      |
+| Phase 4: Web                     | 9      | 0      | 0       | 9      |
 | Phase 5: Docker                  | 5      | 0      | 0       | 5      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
-| Documentation                    | 4      | 2      | 0       | 2      |
+| Documentation                    | 4      | 0      | 0       | 4      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **91** | **66** | **2**   | **23** |
-
-### Test Summary
-
-| Package | Tests |
-|---------|-------|
-| @saveaction/core | 163 |
-| @saveaction/cli | 173 (3 skipped) |
-| @saveaction/api | 821 |
-| **TOTAL** | **1,157 tests** |
-
----
-
-## Implementation Notes & Future Hints
-
-### Worker Architecture (January 2026)
-
-**Why separate worker process?**
-- Originally worker was embedded in API server
-- Problem: Playwright logs polluted API logs, couldn't scale workers independently
-- Solution: `worker.ts` as separate entry point, communicates via BullMQ/Redis
-
-**Key files:**
-- `packages/api/src/worker.ts` - Worker entry point
-- `packages/api/src/queues/testRunProcessor.ts` - BullMQ processor
-- `packages/api/src/services/RunnerService.ts` - Business logic
-
-**For Docker production:**
-```yaml
-services:
-  api:
-    command: node dist/server.js
-    replicas: 2
-  worker:
-    command: node dist/worker.js
-    replicas: 4  # Scale based on load
-```
-
-### BullMQ Redis Connection
-
-**Important:** BullMQ requires Redis connection WITHOUT `keyPrefix`. The worker creates a separate Redis connection:
-```typescript
-// worker.ts - NO keyPrefix for BullMQ
-redisConnection = new Redis(env.REDIS_URL!);
-
-// app.ts - has keyPrefix for other Redis usage
-keyPrefix: 'saveaction:'
-```
-
-### Concurrency Testing Notes
-
-**Tested:** 3 concurrent runs on same recording
-- All 3 started simultaneously ✅
-- All 3 completed (22/22 actions) ✅
-- Element failures were due to website behavior with 3 browsers, not platform issue
-
-**Resource usage per browser:** ~200-300MB RAM
-
-### Future Enhancements Hints
-
-1. **Video Streaming:** Add GET /api/runs/:id/video endpoint with Range headers
-2. **Real-time Progress:** SSE at GET /api/runs/:id/progress for Web UI
-3. **Run Cancellation:** Currently sets status, need to actually kill browser via shared state
-4. **Cleanup Jobs:** Background job to delete runs older than X days
-5. **Priority Queue:** VIP recordings skip queue
-
-### Known Limitations
-
-1. **No browser kill on cancel:** Cancel sets status but doesn't kill active Playwright
-2. **No retry with backoff:** Failed runs don't auto-retry
-3. **Video storage:** Local filesystem only, no S3 support yet
+| **TOTAL**                        | **97** | **22** | **2**   | **73** |
 
 ---
 

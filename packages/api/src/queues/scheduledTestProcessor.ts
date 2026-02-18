@@ -306,6 +306,7 @@ export function createScheduledTestProcessor(options: ScheduledTestProcessorOpti
         const parentRunData: RunCreateData = {
           userId: schedule.userId,
           projectId: schedule.projectId,
+          testName: suite.name,
           recordingName: suite.name,
           recordingUrl: '',
           browser: (browsers[0] || 'chromium') as BrowserType,
@@ -317,6 +318,7 @@ export function createScheduledTestProcessor(options: ScheduledTestProcessorOpti
           triggeredBy: 'schedule',
           scheduleId: schedule.id,
           runType: 'suite',
+          suiteId: schedule.suiteId,
         };
 
         const parentRun = await runRepository.create(parentRunData);
@@ -328,12 +330,21 @@ export function createScheduledTestProcessor(options: ScheduledTestProcessorOpti
           testCount: testsInSuite.length,
         });
 
-        // Queue individual test runs
+        // Queue individual test runs (same pattern as single-test schedule)
+        let queuedCount = 0;
         for (const test of testsInSuite) {
           if (!test.recordingData) {
             logger.warn('Skipping test without recording data', { testId: test.id });
             continue;
           }
+
+          const testConfig = test.config as {
+            headless?: boolean;
+            timeout?: number;
+            video?: boolean;
+            screenshot?: string;
+            parallelBrowsers?: boolean;
+          } | null;
 
           let recordingName = test.name;
           let recordingUrl = test.recordingUrl || '';
@@ -345,64 +356,111 @@ export function createScheduledTestProcessor(options: ScheduledTestProcessorOpti
             }
           }
 
+          // Determine per-test config with schedule config as override
+          const headless = runConfig.headless ?? testConfig?.headless ?? true;
+          const videoEnabled = runConfig.recordVideo ?? testConfig?.video ?? false;
+          const screenshotEnabled =
+            runConfig.screenshotMode != null
+              ? runConfig.screenshotMode !== 'never'
+              : testConfig?.screenshot != null
+                ? testConfig.screenshot !== 'off'
+                : true;
+          const screenshotMode =
+            runConfig.screenshotMode ??
+            (testConfig?.screenshot === 'on' ? ('always' as const) : ('on-failure' as const));
+          const timeout = runConfig.timeout || testConfig?.timeout || 60000;
+          const parallelBrowsers = testConfig?.parallelBrowsers ?? true;
+
+          // Create child run with runType 'test' (same as single-test schedule)
           const childRunData: RunCreateData = {
             userId: schedule.userId,
             projectId: schedule.projectId,
             recordingId: test.recordingId || null,
             testId: test.id,
             testName: test.name,
+            testSlug: test.slug,
             recordingName,
             recordingUrl,
-            browser: (browsers[0] || test.browsers?.[0] || 'chromium') as BrowserType,
-            headless: runConfig.headless ?? test.config?.headless ?? true,
-            videoEnabled: runConfig.recordVideo ?? false,
-            screenshotEnabled:
-              (runConfig.screenshotMode && runConfig.screenshotMode !== 'never') ?? false,
-            timeout: runConfig.timeout || test.config?.timeout || 60000,
+            browser: browsers[0] as BrowserType,
+            headless,
+            videoEnabled,
+            screenshotEnabled,
+            timeout,
             triggeredBy: 'schedule',
             scheduleId: schedule.id,
             parentRunId: parentRun.id,
+            runType: 'test',
           };
 
           const childRun = await runRepository.create(childRunData);
 
-          const testRunJobData: TestRunJobData = {
-            recordingId: test.recordingId || '',
+          // Create browser result rows for each browser (multi-browser support)
+          const browserResultData = browsers.map((browser) => ({
             userId: schedule.userId,
             runId: childRun.id,
-            browser: (browsers[0] || test.browsers?.[0] || 'chromium') as
-              | 'chromium'
-              | 'firefox'
-              | 'webkit',
-            headless: runConfig.headless ?? test.config?.headless ?? true,
-            recordVideo: runConfig.recordVideo ?? false,
-            recordScreenshots:
-              (runConfig.screenshotMode && runConfig.screenshotMode !== 'never') ?? false,
-            screenshotMode: runConfig.screenshotMode ?? 'on-failure',
-            timeout: runConfig.timeout || test.config?.timeout || 60000,
+            testId: test.id,
+            browser,
+            status: 'pending' as const,
+          }));
+          await browserResultRepository.createMany(browserResultData);
+
+          // Queue execute-test-run job (worker handles all browsers)
+          const testRunJobData: TestRunJobData = {
+            userId: schedule.userId,
+            runId: childRun.id,
+            runType: 'test',
+            testId: test.id,
+            projectId: schedule.projectId,
+            browsers: browsers as Array<'chromium' | 'firefox' | 'webkit'>,
+            parallelBrowsers,
+            headless,
+            recordVideo: videoEnabled,
+            recordScreenshots: screenshotEnabled,
+            screenshotMode,
+            timeout,
             createdAt: new Date().toISOString(),
           };
 
-          await jobQueueManager.addJob('test-runs', 'execute-run', testRunJobData, {
-            jobId: childRun.id,
-          });
+          const testJob = await jobQueueManager.addJob(
+            'test-runs',
+            'execute-test-run',
+            testRunJobData,
+            { jobId: childRun.id }
+          );
 
           await runRepository.update(childRun.id, {
-            jobId: childRun.id,
+            jobId: testJob.id ?? childRun.id,
             queueName: 'test-runs',
+          });
+
+          queuedCount++;
+        }
+
+        // Update parent suite run status
+        if (queuedCount === 0) {
+          await runRepository.update(parentRun.id, {
+            status: 'failed',
+            errorMessage: 'No tests could be queued (missing recording data)',
+            completedAt: new Date(),
+          });
+        } else {
+          await runRepository.update(parentRun.id, {
+            status: 'running',
+            startedAt: new Date(),
           });
         }
 
         await scheduleRepository.update(scheduleId, {
           lastRunId: parentRun.id,
           lastRunAt: new Date(),
-          lastRunStatus: 'running',
+          lastRunStatus: queuedCount > 0 ? 'running' : 'failed',
         });
 
         logger.info('Successfully queued suite scheduled runs', {
           scheduleId,
           parentRunId: parentRun.id,
           testCount: testsInSuite.length,
+          queuedCount,
         });
 
         return { scheduleId, runId: parentRun.id, status: 'queued' };

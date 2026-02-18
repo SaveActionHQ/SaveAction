@@ -371,11 +371,18 @@ export interface DashboardStats {
 
 export interface DashboardRecentRun {
   id: string;
-  recordingName: string;
-  recordingUrl: string;
+  runType: string | null;
+  testName: string | null;
+  recordingName: string | null;
+  recordingUrl: string | null;
   status: string;
   browser: string;
+  parentRunId: string | null;
+  actionsTotal: number | null;
+  actionsExecuted: number | null;
+  actionsFailed: number | null;
   durationMs: number | null;
+  triggeredBy: string | null;
   createdAt: string;
   completedAt: string | null;
 }
@@ -383,8 +390,7 @@ export interface DashboardRecentRun {
 export interface DashboardUpcomingSchedule {
   id: string;
   name: string;
-  recordingId: string;
-  recordingName: string;
+  targetType: string;
   cronExpression: string;
   nextRunAt: string | null;
   totalRuns: number;
@@ -392,10 +398,18 @@ export interface DashboardUpcomingSchedule {
   failedRuns: number;
 }
 
+export interface DashboardRunTrendEntry {
+  date: string;
+  total: number;
+  passed: number;
+  failed: number;
+}
+
 export interface DashboardData {
   stats: DashboardStats;
   recentRuns: DashboardRecentRun[];
   upcomingSchedules: DashboardUpcomingSchedule[];
+  runTrend: DashboardRunTrendEntry[];
 }
 
 export interface PaginatedResponse<T> {
