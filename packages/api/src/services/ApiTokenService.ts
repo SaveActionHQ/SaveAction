@@ -76,6 +76,7 @@ function toResponse(token: SafeApiToken): ApiTokenResponse {
     tokenPrefix: token.tokenPrefix,
     tokenSuffix: token.tokenSuffix,
     scopes: token.scopes as ApiTokenScope[],
+    projectIds: token.projectIds,
     lastUsedAt: token.lastUsedAt,
     useCount: token.useCount,
     expiresAt: token.expiresAt,
@@ -128,6 +129,7 @@ export class ApiTokenService {
       tokenPrefix: TOKEN_PREFIX_LIVE,
       tokenSuffix,
       scopes: data.scopes,
+      projectIds: data.projectIds,
       expiresAt: data.expiresAt || null,
     });
 
@@ -165,6 +167,7 @@ export class ApiTokenService {
       userId: dbToken.userId,
       name: dbToken.name,
       scopes: dbToken.scopes as ApiTokenScope[],
+      projectIds: dbToken.projectIds,
     };
   }
 

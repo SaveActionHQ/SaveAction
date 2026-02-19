@@ -142,12 +142,16 @@ describe('Database Schema', () => {
     expect(schema.allTables).toEqual({
       users: 'users',
       apiTokens: 'api_tokens',
+      projects: 'projects',
       recordings: 'recordings',
       runs: 'runs',
       runActions: 'run_actions',
       schedules: 'schedules',
       webhooks: 'webhooks',
       webhookDeliveries: 'webhook_deliveries',
+      testSuites: 'test_suites',
+      tests: 'tests',
+      runBrowserResults: 'run_browser_results',
     });
   });
 });

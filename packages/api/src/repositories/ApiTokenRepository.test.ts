@@ -18,6 +18,7 @@ describe('ApiTokenRepository', () => {
     tokenPrefix: 'sa_live_',
     tokenSuffix: 'xyz1',
     scopes: '["recordings:read","runs:execute"]',
+    projectIds: '["*"]',
     lastUsedAt: new Date('2024-01-15'),
     lastUsedIp: '192.168.1.1',
     useCount: '5',
@@ -34,6 +35,7 @@ describe('ApiTokenRepository', () => {
     tokenPrefix: mockToken.tokenPrefix,
     tokenSuffix: mockToken.tokenSuffix,
     scopes: ['recordings:read', 'runs:execute'],
+    projectIds: ['*'],
     lastUsedAt: mockToken.lastUsedAt,
     lastUsedIp: mockToken.lastUsedIp,
     useCount: 5,
@@ -87,6 +89,7 @@ describe('ApiTokenRepository', () => {
         tokenPrefix: 'sa_live_',
         tokenSuffix: 'abc1',
         scopes: ['recordings:read'],
+        projectIds: ['*'],
         expiresAt: null,
       };
 
@@ -107,6 +110,7 @@ describe('ApiTokenRepository', () => {
         tokenPrefix: 'sa_live_',
         tokenSuffix: 'exp1',
         scopes: ['runs:read'],
+        projectIds: ['*'],
         expiresAt: futureDate,
       };
 

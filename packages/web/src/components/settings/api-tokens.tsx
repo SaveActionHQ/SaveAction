@@ -16,23 +16,24 @@ import {
 import { Select } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/providers/toast-provider';
-import { api, ApiToken, ApiTokenScope, API_TOKEN_SCOPES, CreateTokenResponse } from '@/lib/api';
+import {
+  api,
+  ApiToken,
+  ApiTokenScope,
+  API_TOKEN_SCOPES,
+  CreateTokenResponse,
+  Project,
+  PROJECT_ACCESS_ALL,
+} from '@/lib/api';
 import { cn } from '@/lib/utils';
+
+// ============================================================
+// Icons
+// ============================================================
 
 function KeyIcon({ className }: { className?: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <circle cx="7.5" cy="15.5" r="5.5" />
       <path d="m21 2-9.6 9.6" />
       <path d="m15.5 7.5 3 3L22 7l-3-3" />
@@ -42,18 +43,7 @@ function KeyIcon({ className }: { className?: string }) {
 
 function PlusIcon({ className }: { className?: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M5 12h14" />
       <path d="M12 5v14" />
     </svg>
@@ -62,18 +52,7 @@ function PlusIcon({ className }: { className?: string }) {
 
 function CopyIcon({ className }: { className?: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <rect width="14" height="14" x="8" y="8" rx="2" ry="2" />
       <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" />
     </svg>
@@ -82,18 +61,7 @@ function CopyIcon({ className }: { className?: string }) {
 
 function CheckIcon({ className }: { className?: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M20 6 9 17l-5-5" />
     </svg>
   );
@@ -101,18 +69,7 @@ function CheckIcon({ className }: { className?: string }) {
 
 function TrashIcon({ className }: { className?: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <path d="M3 6h18" />
       <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
       <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
@@ -122,23 +79,34 @@ function TrashIcon({ className }: { className?: string }) {
 
 function BanIcon({ className }: { className?: string }) {
   return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
       <circle cx="12" cy="12" r="10" />
       <path d="m4.9 4.9 14.2 14.2" />
     </svg>
   );
 }
+
+function GlobeIcon({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <circle cx="12" cy="12" r="10" />
+      <path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20" />
+      <path d="M2 12h20" />
+    </svg>
+  );
+}
+
+function FolderIcon({ className }: { className?: string }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2Z" />
+    </svg>
+  );
+}
+
+// ============================================================
+// Constants
+// ============================================================
 
 const EXPIRY_OPTIONS = [
   { value: '7', label: '7 days' },
@@ -148,16 +116,96 @@ const EXPIRY_OPTIONS = [
   { value: 'never', label: 'Never' },
 ];
 
-const SCOPE_DESCRIPTIONS: Record<ApiTokenScope, string> = {
-  'recordings:read': 'View recordings',
-  'recordings:write': 'Create, update, delete recordings',
-  'runs:read': 'View test runs',
-  'runs:execute': 'Execute test runs',
-  'schedules:read': 'View schedules',
-  'schedules:write': 'Create, update, delete schedules',
-  'webhooks:read': 'View webhooks',
-  'webhooks:write': 'Create, update, delete webhooks',
-};
+/** Scope groups for the permissions UI, organized by resource */
+interface ScopeGroup {
+  label: string;
+  description: string;
+  scopes: { scope: ApiTokenScope; label: string }[];
+}
+
+const SCOPE_GROUPS: ScopeGroup[] = [
+  {
+    label: 'Projects',
+    description: 'Manage projects',
+    scopes: [
+      { scope: 'projects:read', label: 'View projects' },
+      { scope: 'projects:write', label: 'Create, update, delete projects' },
+    ],
+  },
+  {
+    label: 'Test Suites',
+    description: 'Manage test suites',
+    scopes: [
+      { scope: 'suites:read', label: 'View suites' },
+      { scope: 'suites:write', label: 'Create, update, delete suites' },
+    ],
+  },
+  {
+    label: 'Tests',
+    description: 'Manage tests',
+    scopes: [
+      { scope: 'tests:read', label: 'View tests' },
+      { scope: 'tests:write', label: 'Create, update, delete tests' },
+    ],
+  },
+  {
+    label: 'Recordings',
+    description: 'Manage recordings',
+    scopes: [
+      { scope: 'recordings:read', label: 'View recordings' },
+      { scope: 'recordings:write', label: 'Upload, update, delete recordings' },
+    ],
+  },
+  {
+    label: 'Runs',
+    description: 'Test execution',
+    scopes: [
+      { scope: 'runs:read', label: 'View run results' },
+      { scope: 'runs:execute', label: 'Execute test runs' },
+    ],
+  },
+  {
+    label: 'Schedules',
+    description: 'Manage scheduled runs',
+    scopes: [
+      { scope: 'schedules:read', label: 'View schedules' },
+      { scope: 'schedules:write', label: 'Create, update, delete schedules' },
+    ],
+  },
+  {
+    label: 'Webhooks',
+    description: 'Manage webhooks',
+    scopes: [
+      { scope: 'webhooks:read', label: 'View webhooks' },
+      { scope: 'webhooks:write', label: 'Create, update, delete webhooks' },
+    ],
+  },
+];
+
+/** Preset permission sets for quick selection */
+const PRESET_OPTIONS = [
+  { value: 'custom', label: 'Custom' },
+  { value: 'readonly', label: 'Read Only' },
+  { value: 'cicd', label: 'CI/CD Pipeline' },
+  { value: 'full', label: 'Full Access' },
+];
+
+function getPresetScopes(preset: string): ApiTokenScope[] {
+  switch (preset) {
+    case 'readonly':
+      return API_TOKEN_SCOPES.filter((s) => s.endsWith(':read'));
+    case 'cicd':
+      return ['projects:read', 'tests:read', 'runs:read', 'runs:execute', 'recordings:read'];
+    case 'full':
+      return [...API_TOKEN_SCOPES];
+    default:
+      return [];
+  }
+}
+
+// ============================================================
+// Helpers
+// ============================================================
 
 function formatDate(date: string | null | undefined): string {
   if (!date) return '—';
@@ -181,32 +229,90 @@ function formatRelativeTime(date: string | null | undefined): string {
   return formatDate(date);
 }
 
+function formatProjectAccess(projectIds: string[] | undefined, projects: Project[]): string {
+  if (!projectIds || projectIds.length === 0) return 'No projects';
+  if (projectIds.includes(PROJECT_ACCESS_ALL)) return 'All projects';
+  const names = projectIds
+    .map((id) => projects.find((p) => p.id === id)?.name)
+    .filter(Boolean);
+  if (names.length === 0) return `${projectIds.length} project${projectIds.length !== 1 ? 's' : ''}`;
+  if (names.length <= 2) return names.join(', ');
+  return `${names[0]}, ${names[1]} +${names.length - 2} more`;
+}
+
+// ============================================================
+// Checkbox component (inline)
+// ============================================================
+
+function Checkbox({
+  checked,
+  onChange,
+  className,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      role="checkbox"
+      aria-checked={checked}
+      onClick={onChange}
+      className={cn(
+        'h-4 w-4 shrink-0 rounded border flex items-center justify-center transition-colors',
+        checked ? 'bg-primary border-primary' : 'border-muted-foreground hover:border-primary',
+        className
+      )}
+    >
+      {checked && <CheckIcon className="h-3 w-3 text-primary-foreground" />}
+    </button>
+  );
+}
+
+// ============================================================
+// Form Data
+// ============================================================
+
 interface CreateTokenFormData {
   name: string;
   scopes: ApiTokenScope[];
+  projectAccess: 'all' | 'specific';
+  selectedProjectIds: string[];
   expiresIn: string;
+  preset: string;
 }
+
+const INITIAL_FORM_DATA: CreateTokenFormData = {
+  name: '',
+  scopes: [],
+  projectAccess: 'all',
+  selectedProjectIds: [],
+  expiresIn: '30',
+  preset: 'custom',
+};
+
+// ============================================================
+// Main Component
+// ============================================================
 
 export function ApiTokensSettings() {
   const { addToast } = useToast();
   const [tokens, setTokens] = React.useState<ApiToken[]>([]);
+  const [projects, setProjects] = React.useState<Project[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isCreating, setIsCreating] = React.useState(false);
   const [isDeleting, setIsDeleting] = React.useState(false);
   const [isRevoking, setIsRevoking] = React.useState(false);
 
-  // Dialogs state
+  // Dialog state
   const [showCreateDialog, setShowCreateDialog] = React.useState(false);
   const [showTokenDialog, setShowTokenDialog] = React.useState(false);
   const [showRevokeDialog, setShowRevokeDialog] = React.useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = React.useState(false);
 
   // Form state
-  const [formData, setFormData] = React.useState<CreateTokenFormData>({
-    name: '',
-    scopes: [],
-    expiresIn: '30',
-  });
+  const [formData, setFormData] = React.useState<CreateTokenFormData>(INITIAL_FORM_DATA);
 
   // Created token (shown once)
   const [createdToken, setCreatedToken] = React.useState<CreateTokenResponse | null>(null);
@@ -215,7 +321,8 @@ export function ApiTokensSettings() {
   // Token to revoke/delete
   const [selectedToken, setSelectedToken] = React.useState<ApiToken | null>(null);
 
-  // Fetch tokens
+  // ========== Data fetching ==========
+
   const fetchTokens = React.useCallback(async () => {
     try {
       const response = await api.listApiTokens();
@@ -231,24 +338,38 @@ export function ApiTokensSettings() {
     }
   }, [addToast]);
 
+  const fetchProjects = React.useCallback(async () => {
+    try {
+      const response = await api.listProjects({ limit: 100 });
+      setProjects(response.data);
+    } catch {
+      // Silently fail - projects list is optional for token display
+    }
+  }, []);
+
   React.useEffect(() => {
     fetchTokens();
-  }, [fetchTokens]);
+    fetchProjects();
+  }, [fetchTokens, fetchProjects]);
 
-  // Create token
+  // ========== Handlers ==========
+
   const handleCreate = async () => {
     if (!formData.name.trim()) {
       addToast({ type: 'error', title: 'Token name is required' });
       return;
     }
     if (formData.scopes.length === 0) {
-      addToast({ type: 'error', title: 'Select at least one scope' });
+      addToast({ type: 'error', title: 'Select at least one permission' });
+      return;
+    }
+    if (formData.projectAccess === 'specific' && formData.selectedProjectIds.length === 0) {
+      addToast({ type: 'error', title: 'Select at least one project' });
       return;
     }
 
     setIsCreating(true);
     try {
-      // Calculate expiration date
       let expiresAt: string | null = null;
       if (formData.expiresIn !== 'never') {
         const days = parseInt(formData.expiresIn, 10);
@@ -257,15 +378,20 @@ export function ApiTokensSettings() {
         expiresAt = date.toISOString();
       }
 
+      const projectIds =
+        formData.projectAccess === 'all' ? [PROJECT_ACCESS_ALL] : formData.selectedProjectIds;
+
       const token = await api.createApiToken({
         name: formData.name.trim(),
         scopes: formData.scopes,
+        projectIds,
         expiresAt,
       });
+
       setCreatedToken(token);
       setShowCreateDialog(false);
       setShowTokenDialog(true);
-      setFormData({ name: '', scopes: [], expiresIn: '30' });
+      setFormData(INITIAL_FORM_DATA);
       await fetchTokens();
     } catch (error) {
       addToast({
@@ -278,7 +404,6 @@ export function ApiTokensSettings() {
     }
   };
 
-  // Copy token to clipboard
   const handleCopyToken = async () => {
     if (!createdToken?.token) return;
     try {
@@ -290,7 +415,6 @@ export function ApiTokensSettings() {
     }
   };
 
-  // Revoke token
   const handleRevoke = async () => {
     if (!selectedToken) return;
     setIsRevoking(true);
@@ -311,7 +435,6 @@ export function ApiTokensSettings() {
     }
   };
 
-  // Delete token
   const handleDelete = async () => {
     if (!selectedToken) return;
     setIsDeleting(true);
@@ -332,26 +455,52 @@ export function ApiTokensSettings() {
     }
   };
 
-  // Toggle scope selection
+  // ========== Scope & form helpers ==========
+
   const toggleScope = (scope: ApiTokenScope) => {
     setFormData((prev) => ({
       ...prev,
+      preset: 'custom',
       scopes: prev.scopes.includes(scope)
         ? prev.scopes.filter((s) => s !== scope)
         : [...prev.scopes, scope],
     }));
   };
 
-  // Select all scopes
-  const selectAllScopes = () => {
+  const toggleGroupScopes = (group: ScopeGroup) => {
+    const groupScopes = group.scopes.map((s) => s.scope);
+    const allSelected = groupScopes.every((s) => formData.scopes.includes(s));
     setFormData((prev) => ({
       ...prev,
-      scopes: [...API_TOKEN_SCOPES],
+      preset: 'custom',
+      scopes: allSelected
+        ? prev.scopes.filter((s) => !groupScopes.includes(s))
+        : [...new Set([...prev.scopes, ...groupScopes])],
+    }));
+  };
+
+  const applyPreset = (preset: string) => {
+    const scopes = getPresetScopes(preset);
+    setFormData((prev) => ({
+      ...prev,
+      preset,
+      scopes: preset === 'custom' ? prev.scopes : scopes,
+    }));
+  };
+
+  const toggleProject = (projectId: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      selectedProjectIds: prev.selectedProjectIds.includes(projectId)
+        ? prev.selectedProjectIds.filter((id) => id !== projectId)
+        : [...prev.selectedProjectIds, projectId],
     }));
   };
 
   const activeTokens = tokens.filter((t) => !t.revokedAt);
   const revokedTokens = tokens.filter((t) => t.revokedAt);
+
+  // ========== Render ==========
 
   if (isLoading) {
     return (
@@ -402,68 +551,24 @@ export function ApiTokensSettings() {
               {/* Active Tokens */}
               {activeTokens.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground">Active Tokens</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">
+                    Active Tokens ({activeTokens.length})
+                  </h4>
                   <div className="divide-y divide-border rounded-lg border">
                     {activeTokens.map((token) => (
-                      <div key={token.id} className="p-4">
-                        <div className="flex items-start justify-between">
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{token.name}</span>
-                              <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
-                                {token.tokenPrefix}...{token.tokenSuffix}
-                              </code>
-                            </div>
-                            <div className="flex flex-wrap gap-1">
-                              {token.scopes.map((scope) => (
-                                <Badge key={scope} variant="secondary" className="text-xs">
-                                  {scope}
-                                </Badge>
-                              ))}
-                            </div>
-                            <div className="text-xs text-muted-foreground space-x-4">
-                              <span>Created {formatDate(token.createdAt)}</span>
-                              <span>Last used {formatRelativeTime(token.lastUsedAt)}</span>
-                              {token.expiresAt && (
-                                <span
-                                  className={cn(
-                                    new Date(token.expiresAt) < new Date() && 'text-destructive'
-                                  )}
-                                >
-                                  {new Date(token.expiresAt) < new Date()
-                                    ? 'Expired'
-                                    : `Expires ${formatDate(token.expiresAt)}`}
-                                </span>
-                              )}
-                              <span>Used {token.useCount} times</span>
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => {
-                                setSelectedToken(token);
-                                setShowRevokeDialog(true);
-                              }}
-                            >
-                              <BanIcon className="h-4 w-4 mr-1" />
-                              Revoke
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-destructive hover:text-destructive"
-                              onClick={() => {
-                                setSelectedToken(token);
-                                setShowDeleteDialog(true);
-                              }}
-                            >
-                              <TrashIcon className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
+                      <TokenCard
+                        key={token.id}
+                        token={token}
+                        projects={projects}
+                        onRevoke={() => {
+                          setSelectedToken(token);
+                          setShowRevokeDialog(true);
+                        }}
+                        onDelete={() => {
+                          setSelectedToken(token);
+                          setShowDeleteDialog(true);
+                        }}
+                      />
                     ))}
                   </div>
                 </div>
@@ -472,7 +577,9 @@ export function ApiTokensSettings() {
               {/* Revoked Tokens */}
               {revokedTokens.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="text-sm font-medium text-muted-foreground">Revoked Tokens</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">
+                    Revoked Tokens ({revokedTokens.length})
+                  </h4>
                   <div className="divide-y divide-border rounded-lg border border-dashed opacity-60">
                     {revokedTokens.map((token) => (
                       <div key={token.id} className="p-4">
@@ -510,75 +617,204 @@ export function ApiTokensSettings() {
         </CardContent>
       </Card>
 
-      {/* Create Token Dialog */}
-      <Dialog open={showCreateDialog} onClose={() => setShowCreateDialog(false)}>
-        <DialogHeader onClose={() => setShowCreateDialog(false)}>
+      {/* ==================== Create Token Dialog ==================== */}
+      <Dialog
+        open={showCreateDialog}
+        onClose={() => {
+          setShowCreateDialog(false);
+          setFormData(INITIAL_FORM_DATA);
+        }}
+        className="max-w-2xl"
+      >
+        <DialogHeader
+          onClose={() => {
+            setShowCreateDialog(false);
+            setFormData(INITIAL_FORM_DATA);
+          }}
+        >
           <DialogTitle>Create API Token</DialogTitle>
           <DialogDescription>
-            Generate a new API token for programmatic access
+            Generate a new token with specific permissions and project access
           </DialogDescription>
         </DialogHeader>
         <DialogContent>
-          <div className="space-y-4">
+          <div className="space-y-6">
+            {/* Token Name */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Token Name</label>
               <Input
-                placeholder="e.g., CI/CD Pipeline"
+                placeholder="e.g., CI/CD Pipeline, Staging Deploy"
                 value={formData.name}
                 onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
               />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <label className="text-sm font-medium">Permissions</label>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-xs h-auto py-1"
-                  onClick={selectAllScopes}
-                >
-                  Select All
-                </Button>
-              </div>
+            {/* Project Access */}
+            <div className="space-y-3">
+              <label className="text-sm font-medium">Project Access</label>
+              <p className="text-xs text-muted-foreground">
+                Choose which projects this token can access
+              </p>
               <div className="grid grid-cols-2 gap-2">
-                {API_TOKEN_SCOPES.map((scope) => (
-                  <label
-                    key={scope}
-                    className={cn(
-                      'flex items-center gap-2 p-2 rounded-md border cursor-pointer transition-colors',
-                      formData.scopes.includes(scope)
-                        ? 'border-primary bg-primary/5'
-                        : 'border-border hover:border-primary/50'
-                    )}
-                  >
-                    <input
-                      type="checkbox"
-                      className="sr-only"
-                      checked={formData.scopes.includes(scope)}
-                      onChange={() => toggleScope(scope)}
-                    />
+                <button
+                  type="button"
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-lg border text-left transition-colors',
+                    formData.projectAccess === 'all'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  )}
+                  onClick={() => setFormData((prev) => ({ ...prev, projectAccess: 'all' }))}
+                >
+                  <GlobeIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <div>
+                    <div className="text-sm font-medium">All Projects</div>
+                    <div className="text-xs text-muted-foreground">
+                      Access all current and future projects
+                    </div>
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className={cn(
+                    'flex items-center gap-3 p-3 rounded-lg border text-left transition-colors',
+                    formData.projectAccess === 'specific'
+                      ? 'border-primary bg-primary/5'
+                      : 'border-border hover:border-primary/50'
+                  )}
+                  onClick={() => setFormData((prev) => ({ ...prev, projectAccess: 'specific' }))}
+                >
+                  <FolderIcon className="h-5 w-5 text-muted-foreground shrink-0" />
+                  <div>
+                    <div className="text-sm font-medium">Specific Projects</div>
+                    <div className="text-xs text-muted-foreground">
+                      Limit access to selected projects
+                    </div>
+                  </div>
+                </button>
+              </div>
+
+              {/* Project Selector */}
+              {formData.projectAccess === 'specific' && (
+                <div className="space-y-2 pl-1">
+                  {projects.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic">No projects found</p>
+                  ) : (
+                    <div className="grid grid-cols-2 gap-1.5 max-h-32 overflow-y-auto">
+                      {projects.map((project) => (
+                        <label
+                          key={project.id}
+                          className={cn(
+                            'flex items-center gap-2 px-2.5 py-1.5 rounded-md cursor-pointer transition-colors text-sm',
+                            formData.selectedProjectIds.includes(project.id)
+                              ? 'bg-primary/5 text-foreground'
+                              : 'hover:bg-muted text-muted-foreground'
+                          )}
+                        >
+                          <Checkbox
+                            checked={formData.selectedProjectIds.includes(project.id)}
+                            onChange={() => toggleProject(project.id)}
+                          />
+                          <span className="truncate">
+                            {project.color && (
+                              <span
+                                className="inline-block w-2 h-2 rounded-full mr-1.5"
+                                style={{ backgroundColor: project.color }}
+                              />
+                            )}
+                            {project.name}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Permissions */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-medium">Permissions</label>
+                  <p className="text-xs text-muted-foreground">
+                    {formData.scopes.length} of {API_TOKEN_SCOPES.length} selected
+                  </p>
+                </div>
+                <Select
+                  value={formData.preset}
+                  onValueChange={applyPreset}
+                  options={PRESET_OPTIONS}
+                />
+              </div>
+
+              <div className="space-y-2 max-h-64 overflow-y-auto pr-1">
+                {SCOPE_GROUPS.map((group) => {
+                  const groupScopes = group.scopes.map((s) => s.scope);
+                  const allSelected = groupScopes.every((s) => formData.scopes.includes(s));
+                  const someSelected =
+                    !allSelected && groupScopes.some((s) => formData.scopes.includes(s));
+
+                  return (
                     <div
-                      className={cn(
-                        'h-4 w-4 rounded border flex items-center justify-center',
-                        formData.scopes.includes(scope)
-                          ? 'bg-primary border-primary'
-                          : 'border-muted-foreground'
-                      )}
+                      key={group.label}
+                      className="rounded-lg border overflow-hidden"
                     >
-                      {formData.scopes.includes(scope) && (
-                        <CheckIcon className="h-3 w-3 text-primary-foreground" />
-                      )}
+                      {/* Group header */}
+                      <button
+                        type="button"
+                        className="flex items-center gap-2 w-full px-3 py-2 bg-muted/50 hover:bg-muted transition-colors text-left"
+                        onClick={() => toggleGroupScopes(group)}
+                      >
+                        <div
+                          className={cn(
+                            'h-4 w-4 shrink-0 rounded border flex items-center justify-center transition-colors',
+                            allSelected
+                              ? 'bg-primary border-primary'
+                              : someSelected
+                                ? 'border-primary bg-primary/30'
+                                : 'border-muted-foreground'
+                          )}
+                        >
+                          {allSelected && (
+                            <CheckIcon className="h-3 w-3 text-primary-foreground" />
+                          )}
+                          {someSelected && !allSelected && (
+                            <div className="h-1.5 w-1.5 rounded-sm bg-primary-foreground" />
+                          )}
+                        </div>
+                        <span className="text-sm font-medium flex-1">{group.label}</span>
+                        <span className="text-xs text-muted-foreground">{group.description}</span>
+                      </button>
+
+                      {/* Group scopes */}
+                      <div className="divide-y divide-border">
+                        {group.scopes.map(({ scope, label }) => (
+                          <label
+                            key={scope}
+                            className={cn(
+                              'flex items-center gap-2 px-3 py-2 cursor-pointer transition-colors',
+                              formData.scopes.includes(scope)
+                                ? 'bg-primary/5'
+                                : 'hover:bg-muted/30'
+                            )}
+                          >
+                            <Checkbox
+                              checked={formData.scopes.includes(scope)}
+                              onChange={() => toggleScope(scope)}
+                            />
+                            <span className="text-sm flex-1">{label}</span>
+                            <code className="text-xs text-muted-foreground">{scope}</code>
+                          </label>
+                        ))}
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <span className="text-xs font-medium block">{SCOPE_DESCRIPTIONS[scope]}</span>
-                      <span className="text-xs text-muted-foreground">{scope}</span>
-                    </div>
-                  </label>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
+            {/* Expiration */}
             <div className="space-y-2">
               <label className="text-sm font-medium">Expiration</label>
               <Select
@@ -590,7 +826,13 @@ export function ApiTokensSettings() {
           </div>
         </DialogContent>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setShowCreateDialog(false)}>
+          <Button
+            variant="outline"
+            onClick={() => {
+              setShowCreateDialog(false);
+              setFormData(INITIAL_FORM_DATA);
+            }}
+          >
             Cancel
           </Button>
           <Button onClick={handleCreate} isLoading={isCreating}>
@@ -599,7 +841,7 @@ export function ApiTokensSettings() {
         </DialogFooter>
       </Dialog>
 
-      {/* Show Token Dialog */}
+      {/* ==================== Show Token Dialog ==================== */}
       <Dialog
         open={showTokenDialog}
         onClose={() => {
@@ -634,7 +876,13 @@ export function ApiTokensSettings() {
                 <strong>Name:</strong> {createdToken?.name}
               </p>
               <p>
-                <strong>Scopes:</strong> {createdToken?.scopes.join(', ')}
+                <strong>Access:</strong>{' '}
+                {createdToken?.projectIds?.includes(PROJECT_ACCESS_ALL)
+                  ? 'All projects'
+                  : formatProjectAccess(createdToken?.projectIds, projects)}
+              </p>
+              <p>
+                <strong>Permissions:</strong> {createdToken?.scopes.join(', ')}
               </p>
               {createdToken?.expiresAt && (
                 <p>
@@ -657,7 +905,7 @@ export function ApiTokensSettings() {
         </DialogFooter>
       </Dialog>
 
-      {/* Revoke Confirmation Dialog */}
+      {/* ===== Revoke Confirmation Dialog ===== */}
       <ConfirmDialog
         open={showRevokeDialog}
         onClose={() => {
@@ -672,7 +920,7 @@ export function ApiTokensSettings() {
         isLoading={isRevoking}
       />
 
-      {/* Delete Confirmation Dialog */}
+      {/* ===== Delete Confirmation Dialog ===== */}
       <ConfirmDialog
         open={showDeleteDialog}
         onClose={() => {
@@ -687,5 +935,105 @@ export function ApiTokensSettings() {
         isLoading={isDeleting}
       />
     </>
+  );
+}
+
+// ============================================================
+// Token Card Component
+// ============================================================
+
+function TokenCard({
+  token,
+  projects,
+  onRevoke,
+  onDelete,
+}: {
+  token: ApiToken;
+  projects: Project[];
+  onRevoke: () => void;
+  onDelete: () => void;
+}) {
+  // Group scopes by resource for display
+  const scopesByResource = React.useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const scope of token.scopes) {
+      const [resource, action] = scope.split(':');
+      if (!map.has(resource)) map.set(resource, []);
+      map.get(resource)!.push(action);
+    }
+    return map;
+  }, [token.scopes]);
+
+  const isExpired = token.expiresAt ? new Date(token.expiresAt) < new Date() : false;
+
+  return (
+    <div className="p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="space-y-2 min-w-0 flex-1">
+          {/* Name + prefix */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="font-medium">{token.name}</span>
+            <code className="text-xs bg-muted px-1.5 py-0.5 rounded">
+              {token.tokenPrefix}...{token.tokenSuffix}
+            </code>
+            {isExpired && (
+              <Badge variant="secondary" className="text-xs text-destructive border-destructive/30">
+                Expired
+              </Badge>
+            )}
+          </div>
+
+          {/* Project access */}
+          <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+            {token.projectIds?.includes(PROJECT_ACCESS_ALL) ? (
+              <>
+                <GlobeIcon className="h-3 w-3" />
+                <span>All projects</span>
+              </>
+            ) : (
+              <>
+                <FolderIcon className="h-3 w-3" />
+                <span>{formatProjectAccess(token.projectIds, projects)}</span>
+              </>
+            )}
+          </div>
+
+          {/* Scopes - compact display grouped by resource */}
+          <div className="flex flex-wrap gap-1">
+            {Array.from(scopesByResource.entries()).map(([resource, actions]) => (
+              <Badge key={resource} variant="secondary" className="text-xs">
+                {resource}: {actions.join(', ')}
+              </Badge>
+            ))}
+          </div>
+
+          {/* Meta info */}
+          <div className="text-xs text-muted-foreground space-x-3">
+            <span>Created {formatDate(token.createdAt)}</span>
+            <span>Last used {formatRelativeTime(token.lastUsedAt)}</span>
+            {token.expiresAt && !isExpired && (
+              <span>Expires {formatDate(token.expiresAt)}</span>
+            )}
+            <span>Used {token.useCount}×</span>
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex items-center gap-1 shrink-0">
+          <Button variant="ghost" size="sm" onClick={onRevoke}>
+            <BanIcon className="h-4 w-4 mr-1" />
+            Revoke
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-destructive hover:text-destructive"
+            onClick={onDelete}
+          >
+            <TrashIcon className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+    </div>
   );
 }

@@ -14,12 +14,18 @@ import {
   RunError,
   createRunSchema,
   listRunsQuerySchema,
+  queueTestRunSchema,
+  queueSuiteRunSchema,
 } from '../services/RunnerService.js';
 import { RunRepository } from '../repositories/RunRepository.js';
 import { RecordingRepository } from '../repositories/RecordingRepository.js';
+import { TestRepository } from '../repositories/TestRepository.js';
+import { TestSuiteRepository } from '../repositories/TestSuiteRepository.js';
+import { RunBrowserResultRepository } from '../repositories/RunBrowserResultRepository.js';
 import type { Database } from '../db/index.js';
 import type { JobQueueManager } from '../queues/JobQueueManager.js';
 import { subscribeToRunProgress, type RunProgressEvent } from '../services/RunProgressService.js';
+import { requireScopes } from '../plugins/jwt.js';
 import { z } from 'zod';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -82,10 +88,21 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
   // Create repositories and service
   const runRepository = new RunRepository(db);
   const recordingRepository = new RecordingRepository(db);
-  const runnerService = new RunnerService(runRepository, recordingRepository, jobQueueManager, {
-    videoStoragePath,
-    screenshotStoragePath,
-  });
+  const testRepository = new TestRepository(db);
+  const testSuiteRepository = new TestSuiteRepository(db);
+  const browserResultRepository = new RunBrowserResultRepository(db);
+  const runnerService = new RunnerService(
+    runRepository,
+    recordingRepository,
+    jobQueueManager,
+    {
+      videoStoragePath,
+      screenshotStoragePath,
+    },
+    testRepository,
+    testSuiteRepository,
+    browserResultRepository,
+  );
 
   // All routes require authentication (except video/screenshot which handle their own auth)
   fastify.addHook('onRequest', async (request, reply) => {
@@ -94,16 +111,14 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
       return;
     }
 
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required',
-        },
-      });
+    await fastify.authenticate(request, reply);
+
+    // Scope enforcement for API token users
+    if (request.apiToken) {
+      const isWrite = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method);
+      // POST to create a run requires runs:execute, not runs:write
+      const scope = isWrite ? 'runs:execute' : 'runs:read';
+      if (!requireScopes(request, reply, [scope as 'runs:execute' | 'runs:read'])) return;
     }
   });
 
@@ -143,6 +158,7 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
                   status: { type: 'string' },
                   browser: { type: 'string' },
                   headless: { type: 'boolean' },
+                  jobId: { type: 'string', nullable: true },
                   createdAt: { type: 'string' },
                 },
               },
@@ -186,6 +202,11 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
         querystring: {
           type: 'object',
           properties: {
+            projectId: { type: 'string', format: 'uuid' },
+            testId: { type: 'string', format: 'uuid' },
+            suiteId: { type: 'string', format: 'uuid' },
+            parentRunId: { type: 'string', format: 'uuid' },
+            runType: { type: 'string', enum: ['test', 'suite', 'project', 'recording'] },
             page: { type: 'number', minimum: 1 },
             limit: { type: 'number', minimum: 1, maximum: 100 },
             recordingId: { type: 'string', format: 'uuid' },
@@ -196,6 +217,7 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
             sortOrder: { type: 'string', enum: ['asc', 'desc'] },
             includeDeleted: { type: 'boolean' },
           },
+          required: ['projectId'],
         },
         response: {
           200: {
@@ -208,16 +230,32 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
                   type: 'object',
                   properties: {
                     id: { type: 'string' },
+                    userId: { type: 'string' },
+                    projectId: { type: 'string' },
+                    runType: { type: 'string', nullable: true },
+                    testId: { type: 'string', nullable: true },
+                    testName: { type: 'string', nullable: true },
+                    testSlug: { type: 'string', nullable: true },
+                    suiteId: { type: 'string', nullable: true },
                     recordingId: { type: 'string', nullable: true },
                     recordingName: { type: 'string' },
+                    recordingUrl: { type: 'string', nullable: true },
                     status: { type: 'string' },
                     browser: { type: 'string' },
                     actionsTotal: { type: 'number', nullable: true },
                     actionsExecuted: { type: 'number', nullable: true },
                     actionsFailed: { type: 'number', nullable: true },
                     durationMs: { type: 'number', nullable: true },
+                    startedAt: { type: 'string', nullable: true },
+                    completedAt: { type: 'string', nullable: true },
+                    triggeredBy: { type: 'string', nullable: true },
                     scheduleId: { type: 'string', nullable: true },
                     scheduleName: { type: 'string', nullable: true },
+                    browsers: {
+                      type: 'array',
+                      items: { type: 'string' },
+                      nullable: true,
+                    },
                     createdAt: { type: 'string' },
                   },
                 },
@@ -244,10 +282,22 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
         const query = listRunsQuerySchema.parse(request.query);
         const result = await runnerService.listRuns(userId, query);
 
+        // Batch-fetch browsers per run from run_browser_results
+        const runIds = result.data.map((r) => r.id);
+        const browsersMap = await browserResultRepository.getBrowsersByRunIds(runIds);
+
         return reply.send({
           success: true,
           data: result.data.map((run) => ({
             id: run.id,
+            userId: run.userId,
+            projectId: run.projectId,
+            runType: run.runType,
+            testId: run.testId,
+            testName: run.testName,
+            testSlug: run.testSlug,
+            suiteId: run.suiteId,
+            parentRunId: run.parentRunId,
             recordingId: run.recordingId,
             recordingName: run.recordingName,
             recordingUrl: run.recordingUrl,
@@ -262,6 +312,7 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
             triggeredBy: run.triggeredBy,
             scheduleId: run.scheduleId,
             scheduleName: run.scheduleName,
+            browsers: browsersMap.get(run.id) ?? null,
             createdAt: run.createdAt.toISOString(),
           })),
           pagination: result.pagination,
@@ -306,6 +357,14 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
           success: true,
           data: {
             id: run.id,
+            userId: run.userId,
+            projectId: run.projectId,
+            runType: run.runType,
+            testId: run.testId,
+            testName: run.testName,
+            testSlug: run.testSlug,
+            suiteId: run.suiteId,
+            parentRunId: run.parentRunId,
             recordingId: run.recordingId,
             recordingName: run.recordingName,
             recordingUrl: run.recordingUrl,
@@ -349,7 +408,7 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
   /**
    * GET /runs/:id/actions - Get run's action results
    */
-  fastify.get<{ Params: { id: string } }>(
+  fastify.get<{ Params: { id: string }; Querystring: { browser?: string } }>(
     '/:id/actions',
     {
       schema: {
@@ -360,14 +419,21 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
             id: { type: 'string', format: 'uuid' },
           },
         },
+        querystring: {
+          type: 'object',
+          properties: {
+            browser: { type: 'string', enum: ['chromium', 'firefox', 'webkit'] },
+          },
+        },
       },
     },
     async (request, reply) => {
       try {
         const userId = (request.user as { sub: string }).sub;
         const { id } = request.params;
+        const { browser } = request.query;
 
-        const actions = await runnerService.getRunActions(userId, id);
+        const actions = await runnerService.getRunActions(userId, id, browser);
 
         return reply.send({
           success: true,
@@ -376,6 +442,7 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
             actionId: action.actionId,
             actionType: action.actionType,
             actionIndex: action.actionIndex,
+            browser: action.browser,
             status: action.status,
             durationMs: action.durationMs,
             startedAt: action.startedAt?.toISOString() ?? null,
@@ -400,8 +467,9 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
   /**
    * GET /runs/:id/video - Stream run video
    * Supports token via query param for <video> element (can't set headers)
+   * Optional ?browser=chromium|firefox|webkit to get a specific browser's video
    */
-  fastify.get<{ Params: { id: string }; Querystring: { token?: string } }>(
+  fastify.get<{ Params: { id: string }; Querystring: { token?: string; browser?: string } }>(
     '/:id/video',
     {
       // Skip normal preHandler auth - we'll handle it manually
@@ -424,18 +492,8 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
             });
           }
         } else {
-          // Fall back to standard auth header
-          try {
-            await request.jwtVerify();
-          } catch {
-            return reply.status(401).send({
-              success: false,
-              error: {
-                code: 'UNAUTHORIZED',
-                message: 'Authentication required',
-              },
-            });
-          }
+          // Fall back to standard auth (JWT or API token)
+          await fastify.authenticate(request, reply);
         }
       },
       schema: {
@@ -450,6 +508,7 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
           type: 'object',
           properties: {
             token: { type: 'string' },
+            browser: { type: 'string', enum: ['chromium', 'firefox', 'webkit'] },
           },
         },
       },
@@ -458,10 +517,27 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
       try {
         const userId = (request.user as { sub: string }).sub;
         const { id } = request.params;
+        const { browser } = request.query;
 
         const run = await runnerService.getRunById(userId, id);
 
-        if (!run.videoPath) {
+        let videoPath: string | null = null;
+
+        // If browser query param is specified, look up from browser results
+        if (browser && browserResultRepository) {
+          const browserResults = await browserResultRepository.findByRunId(id);
+          const browserResult = browserResults.find((r) => r.browser === browser);
+          if (browserResult?.videoPath) {
+            videoPath = browserResult.videoPath;
+          }
+        }
+
+        // Fall back to the parent run's video path
+        if (!videoPath) {
+          videoPath = run.videoPath;
+        }
+
+        if (!videoPath) {
           return reply.status(404).send({
             success: false,
             error: {
@@ -472,7 +548,6 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
         }
 
         // Check if file exists
-        const videoPath = run.videoPath;
         if (!fs.existsSync(videoPath)) {
           return reply.status(404).send({
             success: false,
@@ -515,7 +590,7 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
    */
   fastify.get<{
     Params: { id: string; actionId: string };
-    Querystring: { token?: string };
+    Querystring: { token?: string; browser?: string };
   }>(
     '/:id/actions/:actionId/screenshot',
     {
@@ -539,18 +614,8 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
             });
           }
         } else {
-          // Fall back to standard auth header
-          try {
-            await request.jwtVerify();
-          } catch {
-            return reply.status(401).send({
-              success: false,
-              error: {
-                code: 'UNAUTHORIZED',
-                message: 'Authentication required',
-              },
-            });
-          }
+          // Fall back to standard auth (JWT or API token)
+          await fastify.authenticate(request, reply);
         }
       },
       schema: {
@@ -566,6 +631,7 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
           type: 'object',
           properties: {
             token: { type: 'string' },
+            browser: { type: 'string', enum: ['chromium', 'firefox', 'webkit'] },
           },
         },
       },
@@ -587,8 +653,9 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
           });
         }
 
-        // Get the specific action
-        const action = await runRepository.findActionByRunIdAndActionId(id, actionId);
+        // Get the specific action (with optional browser filter for multi-browser runs)
+        const browser = (request.query as { browser?: string }).browser;
+        const action = await runRepository.findActionByRunIdAndActionId(id, actionId, browser);
         if (!action) {
           return reply.status(404).send({
             success: false,
@@ -721,6 +788,39 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
   );
 
   /**
+   * POST /runs/:id/retry - Retry a completed/failed run
+   */
+  fastify.post<{ Params: { id: string } }>(
+    '/:id/retry',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request.user as { sub: string }).sub;
+        const { id } = request.params;
+
+        const newRun = await runnerService.retryRun(userId, id);
+
+        return reply.status(201).send({
+          success: true,
+          data: newRun,
+        });
+      } catch (error) {
+        return handleRunError(error, reply);
+      }
+    }
+  );
+
+  /**
    * POST /runs/:id/restore - Restore a soft-deleted run
    */
   fastify.post<{ Params: { id: string } }>(
@@ -781,6 +881,256 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
         await runnerService.permanentlyDeleteRun(userId, id);
 
         return reply.status(204).send();
+      } catch (error) {
+        return handleRunError(error, reply);
+      }
+    }
+  );
+
+  /**
+   * POST /runs/test - Queue a test run (multi-browser)
+   */
+  fastify.post(
+    '/test',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['testId', 'projectId'],
+          properties: {
+            testId: { type: 'string', format: 'uuid' },
+            projectId: { type: 'string', format: 'uuid' },
+            browsers: {
+              type: 'array',
+              items: { type: 'string', enum: ['chromium', 'firefox', 'webkit'] },
+            },
+            parallelBrowsers: { type: 'boolean' },
+            headless: { type: 'boolean' },
+            timeout: { type: 'number', minimum: 1000, maximum: 600000 },
+            triggeredBy: { type: 'string', enum: ['manual', 'api', 'schedule', 'ci'] },
+          },
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  testId: { type: 'string' },
+                  testName: { type: 'string' },
+                  status: { type: 'string' },
+                  browser: { type: 'string' },
+                  createdAt: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request.user as { sub: string }).sub;
+        const body = request.body as Record<string, unknown>;
+        const projectId = body.projectId as string | undefined;
+
+        if (!projectId) {
+          return reply.status(400).send({
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'projectId is required',
+            },
+          });
+        }
+
+        const validated = queueTestRunSchema.parse(body);
+        const run = await runnerService.queueTestRun(userId, projectId, validated);
+
+        return reply.status(201).send({
+          success: true,
+          data: {
+            id: run.id,
+            testId: run.testId,
+            testName: run.testName,
+            status: run.status,
+            browser: run.browser,
+            createdAt: run.createdAt.toISOString(),
+          },
+        });
+      } catch (error) {
+        return handleRunError(error, reply);
+      }
+    }
+  );
+
+  /**
+   * POST /runs/suite - Queue runs for all tests in a suite
+   */
+  fastify.post(
+    '/suite',
+    {
+      schema: {
+        body: {
+          type: 'object',
+          required: ['suiteId', 'projectId'],
+          properties: {
+            suiteId: { type: 'string', format: 'uuid' },
+            projectId: { type: 'string', format: 'uuid' },
+            browsers: {
+              type: 'array',
+              items: { type: 'string', enum: ['chromium', 'firefox', 'webkit'] },
+            },
+            parallelBrowsers: { type: 'boolean' },
+            headless: { type: 'boolean' },
+            timeout: { type: 'number', minimum: 1000, maximum: 600000 },
+            triggeredBy: { type: 'string', enum: ['manual', 'api', 'schedule', 'ci'] },
+          },
+        },
+        response: {
+          201: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  suiteRun: {
+                    type: 'object',
+                    properties: {
+                      id: { type: 'string' },
+                      suiteId: { type: 'string' },
+                      status: { type: 'string' },
+                    },
+                  },
+                  testRuns: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        id: { type: 'string' },
+                        testId: { type: 'string' },
+                        testName: { type: 'string' },
+                        status: { type: 'string' },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request.user as { sub: string }).sub;
+        const body = request.body as Record<string, unknown>;
+        const projectId = body.projectId as string | undefined;
+
+        if (!projectId) {
+          return reply.status(400).send({
+            success: false,
+            error: {
+              code: 'VALIDATION_ERROR',
+              message: 'projectId is required',
+            },
+          });
+        }
+
+        const validated = queueSuiteRunSchema.parse(body);
+        const result = await runnerService.queueSuiteRun(userId, projectId, validated);
+
+        return reply.status(201).send({
+          success: true,
+          data: {
+            suiteRun: {
+              id: result.suiteRun.id,
+              suiteId: result.suiteRun.suiteId,
+              status: result.suiteRun.status,
+            },
+            testRuns: result.testRuns.map((run) => ({
+              id: run.id,
+              testId: run.testId,
+              testName: run.testName,
+              status: run.status,
+            })),
+          },
+        });
+      } catch (error) {
+        return handleRunError(error, reply);
+      }
+    }
+  );
+
+  /**
+   * GET /runs/:id/browsers - Get browser results for a multi-browser run
+   */
+  fastify.get(
+    '/:id/browsers',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['id'],
+          properties: {
+            id: { type: 'string', format: 'uuid' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    id: { type: 'string' },
+                    userId: { type: 'string' },
+                    runId: { type: 'string' },
+                    testId: { type: 'string' },
+                    browser: { type: 'string' },
+                    status: { type: 'string' },
+                    durationMs: { type: 'number', nullable: true },
+                    startedAt: { type: 'string', nullable: true },
+                    completedAt: { type: 'string', nullable: true },
+                    actionsTotal: { type: 'number', nullable: true },
+                    actionsExecuted: { type: 'number', nullable: true },
+                    actionsFailed: { type: 'number', nullable: true },
+                    actionsSkipped: { type: 'number', nullable: true },
+                    errorMessage: { type: 'string', nullable: true },
+                    errorStack: { type: 'string', nullable: true },
+                    errorActionId: { type: 'string', nullable: true },
+                    errorActionIndex: { type: 'number', nullable: true },
+                    videoPath: { type: 'string', nullable: true },
+                    screenshotPath: { type: 'string', nullable: true },
+                    tracePath: { type: 'string', nullable: true },
+                    createdAt: { type: 'string' },
+                    updatedAt: { type: 'string' },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request.user as { sub: string }).sub;
+        const { id } = request.params as { id: string };
+
+        const results = await runnerService.getBrowserResults(userId, id);
+
+        return reply.status(200).send({
+          success: true,
+          data: results,
+        });
       } catch (error) {
         return handleRunError(error, reply);
       }

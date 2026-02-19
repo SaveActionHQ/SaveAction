@@ -20,6 +20,7 @@ import type {
   SafeRecording,
   RecordingSummary,
 } from '../repositories/RecordingRepository.js';
+import type { ProjectRepository, SafeProject } from '../repositories/ProjectRepository.js';
 import type { RecordingData } from '../db/schema/recordings.js';
 
 // Sample recording data
@@ -38,9 +39,23 @@ const sampleRecordingData: RecordingData = {
   version: '1.0.0',
 };
 
+const sampleProject: SafeProject = {
+  id: 'proj-123',
+  userId: 'user-123',
+  name: 'Default Project',
+  slug: 'default-project',
+  description: 'Default project',
+  color: '#3B82F6',
+  isDefault: true,
+  deletedAt: null,
+  createdAt: new Date('2026-01-01'),
+  updatedAt: new Date('2026-01-01'),
+};
+
 const sampleSafeRecording: SafeRecording = {
   id: 'rec-uuid-123',
   userId: 'user-123',
+  projectId: 'proj-123',
   name: 'Test Recording',
   url: 'https://example.com',
   description: 'Test description',
@@ -59,6 +74,7 @@ const sampleSafeRecording: SafeRecording = {
 const sampleSummary: RecordingSummary = {
   id: 'rec-uuid-123',
   userId: 'user-123',
+  projectId: 'proj-123',
   name: 'Test Recording',
   url: 'https://example.com',
   description: 'Test description',
@@ -71,6 +87,19 @@ const sampleSummary: RecordingSummary = {
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
 };
+
+// Mock project repository
+type MockedProjectRepository = {
+  findDefaultProject: ReturnType<typeof vi.fn>;
+  createDefaultProject: ReturnType<typeof vi.fn>;
+  findByIdAndUser: ReturnType<typeof vi.fn>;
+};
+
+const createMockProjectRepository = (): MockedProjectRepository => ({
+  findDefaultProject: vi.fn().mockResolvedValue(sampleProject),
+  createDefaultProject: vi.fn().mockResolvedValue(sampleProject),
+  findByIdAndUser: vi.fn().mockResolvedValue(sampleProject),
+});
 
 // Mock repository interface (only the methods we need)
 type MockedRepository = {
@@ -116,10 +145,15 @@ const createMockRepository = (): MockedRepository => ({
 describe('RecordingService', () => {
   let service: RecordingService;
   let mockRepository: MockedRepository;
+  let mockProjectRepository: MockedProjectRepository;
 
   beforeEach(() => {
     mockRepository = createMockRepository();
-    service = new RecordingService(mockRepository as unknown as RecordingRepository);
+    mockProjectRepository = createMockProjectRepository();
+    service = new RecordingService(
+      mockRepository as unknown as RecordingRepository,
+      mockProjectRepository as unknown as ProjectRepository
+    );
   });
 
   describe('Schema Validation', () => {
@@ -213,8 +247,16 @@ describe('RecordingService', () => {
     });
 
     describe('listRecordingsQuerySchema', () => {
-      it('should provide defaults for empty query', () => {
-        const result = listRecordingsQuerySchema.parse({});
+      const validProjectId = '00000000-0000-0000-0000-000000000001';
+
+      it('should require projectId', () => {
+        const result = listRecordingsQuerySchema.safeParse({});
+        expect(result.success).toBe(false);
+      });
+
+      it('should provide defaults for query with projectId', () => {
+        const result = listRecordingsQuerySchema.parse({ projectId: validProjectId });
+        expect(result.projectId).toBe(validProjectId);
         expect(result.page).toBe(1);
         expect(result.limit).toBe(20);
         expect(result.sortBy).toBe('updatedAt');
@@ -222,18 +264,28 @@ describe('RecordingService', () => {
       });
 
       it('should coerce string numbers', () => {
-        const result = listRecordingsQuerySchema.parse({ page: '2', limit: '50' });
+        const result = listRecordingsQuerySchema.parse({
+          projectId: validProjectId,
+          page: '2',
+          limit: '50',
+        });
         expect(result.page).toBe(2);
         expect(result.limit).toBe(50);
       });
 
       it('should reject invalid sortBy', () => {
-        const result = listRecordingsQuerySchema.safeParse({ sortBy: 'invalid' });
+        const result = listRecordingsQuerySchema.safeParse({
+          projectId: validProjectId,
+          sortBy: 'invalid',
+        });
         expect(result.success).toBe(false);
       });
 
       it('should reject limit over 100', () => {
-        const result = listRecordingsQuerySchema.safeParse({ limit: 200 });
+        const result = listRecordingsQuerySchema.safeParse({
+          projectId: validProjectId,
+          limit: 200,
+        });
         expect(result.success).toBe(false);
       });
     });
@@ -292,6 +344,7 @@ describe('RecordingService', () => {
     it('should reject data exceeding size limit', async () => {
       const serviceWithLimit = new RecordingService(
         mockRepository as unknown as RecordingRepository,
+        mockProjectRepository as unknown as ProjectRepository,
         {
           maxDataSizeBytes: 100, // Very small limit
         }
@@ -310,6 +363,7 @@ describe('RecordingService', () => {
     it('should enforce recording limit per user', async () => {
       const serviceWithLimit = new RecordingService(
         mockRepository as unknown as RecordingRepository,
+        mockProjectRepository as unknown as ProjectRepository,
         {
           maxRecordingsPerUser: 5,
         }
@@ -366,6 +420,7 @@ describe('RecordingService', () => {
 
   describe('listRecordings', () => {
     const defaultQuery: ListRecordingsQuery = {
+      projectId: '00000000-0000-0000-0000-000000000001',
       page: 1,
       limit: 20,
       sortBy: 'updatedAt',
@@ -455,6 +510,7 @@ describe('RecordingService', () => {
     it('should reject data exceeding size limit on update', async () => {
       const serviceWithLimit = new RecordingService(
         mockRepository as unknown as RecordingRepository,
+        mockProjectRepository as unknown as ProjectRepository,
         {
           maxDataSizeBytes: 100,
         }

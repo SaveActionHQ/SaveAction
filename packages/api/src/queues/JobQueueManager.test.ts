@@ -398,6 +398,15 @@ describe('JobQueueManager', () => {
 
       expect(result).toBe(true);
     });
+
+    it('should remove a repeatable job with timezone and jobId', async () => {
+      const result = await manager.removeRepeatableJob('cleanup', 'daily-cleanup', '0 0 * * *', {
+        timezone: 'America/New_York',
+        jobId: 'schedule:abc-123',
+      });
+
+      expect(result).toBe(true);
+    });
   });
 
   describe('shutdown', () => {

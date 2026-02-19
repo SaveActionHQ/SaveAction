@@ -1,7 +1,8 @@
 # SaveAction AI Agent Instructions
 
 > **Last Updated:** February 2026  
-> **Total Tests:** 1,019+ (140 core + 90 CLI + 792 API)  
+> **Total Tests:** 1,505+ (163 core + 176 CLI + 1,169 API)  
+> **Total Test Files:** 51 (5 core + 6 CLI + 40 API)  
 > **Test Coverage Target:** 90%+ for critical components
 
 ## What This Project Does
@@ -44,7 +45,8 @@ SaveAction/
 ├── packages/
 │   ├── core/           # @saveaction/core - Playwright execution engine
 │   ├── cli/            # @saveaction/cli - Command-line interface
-│   └── api/            # @saveaction/api - REST API + Worker
+│   ├── api/            # @saveaction/api - REST API + Worker
+│   └── web/            # @saveaction/web - Next.js Web UI
 ├── docs/               # Technical documentation
 ├── docker/             # Docker configurations
 ├── .github/
@@ -109,37 +111,73 @@ saveaction run test.json \
   --output-file results.json
 ```
 
-### 3. @saveaction/api (REST API + Worker)
+**Additional Modules:**
+- `CIDetector` (`src/ci/CIDetector.ts`) - Detects CI environments (GitHub Actions, GitLab CI, Jenkins, etc.)
+- `PlatformClient` (`src/platform/PlatformClient.ts`) - HTTP client for SaveAction API integration
+
+### 3. @saveaction/web (Next.js Web UI)
+
+**Purpose:** Web dashboard for managing projects, tests, and runs
+
+**Technology:** Next.js 15 (App Router) + Tailwind CSS + shadcn/ui
+
+**Key Features:**
+| Feature | Description |
+|---------|-------------|
+| Projects | Create/manage test projects |
+| Test Suites | Group tests into suites |
+| Tests | Configure tests with multi-browser, headless, timeout |
+| Runs | View live run progress with SSE streaming |
+| Recording Library | Upload and manage recordings |
+| Schedules | Configure cron-scheduled test runs |
+| Dashboard | Aggregated statistics per project |
+| Settings | Profile, security, API tokens |
+
+**Route Groups:**
+- `(auth)` - Login/register pages
+- `(global)` - Project list, global settings
+- `(project)` - Project-scoped pages (dashboard, suites, tests, runs, schedules, library, settings)
+
+### 4. @saveaction/api (REST API + Worker)
 
 **Purpose:** Enterprise API for managing recordings and runs
 
 **Architecture:**
-- **API Server** (`server.ts`): Fastify HTTP server
-- **Worker Process** (`worker.ts`): BullMQ job processor for test execution
-- **Database**: PostgreSQL with Drizzle ORM
+- **API Server** (`server.ts`): Fastify HTTP server with JWT auth + Helmet + Rate Limiting + CSRF + Swagger
+- **Worker Process** (`worker.ts`): BullMQ job processor with 3 workers (test runs, scheduled tests, cleanup)
+- **Database**: PostgreSQL with Drizzle ORM (12 tables)
 - **Cache/Queue**: Redis with BullMQ
+- **Real-Time**: SSE via Redis pub/sub for live run progress
 
-**Database Schema (8 tables):**
+**Database Schema (12 tables):**
 | Table | Purpose |
 |-------|---------|
 | `users` | User accounts |
+| `projects` | Project organization (default: "My Tests") |
 | `api_tokens` | API authentication tokens |
-| `recordings` | Test recording storage |
-| `runs` | Test execution history |
-| `run_actions` | Per-action execution results |
-| `schedules` | Cron-scheduled test runs |
+| `recordings` | Recording library storage |
+| `test_suites` | Test suite grouping within projects |
+| `tests` | Individual test definitions with config (multi-browser, headless, timeout) |
+| `runs` | Test execution history (types: test, suite, project, recording) |
+| `run_actions` | Per-action results (incrementally persisted during execution) |
+| `run_browser_results` | Per-browser results for multi-browser runs |
+| `schedules` | Cron-scheduled runs (targets: test, suite, project) |
 | `webhooks` | Event notification config |
 | `webhook_deliveries` | Webhook delivery log |
 
 **API Routes:**
 | Route | Purpose |
 |-------|---------|
-| `/api/v1/auth/*` | Authentication (register, login, refresh) |
+| `/api/v1/auth/*` | Authentication (register, login, refresh, password reset) |
 | `/api/v1/tokens/*` | API token management |
-| `/api/v1/recordings/*` | Recording CRUD operations |
-| `/api/v1/runs/*` | Test run management |
+| `/api/v1/projects/*` | Project CRUD (max 100/user) |
+| `/api/v1/projects/:projectId/suites/*` | Suite management (nested under projects) |
+| `/api/v1/projects/:projectId/tests/*` | Test management (nested under projects) |
+| `/api/v1/recordings/*` | Recording library |
+| `/api/v1/runs/*` | Test run management + SSE progress stream |
 | `/api/v1/schedules/*` | Scheduled test configuration |
-| `/api/health/*` | Health checks |
+| `/api/v1/dashboard/*` | Aggregated statistics |
+| `/api/health/*` | Health checks (basic, detailed, live, ready) |
 | `/api/queues/*` | Queue status |
 
 **Service Layer Pattern:**
@@ -445,27 +483,32 @@ test(cli): add validate command tests
 
 - Core Playwright runner with all action types
 - Multi-strategy element locator with retry
-- CLI with run, validate, info, list commands
+- CLI with run, validate, info, list commands + CI detection + platform client
 - JSON output support
-- REST API with Fastify
-- PostgreSQL + Drizzle ORM (8 tables)
-- Redis + BullMQ job queues
-- Authentication (JWT + API tokens)
-- Recording CRUD operations
-- Run management and execution
-- Schedule management
-- Worker process for test execution
-- 1,019+ unit tests
+- REST API with Fastify + Helmet + Rate Limiting + CSRF + Swagger
+- PostgreSQL + Drizzle ORM (12 tables)
+- Redis + BullMQ job queues (3 workers: test runs, scheduled tests, cleanup)
+- JWT + API token authentication + account lockout + password reset (email)
+- Project/Suite/Test management with multi-browser support
+- Recording library (upload, manage, link to tests)
+- Run management with parent/child runs (suite → test runs)
+- SSE real-time progress streaming via Redis pub/sub
+- Incremental action persistence (actions saved to DB as they execute, not batched)
+- Schedule management (targets: test, suite, project)
+- Dashboard with aggregated statistics
+- Worker process for test execution (configurable concurrency)
+- Web UI with Next.js 15 (App Router) + Tailwind CSS + shadcn/ui
+- 1,505+ unit tests across 51 test files
 - Integration tests (API + Core browser)
 - CI/CD pipeline
 
 ### In Progress 🚧
 
+- Web UI refinements and additional pages
 - API integration tests in CI (PostgreSQL + Redis services)
 
 ### Planned 📋
 
-- Phase 4: Web UI (React/Next.js)
 - Webhook notifications
 - Run comparison/history
 - Team/organization support
@@ -488,24 +531,44 @@ packages/
 ├── cli/
 │   └── src/
 │       ├── cli.ts           # Commander.js setup
+│       ├── ci/              # CI environment detection
+│       ├── platform/        # Platform API client
 │       └── commands/        # Command implementations
-└── api/
+├── api/
+│   └── src/
+│       ├── app.ts           # Fastify app builder
+│       ├── server.ts        # HTTP server entry
+│       ├── worker.ts        # BullMQ worker entry (3 workers, concurrency=3)
+│       ├── config/          # Environment config
+│       ├── db/
+│       │   ├── schema/      # Drizzle table definitions (12 tables)
+│       │   └── index.ts     # Database connection
+│       ├── auth/            # Authentication service
+│       ├── routes/          # API route handlers
+│       ├── services/        # Business logic (11 services)
+│       ├── repositories/    # Database access (9 repositories)
+│       ├── queues/          # Job processors (test, scheduled, cleanup)
+│       ├── plugins/         # Fastify plugins (helmet, rateLimit, csrf, swagger)
+│       ├── redis/           # Redis client + pub/sub
+│       └── errors/          # Error classes
+└── web/
     └── src/
-        ├── app.ts           # Fastify app builder
-        ├── server.ts        # HTTP server entry
-        ├── worker.ts        # BullMQ worker entry
-        ├── config/          # Environment config
-        ├── db/
-        │   ├── schema/      # Drizzle table definitions
-        │   └── index.ts     # Database connection
-        ├── auth/            # Authentication service
-        ├── routes/          # API route handlers
-        ├── services/        # Business logic
-        ├── repositories/    # Database access
-        ├── queues/          # Job processors
-        ├── plugins/         # Fastify plugins
-        ├── redis/           # Redis client
-        └── errors/          # Error classes
+        ├── app/             # Next.js App Router
+        │   ├── (auth)/      # Login, register pages
+        │   ├── (global)/    # Project list, global settings
+        │   └── (project)/   # Project-scoped pages
+        ├── components/      # React components (shadcn/ui)
+        │   ├── ui/          # Base UI components
+        │   ├── layout/      # Sidebar, header, navigation
+        │   ├── projects/    # Project switcher
+        │   ├── suites/      # Suite cards, dialogs
+        │   ├── tests/       # Test config forms
+        │   ├── runs/        # Run detail, actions table, SSE
+        │   ├── schedules/   # Schedule management
+        │   ├── settings/    # Profile, security, tokens
+        │   └── shared/      # Data tables, pagination, empty states
+        ├── lib/             # API client, utilities
+        └── providers/       # Auth, theme, toast providers
 ```
 
 ## Important Notes
@@ -514,8 +577,12 @@ packages/
 2. **Keep 300ms delays** - required for animation stability in runner
 3. **Use `beforeEach` for test data** - `afterEach` truncates tables
 4. **Run build before CLI** - TypeScript must compile first
-5. **Worker is separate process** - scales independently from API
+5. **Worker is separate process** - scales independently from API (3 concurrent jobs default)
 6. **Soft delete by default** - recordings/runs use `deletedAt` column
+7. **Actions persist incrementally** - saved to DB as each action completes, not batched at end
+8. **SSE has no replay** - Redis pub/sub; frontend merges DB data with SSE on reconnect
+9. **Parent run tracking** - suite runs create child test runs with `parentRunId`
+10. **Multi-browser runs** - tests can configure multiple browsers; results stored in `run_browser_results`
 
 ## Copilot Instruction Files
 
@@ -528,8 +595,7 @@ The `.github/instructions/` folder contains context-specific guidelines that are
 | `es-modules.instructions.md` | `packages/**/*.ts` | ES module import rules (`.js` extensions) |
 | `playwright-runner.instructions.md` | `packages/core/src/runner/**/*.ts` | Element location, retry logic, navigation |
 | `testing.instructions.md` | `**/*.test.ts`, `tests/**/*.ts` | Vitest patterns, mocking, integration tests |
-| `types.instructions.md` | `packages/core/src/types/**/*.ts` | Type definition conventions |
-
+| `types.instructions.md` | `packages/core/src/types/**/*.ts` | Type definition conventions || `web-ui.instructions.md` | `packages/web/**/*.ts`, `packages/web/**/*.tsx` | Web UI design system, component guidelines |
 These files help AI agents understand package-specific patterns and conventions.
 
 ## Getting Help

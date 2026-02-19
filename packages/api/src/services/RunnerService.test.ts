@@ -9,12 +9,19 @@ import {
   RunErrors,
   createRunSchema,
   listRunsQuerySchema,
+  queueTestRunSchema,
+  queueSuiteRunSchema,
   type CreateRunRequest,
   type ListRunsQuery,
   type ExecutionResult,
+  type QueueTestRunRequest,
+  type QueueSuiteRunRequest,
 } from './RunnerService.js';
 import type { RunRepository, SafeRun, RunSummary } from '../repositories/RunRepository.js';
 import type { RecordingRepository, SafeRecording } from '../repositories/RecordingRepository.js';
+import type { TestRepository, SafeTest } from '../repositories/TestRepository.js';
+import type { TestSuiteRepository, SafeTestSuite } from '../repositories/TestSuiteRepository.js';
+import type { RunBrowserResultRepository, SafeBrowserResult } from '../repositories/RunBrowserResultRepository.js';
 import type { JobQueueManager } from '../queues/JobQueueManager.js';
 import type { RecordingData } from '../db/schema/recordings.js';
 
@@ -84,6 +91,11 @@ const sampleRun: SafeRun = {
   triggeredBy: 'manual',
   scheduleId: null,
   ciMetadata: null,
+  runType: null,
+  testId: null,
+  suiteId: null,
+  testName: null,
+  testSlug: null,
   deletedAt: null,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
@@ -104,6 +116,11 @@ const sampleRunSummary: RunSummary = {
   startedAt: null,
   completedAt: null,
   triggeredBy: 'manual',
+  runType: null,
+  testId: null,
+  suiteId: null,
+  testName: null,
+  testSlug: null,
   createdAt: new Date('2026-01-01'),
 };
 
@@ -133,6 +150,58 @@ type MockedRecordingRepository = {
 type MockedJobQueueManager = {
   addJob: ReturnType<typeof vi.fn>;
   getQueue: ReturnType<typeof vi.fn>;
+};
+
+type MockedTestRepository = {
+  findById: ReturnType<typeof vi.fn>;
+  findMany: ReturnType<typeof vi.fn>;
+};
+
+type MockedTestSuiteRepository = {
+  findById: ReturnType<typeof vi.fn>;
+};
+
+type MockedBrowserResultRepository = {
+  createMany: ReturnType<typeof vi.fn>;
+  findByRunId: ReturnType<typeof vi.fn>;
+};
+
+const TEST_UUID = '00000000-0000-0000-0000-000000000010';
+const SUITE_UUID = '00000000-0000-0000-0000-000000000020';
+const PROJECT_UUID = '00000000-0000-0000-0000-000000000030';
+
+const sampleTest: SafeTest = {
+  id: TEST_UUID,
+  userId: 'user-123',
+  projectId: PROJECT_UUID,
+  suiteId: SUITE_UUID,
+  name: 'Login Test',
+  description: null,
+  slug: 'login-test',
+  recordingData: sampleRecordingData as unknown as Record<string, unknown>,
+  recordingUrl: 'https://example.com',
+  actionCount: 2,
+  browsers: ['chromium', 'firefox'],
+  config: { headless: true, timeout: 30000, parallelBrowsers: true },
+  displayOrder: 0,
+  lastRunId: null,
+  lastRunAt: null,
+  lastRunStatus: null,
+  deletedAt: null,
+  createdAt: new Date('2026-01-01'),
+  updatedAt: new Date('2026-01-01'),
+};
+
+const sampleSuite: SafeTestSuite = {
+  id: SUITE_UUID,
+  userId: 'user-123',
+  projectId: PROJECT_UUID,
+  name: 'Smoke Tests',
+  description: null,
+  displayOrder: 0,
+  deletedAt: null,
+  createdAt: new Date('2026-01-01'),
+  updatedAt: new Date('2026-01-01'),
 };
 
 const createMockRunRepository = (): MockedRunRepository => ({
@@ -176,20 +245,47 @@ const createMockJobQueueManager = (): MockedJobQueueManager => ({
   }),
 });
 
+const createMockTestRepository = (): MockedTestRepository => ({
+  findById: vi.fn().mockResolvedValue(sampleTest),
+  findMany: vi.fn().mockResolvedValue({
+    data: [{ id: sampleTest.id, name: sampleTest.name, slug: sampleTest.slug }],
+    pagination: { page: 1, limit: 1000, total: 1, totalPages: 1, hasNext: false, hasPrevious: false },
+  }),
+});
+
+const createMockTestSuiteRepository = (): MockedTestSuiteRepository => ({
+  findById: vi.fn().mockResolvedValue(sampleSuite),
+});
+
+const createMockBrowserResultRepository = (): MockedBrowserResultRepository => ({
+  createMany: vi.fn().mockResolvedValue([]),
+  findByRunId: vi.fn().mockResolvedValue([]),
+});
+
 describe('RunnerService', () => {
   let service: RunnerService;
   let mockRunRepository: MockedRunRepository;
   let mockRecordingRepository: MockedRecordingRepository;
   let mockJobQueueManager: MockedJobQueueManager;
+  let mockTestRepository: MockedTestRepository;
+  let mockTestSuiteRepository: MockedTestSuiteRepository;
+  let mockBrowserResultRepository: MockedBrowserResultRepository;
 
   beforeEach(() => {
     mockRunRepository = createMockRunRepository();
     mockRecordingRepository = createMockRecordingRepository();
     mockJobQueueManager = createMockJobQueueManager();
+    mockTestRepository = createMockTestRepository();
+    mockTestSuiteRepository = createMockTestSuiteRepository();
+    mockBrowserResultRepository = createMockBrowserResultRepository();
     service = new RunnerService(
       mockRunRepository as unknown as RunRepository,
       mockRecordingRepository as unknown as RecordingRepository,
-      mockJobQueueManager as unknown as JobQueueManager
+      mockJobQueueManager as unknown as JobQueueManager,
+      undefined,
+      mockTestRepository as unknown as TestRepository,
+      mockTestSuiteRepository as unknown as TestSuiteRepository,
+      mockBrowserResultRepository as unknown as RunBrowserResultRepository,
     );
   });
 
@@ -253,10 +349,18 @@ describe('RunnerService', () => {
     });
 
     describe('listRunsQuerySchema', () => {
-      it('should validate empty query with defaults', () => {
+      const validProjectId = '00000000-0000-0000-0000-000000000001';
+
+      it('should require projectId', () => {
         const result = listRunsQuerySchema.safeParse({});
+        expect(result.success).toBe(false);
+      });
+
+      it('should validate query with projectId and defaults', () => {
+        const result = listRunsQuerySchema.safeParse({ projectId: validProjectId });
         expect(result.success).toBe(true);
         if (result.success) {
+          expect(result.data.projectId).toBe(validProjectId);
           expect(result.data.page).toBe(1);
           expect(result.data.limit).toBe(20);
           expect(result.data.sortBy).toBe('createdAt');
@@ -265,6 +369,7 @@ describe('RunnerService', () => {
 
       it('should validate status filter', () => {
         const result = listRunsQuerySchema.safeParse({
+          projectId: validProjectId,
           status: 'running',
         });
         expect(result.success).toBe(true);
@@ -272,6 +377,7 @@ describe('RunnerService', () => {
 
       it('should validate multiple status filter', () => {
         const result = listRunsQuerySchema.safeParse({
+          projectId: validProjectId,
           status: ['running', 'queued'],
         });
         expect(result.success).toBe(true);
@@ -279,6 +385,7 @@ describe('RunnerService', () => {
 
       it('should reject invalid status', () => {
         const result = listRunsQuerySchema.safeParse({
+          projectId: validProjectId,
           status: 'invalid-status',
         });
         expect(result.success).toBe(false);
@@ -403,6 +510,7 @@ describe('RunnerService', () => {
 
   describe('listRuns', () => {
     const defaultQuery = {
+      projectId: '00000000-0000-0000-0000-000000000001',
       page: 1,
       limit: 20,
       sortBy: 'createdAt' as const,
@@ -453,7 +561,7 @@ describe('RunnerService', () => {
       const result = await service.getRunActions('user-123', 'run-123');
 
       expect(result).toHaveLength(2);
-      expect(mockRunRepository.findActionsByRunId).toHaveBeenCalledWith('run-123');
+      expect(mockRunRepository.findActionsByRunId).toHaveBeenCalledWith('run-123', undefined);
     });
 
     it('should throw if run not found', async () => {
@@ -788,6 +896,310 @@ describe('RunnerService', () => {
 
       expect(result).toHaveLength(1);
       expect(mockRunRepository.findOrphanedRuns).toHaveBeenCalledWith(600000);
+    });
+  });
+
+  describe('queueTestRunSchema Validation', () => {
+    it('should validate minimal request', () => {
+      const result = queueTestRunSchema.safeParse({
+        testId: '12345678-1234-1234-1234-123456789012',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should validate full request with browsers', () => {
+      const result = queueTestRunSchema.safeParse({
+        testId: '12345678-1234-1234-1234-123456789012',
+        browsers: ['chromium', 'firefox'],
+        parallelBrowsers: false,
+        headless: false,
+        timeout: 60000,
+        triggeredBy: 'api',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject invalid browser', () => {
+      const result = queueTestRunSchema.safeParse({
+        testId: '12345678-1234-1234-1234-123456789012',
+        browsers: ['ie'],
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it('should reject empty browsers array', () => {
+      const result = queueTestRunSchema.safeParse({
+        testId: '12345678-1234-1234-1234-123456789012',
+        browsers: [],
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('queueSuiteRunSchema Validation', () => {
+    it('should validate minimal request', () => {
+      const result = queueSuiteRunSchema.safeParse({
+        suiteId: '12345678-1234-1234-1234-123456789012',
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it('should reject missing suiteId', () => {
+      const result = queueSuiteRunSchema.safeParse({});
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe('queueTestRun', () => {
+    it('should create run and queue job for a test', async () => {
+      const result = await service.queueTestRun('user-123', PROJECT_UUID, {
+        testId: TEST_UUID,
+      });
+
+      expect(result).toBeDefined();
+      expect(mockTestRepository.findById).toHaveBeenCalledWith(TEST_UUID);
+      expect(mockRunRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          runType: 'test',
+          testId: TEST_UUID,
+          suiteId: SUITE_UUID,
+          testName: 'Login Test',
+          testSlug: 'login-test',
+        })
+      );
+      expect(mockBrowserResultRepository.createMany).toHaveBeenCalled();
+      expect(mockJobQueueManager.addJob).toHaveBeenCalledWith(
+        'test-runs',
+        'execute-test-run',
+        expect.objectContaining({
+          runType: 'test',
+          testId: TEST_UUID,
+          browsers: ['chromium', 'firefox'],
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it('should throw if test not found', async () => {
+      mockTestRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.queueTestRun('user-123', PROJECT_UUID, { testId: TEST_UUID })
+      ).rejects.toEqual(RunErrors.TEST_NOT_FOUND);
+    });
+
+    it('should throw if user does not own test', async () => {
+      mockTestRepository.findById.mockResolvedValue({
+        ...sampleTest,
+        userId: 'other-user',
+      });
+
+      await expect(
+        service.queueTestRun('user-123', PROJECT_UUID, { testId: TEST_UUID })
+      ).rejects.toEqual(RunErrors.NOT_AUTHORIZED);
+    });
+
+    it('should throw if test belongs to different project', async () => {
+      mockTestRepository.findById.mockResolvedValue({
+        ...sampleTest,
+        projectId: 'other-project',
+      });
+
+      await expect(
+        service.queueTestRun('user-123', PROJECT_UUID, { testId: TEST_UUID })
+      ).rejects.toEqual(RunErrors.NOT_AUTHORIZED);
+    });
+
+    it('should use override browsers when provided', async () => {
+      await service.queueTestRun('user-123', PROJECT_UUID, {
+        testId: TEST_UUID,
+        browsers: ['webkit'],
+      });
+
+      expect(mockJobQueueManager.addJob).toHaveBeenCalledWith(
+        'test-runs',
+        'execute-test-run',
+        expect.objectContaining({
+          browsers: ['webkit'],
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it('should use test browsers when no override', async () => {
+      await service.queueTestRun('user-123', PROJECT_UUID, {
+        testId: TEST_UUID,
+      });
+
+      expect(mockJobQueueManager.addJob).toHaveBeenCalledWith(
+        'test-runs',
+        'execute-test-run',
+        expect.objectContaining({
+          browsers: ['chromium', 'firefox'],
+        }),
+        expect.any(Object)
+      );
+    });
+
+    it('should mark run as failed if queueing fails', async () => {
+      mockJobQueueManager.addJob.mockRejectedValue(new Error('Queue error'));
+
+      await expect(
+        service.queueTestRun('user-123', PROJECT_UUID, { testId: TEST_UUID })
+      ).rejects.toEqual(RunErrors.QUEUE_ERROR);
+      expect(mockRunRepository.update).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ status: 'failed' })
+      );
+    });
+  });
+
+  describe('queueSuiteRun', () => {
+    it('should create suite run and queue tests', async () => {
+      const result = await service.queueSuiteRun('user-123', PROJECT_UUID, {
+        suiteId: SUITE_UUID,
+      });
+
+      expect(result.suiteRun).toBeDefined();
+      expect(result.testRuns).toBeDefined();
+      expect(mockTestSuiteRepository.findById).toHaveBeenCalledWith(SUITE_UUID);
+      expect(mockRunRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          runType: 'suite',
+          suiteId: SUITE_UUID,
+          testName: 'Smoke Tests',
+        })
+      );
+    });
+
+    it('should throw if suite not found', async () => {
+      mockTestSuiteRepository.findById.mockResolvedValue(null);
+
+      await expect(
+        service.queueSuiteRun('user-123', PROJECT_UUID, { suiteId: SUITE_UUID })
+      ).rejects.toEqual(RunErrors.SUITE_NOT_FOUND);
+    });
+
+    it('should throw if user does not own suite', async () => {
+      mockTestSuiteRepository.findById.mockResolvedValue({
+        ...sampleSuite,
+        userId: 'other-user',
+      });
+
+      await expect(
+        service.queueSuiteRun('user-123', PROJECT_UUID, { suiteId: SUITE_UUID })
+      ).rejects.toEqual(RunErrors.NOT_AUTHORIZED);
+    });
+
+    it('should throw if suite belongs to different project', async () => {
+      mockTestSuiteRepository.findById.mockResolvedValue({
+        ...sampleSuite,
+        projectId: 'other-project',
+      });
+
+      await expect(
+        service.queueSuiteRun('user-123', PROJECT_UUID, { suiteId: SUITE_UUID })
+      ).rejects.toEqual(RunErrors.NOT_AUTHORIZED);
+    });
+
+    it('should throw if suite has no tests', async () => {
+      mockTestRepository.findMany.mockResolvedValue({
+        data: [],
+        pagination: { page: 1, limit: 1000, total: 0, totalPages: 0, hasNext: false, hasPrevious: false },
+      });
+
+      await expect(
+        service.queueSuiteRun('user-123', PROJECT_UUID, { suiteId: SUITE_UUID })
+      ).rejects.toEqual(RunErrors.SUITE_EMPTY);
+    });
+
+    it('should update suite run to failed if no test runs could be queued', async () => {
+      // findMany returns a test but findById for that test returns null (simulating failure)
+      mockTestRepository.findMany.mockResolvedValue({
+        data: [{ id: TEST_UUID, name: 'Test' }],
+        pagination: { page: 1, limit: 1000, total: 1, totalPages: 1, hasNext: false, hasPrevious: false },
+      });
+      mockTestRepository.findById.mockResolvedValue(null);
+
+      const result = await service.queueSuiteRun('user-123', PROJECT_UUID, {
+        suiteId: SUITE_UUID,
+      });
+
+      // Suite run should be updated to failed
+      expect(mockRunRepository.update).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.objectContaining({ status: 'failed' })
+      );
+      expect(result.testRuns).toHaveLength(0);
+    });
+  });
+
+  describe('getBrowserResults', () => {
+    it('should return browser results for a run', async () => {
+      const mockResults: SafeBrowserResult[] = [
+        {
+          id: 'br-1',
+          userId: 'user-123',
+          runId: 'run-123',
+          testId: TEST_UUID,
+          browser: 'chromium',
+          status: 'passed',
+          durationMs: 5000,
+          startedAt: new Date(),
+          completedAt: new Date(),
+          actionsTotal: 10,
+          actionsExecuted: 10,
+          actionsFailed: 0,
+          actionsSkipped: 0,
+          errorMessage: null,
+          errorStack: null,
+          errorActionId: null,
+          errorActionIndex: null,
+          videoPath: null,
+          screenshotPath: null,
+          tracePath: null,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ];
+      mockBrowserResultRepository.findByRunId.mockResolvedValue(mockResults);
+
+      const results = await service.getBrowserResults('user-123', 'run-123');
+
+      expect(results).toHaveLength(1);
+      expect(results[0].browser).toBe('chromium');
+      expect(mockBrowserResultRepository.findByRunId).toHaveBeenCalledWith('run-123');
+    });
+
+    it('should throw if run not found', async () => {
+      mockRunRepository.findById.mockResolvedValue(null);
+
+      await expect(service.getBrowserResults('user-123', 'run-123')).rejects.toEqual(
+        RunErrors.NOT_FOUND
+      );
+    });
+
+    it('should throw if user does not own run', async () => {
+      mockRunRepository.findById.mockResolvedValue({
+        ...sampleRun,
+        userId: 'other-user',
+      });
+
+      await expect(service.getBrowserResults('user-123', 'run-123')).rejects.toEqual(
+        RunErrors.NOT_AUTHORIZED
+      );
+    });
+
+    it('should return empty array when no browser result repository', async () => {
+      const serviceWithoutBrowserRepo = new RunnerService(
+        mockRunRepository as unknown as RunRepository,
+        mockRecordingRepository as unknown as RecordingRepository,
+        mockJobQueueManager as unknown as JobQueueManager,
+      );
+
+      const results = await serviceWithoutBrowserRepo.getBrowserResults('user-123', 'run-123');
+
+      expect(results).toEqual([]);
     });
   });
 

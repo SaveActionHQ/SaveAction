@@ -18,11 +18,16 @@ import {
 } from './plugins/index.js';
 import authRoutes from './routes/auth.js';
 import apiTokenRoutes from './routes/tokens.js';
+import projectRoutes from './routes/projects.js';
 import recordingRoutes from './routes/recordings.js';
 import runRoutes from './routes/runs.js';
 import scheduleRoutes from './routes/schedules.js';
 import dashboardRoutes from './routes/dashboard.js';
+import suiteRoutes from './routes/suites.js';
+import testRoutes from './routes/tests.js';
 import { EmailService } from './services/EmailService.js';
+import { ApiTokenService } from './services/ApiTokenService.js';
+import { ApiTokenRepository } from './repositories/ApiTokenRepository.js';
 import type { Env } from './config/index.js';
 
 export interface AppOptions {
@@ -185,6 +190,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
     // Register auth routes (requires both database and JWT)
     if (!skipDatabase && app.db) {
+      // Initialize API token service for dual-auth support
+      // This allows routes to authenticate with both JWT and API tokens (sa_live_*/sa_test_*)
+      const apiTokenRepository = new ApiTokenRepository(app.db);
+      app.apiTokenService = new ApiTokenService(apiTokenRepository);
+
       // Register all v1 API routes under /api/v1 prefix
       await app.register(
         async (v1App) => {
@@ -210,6 +220,13 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
             maxTokensPerUser: 10,
           });
 
+          // Project routes
+          await v1App.register(projectRoutes, {
+            prefix: '/projects',
+            db: app.db!,
+            maxProjectsPerUser: 100,
+          });
+
           // Recording routes
           await v1App.register(recordingRoutes, {
             prefix: '/recordings',
@@ -222,6 +239,20 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
           await v1App.register(dashboardRoutes, {
             prefix: '/dashboard',
             db: app.db!,
+          });
+
+          // Test Suite routes (nested under projects)
+          await v1App.register(suiteRoutes, {
+            prefix: '/projects/:projectId/suites',
+            db: app.db!,
+            maxSuitesPerProject: 100,
+          });
+
+          // Test routes (nested under projects)
+          await v1App.register(testRoutes, {
+            prefix: '/projects/:projectId/tests',
+            db: app.db!,
+            maxTestsPerProject: 1000,
           });
         },
         { prefix: '/api/v1' }

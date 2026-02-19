@@ -22,9 +22,21 @@ import type { Database } from '../db/index.js';
  */
 export interface RunCreateData {
   userId: string;
-  recordingId: string;
-  recordingName: string;
-  recordingUrl: string;
+  projectId: string;
+  recordingId?: string | null;
+  recordingName?: string | null;
+  recordingUrl?: string | null;
+  /** Run type: recording (legacy), test, or suite */
+  runType?: 'recording' | 'test' | 'suite' | 'project';
+  /** Test ID for test-based runs */
+  testId?: string | null;
+  /** Suite ID for suite-level runs */
+  suiteId?: string | null;
+  /** Parent run ID (for child runs of a suite run) */
+  parentRunId?: string | null;
+  /** Test snapshot fields */
+  testName?: string | null;
+  testSlug?: string | null;
   browser?: BrowserType;
   headless?: boolean;
   videoEnabled?: boolean;
@@ -64,6 +76,11 @@ export interface RunUpdateData {
  */
 export interface RunListFilters {
   userId: string;
+  projectId?: string;
+  testId?: string;
+  suiteId?: string;
+  parentRunId?: string;
+  runType?: string;
   recordingId?: string;
   scheduleId?: string;
   status?: RunStatus | RunStatus[];
@@ -104,9 +121,16 @@ export interface PaginatedResult<T> {
 export interface SafeRun {
   id: string;
   userId: string;
+  projectId: string;
   recordingId: string | null;
-  recordingName: string;
-  recordingUrl: string;
+  recordingName: string | null;
+  recordingUrl: string | null;
+  runType: string | null;
+  testId: string | null;
+  suiteId: string | null;
+  parentRunId: string | null;
+  testName: string | null;
+  testSlug: string | null;
   status: RunStatus;
   jobId: string | null;
   queueName: string | null;
@@ -145,9 +169,16 @@ export interface SafeRun {
 export interface RunSummary {
   id: string;
   userId: string;
+  projectId: string;
   recordingId: string | null;
-  recordingName: string;
-  recordingUrl: string;
+  recordingName: string | null;
+  recordingUrl: string | null;
+  runType: string | null;
+  testId: string | null;
+  suiteId: string | null;
+  parentRunId: string | null;
+  testName: string | null;
+  testSlug: string | null;
   status: RunStatus;
   browser: BrowserType;
   actionsTotal: number | null;
@@ -171,6 +202,7 @@ export interface SafeRunAction {
   actionId: string;
   actionType: string;
   actionIndex: number;
+  browser: string | null;
   status: ActionStatus;
   durationMs: number | null;
   startedAt: Date | null;
@@ -200,6 +232,7 @@ export interface RunActionCreateData {
   actionId: string;
   actionType: string;
   actionIndex: number;
+  browser?: string;
   status: ActionStatus;
   durationMs?: number;
   startedAt?: Date;
@@ -227,9 +260,16 @@ function toSafeRun(run: Run, scheduleName?: string | null): SafeRun {
   return {
     id: run.id,
     userId: run.userId,
+    projectId: run.projectId,
     recordingId: run.recordingId,
     recordingName: run.recordingName,
     recordingUrl: run.recordingUrl,
+    runType: run.runType,
+    testId: run.testId,
+    suiteId: run.suiteId,
+    parentRunId: run.parentRunId ?? null,
+    testName: run.testName,
+    testSlug: run.testSlug,
     status: run.status,
     jobId: run.jobId,
     queueName: run.queueName,
@@ -270,9 +310,16 @@ function toRunSummary(run: Partial<Run> & { scheduleName?: string | null }): Run
   return {
     id: run.id!,
     userId: run.userId!,
+    projectId: run.projectId!,
     recordingId: run.recordingId ?? null,
-    recordingName: run.recordingName!,
-    recordingUrl: run.recordingUrl!,
+    recordingName: run.recordingName ?? null,
+    recordingUrl: run.recordingUrl ?? null,
+    runType: run.runType ?? null,
+    testId: run.testId ?? null,
+    suiteId: run.suiteId ?? null,
+    parentRunId: run.parentRunId ?? null,
+    testName: run.testName ?? null,
+    testSlug: run.testSlug ?? null,
     status: run.status!,
     browser: run.browser!,
     actionsTotal: run.actionsTotal ? parseInt(run.actionsTotal, 10) : null,
@@ -298,6 +345,7 @@ function toSafeRunAction(action: RunAction): SafeRunAction {
     actionId: action.actionId,
     actionType: action.actionType,
     actionIndex: parseInt(action.actionIndex, 10),
+    browser: action.browser ?? null,
     status: action.status,
     durationMs: action.durationMs ? parseInt(action.durationMs, 10) : null,
     startedAt: action.startedAt,
@@ -338,9 +386,16 @@ export class RunRepository {
       .insert(runs)
       .values({
         userId: data.userId,
-        recordingId: data.recordingId,
-        recordingName: data.recordingName,
-        recordingUrl: data.recordingUrl,
+        projectId: data.projectId,
+        recordingId: data.recordingId ?? null,
+        recordingName: data.recordingName ?? null,
+        recordingUrl: data.recordingUrl ?? null,
+        runType: data.runType ?? 'recording',
+        testId: data.testId ?? null,
+        suiteId: data.suiteId ?? null,
+        parentRunId: data.parentRunId ?? null,
+        testName: data.testName ?? null,
+        testSlug: data.testSlug ?? null,
         status: 'queued',
         browser: data.browser ?? 'chromium',
         headless: data.headless ?? true,
@@ -410,6 +465,26 @@ export class RunRepository {
       conditions.push(isNull(runs.deletedAt));
     }
 
+    if (filters.projectId) {
+      conditions.push(eq(runs.projectId, filters.projectId));
+    }
+
+    if (filters.testId) {
+      conditions.push(eq(runs.testId, filters.testId));
+    }
+
+    if (filters.suiteId) {
+      conditions.push(eq(runs.suiteId, filters.suiteId));
+    }
+
+    if (filters.parentRunId) {
+      conditions.push(eq(runs.parentRunId, filters.parentRunId));
+    }
+
+    if (filters.runType) {
+      conditions.push(eq(runs.runType, filters.runType as any));
+    }
+
     if (filters.recordingId) {
       conditions.push(eq(runs.recordingId, filters.recordingId));
     }
@@ -463,6 +538,13 @@ export class RunRepository {
       .select({
         id: runs.id,
         userId: runs.userId,
+        projectId: runs.projectId,
+        runType: runs.runType,
+        testId: runs.testId,
+        suiteId: runs.suiteId,
+        parentRunId: runs.parentRunId,
+        testName: runs.testName,
+        testSlug: runs.testSlug,
         recordingId: runs.recordingId,
         recordingName: runs.recordingName,
         recordingUrl: runs.recordingUrl,
@@ -660,6 +742,7 @@ export class RunRepository {
       actionId: action.actionId,
       actionType: action.actionType,
       actionIndex: String(action.actionIndex),
+      browser: action.browser ?? null,
       status: action.status,
       durationMs: action.durationMs !== undefined ? String(action.durationMs) : null,
       startedAt: action.startedAt,
@@ -695,9 +778,24 @@ export class RunRepository {
   }
 
   /**
-   * Get all actions for a run
+   * Get all actions for a run, optionally filtered by browser.
+   * Falls back to unfiltered results if browser filter returns nothing (old runs without browser data).
    */
-  async findActionsByRunId(runId: string): Promise<SafeRunAction[]> {
+  async findActionsByRunId(runId: string, browser?: string): Promise<SafeRunAction[]> {
+    if (browser) {
+      const conditions = [eq(runActions.runId, runId), eq(runActions.browser, browser)];
+      const result = await this.db
+        .select()
+        .from(runActions)
+        .where(and(...conditions))
+        .orderBy(asc(runActions.actionIndex));
+
+      // Fallback: old runs may not have browser column populated
+      if (result.length > 0) {
+        return result.map(toSafeRunAction);
+      }
+    }
+
     const result = await this.db
       .select()
       .from(runActions)
@@ -708,12 +806,31 @@ export class RunRepository {
   }
 
   /**
-   * Get a specific action by run ID and action ID
+   * Get a specific action by run ID and action ID, optionally filtered by browser.
+   * Falls back to unfiltered lookup if browser filter returns nothing (old runs without browser data).
    */
   async findActionByRunIdAndActionId(
     runId: string,
-    actionId: string
+    actionId: string,
+    browser?: string
   ): Promise<SafeRunAction | null> {
+    if (browser) {
+      const [filtered] = await this.db
+        .select()
+        .from(runActions)
+        .where(
+          and(
+            eq(runActions.runId, runId),
+            eq(runActions.actionId, actionId),
+            eq(runActions.browser, browser)
+          )
+        );
+      if (filtered) {
+        return toSafeRunAction(filtered);
+      }
+      // Fallback: old runs may not have browser column populated
+    }
+
     const [result] = await this.db
       .select()
       .from(runActions)
@@ -745,5 +862,78 @@ export class RunRepository {
       .returning({ id: runActions.id });
 
     return result.length;
+  }
+
+  /**
+   * Find all child run statuses for a parent run.
+   * Used to determine when a suite run is complete.
+   */
+  async findChildrenStatuses(
+    parentRunId: string
+  ): Promise<
+    Array<{
+      id: string;
+      status: RunStatus;
+      durationMs: string | null;
+      actionsTotal: string | null;
+      actionsExecuted: string | null;
+      actionsFailed: string | null;
+      actionsSkipped: string | null;
+      errorMessage: string | null;
+    }>
+  > {
+    const result = await this.db
+      .select({
+        id: runs.id,
+        status: runs.status,
+        durationMs: runs.durationMs,
+        actionsTotal: runs.actionsTotal,
+        actionsExecuted: runs.actionsExecuted,
+        actionsFailed: runs.actionsFailed,
+        actionsSkipped: runs.actionsSkipped,
+        errorMessage: runs.errorMessage,
+      })
+      .from(runs)
+      .where(and(eq(runs.parentRunId, parentRunId), isNull(runs.deletedAt)));
+
+    return result;
+  }
+
+  /**
+   * Update screenshot path for a specific action.
+   * Used after run execution when screenshots become available.
+   */
+  async updateActionScreenshot(
+    runId: string,
+    actionId: string,
+    screenshotPath: string
+  ): Promise<void> {
+    await this.db
+      .update(runActions)
+      .set({ screenshotPath })
+      .where(and(eq(runActions.runId, runId), eq(runActions.actionId, actionId)));
+  }
+
+  /**
+   * Get run stats for a schedule (computed from actual run data).
+   * Used to provide accurate counts even when schedule counters are stale.
+   */
+  async getRunStatsForSchedule(
+    scheduleId: string
+  ): Promise<{ total: number; passed: number; failed: number }> {
+    const result = await this.db
+      .select({
+        total: sql<number>`count(*)::int`,
+        passed: sql<number>`count(*) filter (where ${runs.status} = 'passed')::int`,
+        failed: sql<number>`count(*) filter (where ${runs.status} = 'failed')::int`,
+      })
+      .from(runs)
+      .where(and(eq(runs.scheduleId, scheduleId), isNull(runs.deletedAt)));
+
+    return {
+      total: result[0]?.total ?? 0,
+      passed: result[0]?.passed ?? 0,
+      failed: result[0]?.failed ?? 0,
+    };
   }
 }

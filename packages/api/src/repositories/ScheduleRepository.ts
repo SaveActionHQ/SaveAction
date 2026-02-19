@@ -11,6 +11,7 @@ import {
   type Schedule,
   type NewSchedule,
   type ScheduleStatus,
+  type ScheduleTargetType,
 } from '../db/schema/schedules.js';
 import type { Database } from '../db/index.js';
 
@@ -19,13 +20,17 @@ import type { Database } from '../db/index.js';
  */
 export interface ScheduleCreateData {
   userId: string;
-  recordingId: string;
+  projectId: string;
+  recordingId?: string | null;
+  targetType: ScheduleTargetType;
+  testId?: string | null;
+  suiteId?: string | null;
   name: string;
   description?: string;
   cronExpression: string;
   timezone?: string;
   runConfig?: {
-    browser?: 'chromium' | 'firefox' | 'webkit';
+    browsers?: ('chromium' | 'firefox' | 'webkit')[];
     headless?: boolean;
     timeout?: number;
     viewport?: { width: number; height: number };
@@ -52,7 +57,7 @@ export interface ScheduleUpdateData {
   timezone?: string;
   status?: ScheduleStatus;
   runConfig?: {
-    browser?: 'chromium' | 'firefox' | 'webkit';
+    browsers?: ('chromium' | 'firefox' | 'webkit')[];
     headless?: boolean;
     timeout?: number;
     viewport?: { width: number; height: number };
@@ -80,7 +85,11 @@ export interface ScheduleUpdateData {
  */
 export interface ScheduleListFilters {
   userId: string;
+  projectId?: string;
   recordingId?: string;
+  targetType?: ScheduleTargetType;
+  testId?: string;
+  suiteId?: string;
   status?: ScheduleStatus | ScheduleStatus[];
   includeDeleted?: boolean;
 }
@@ -116,7 +125,11 @@ export interface PaginatedResult<T> {
 export interface SafeSchedule {
   id: string;
   userId: string;
-  recordingId: string;
+  projectId: string;
+  recordingId: string | null;
+  targetType: ScheduleTargetType;
+  testId: string | null;
+  suiteId: string | null;
   name: string;
   description: string | null;
   cronExpression: string;
@@ -127,7 +140,7 @@ export interface SafeSchedule {
   bullmqJobKey: string | null;
   bullmqJobPattern: string | null;
   runConfig: {
-    browser?: 'chromium' | 'firefox' | 'webkit';
+    browsers?: ('chromium' | 'firefox' | 'webkit')[];
     headless?: boolean;
     timeout?: number;
     viewport?: { width: number; height: number };
@@ -162,13 +175,17 @@ export interface SafeSchedule {
 export interface ScheduleSummary {
   id: string;
   userId: string;
-  recordingId: string;
+  projectId: string;
+  recordingId: string | null;
+  targetType: ScheduleTargetType;
+  testId: string | null;
+  suiteId: string | null;
   name: string;
   cronExpression: string;
   timezone: string;
   status: ScheduleStatus;
   runConfig: {
-    browser?: 'chromium' | 'firefox' | 'webkit';
+    browsers?: ('chromium' | 'firefox' | 'webkit')[];
     headless?: boolean;
     timeout?: number;
     viewport?: { width: number; height: number };
@@ -194,7 +211,11 @@ function toSafeSchedule(schedule: Schedule): SafeSchedule {
   return {
     id: schedule.id,
     userId: schedule.userId,
+    projectId: schedule.projectId,
     recordingId: schedule.recordingId,
+    targetType: schedule.targetType ?? 'recording',
+    testId: schedule.testId ?? null,
+    suiteId: schedule.suiteId ?? null,
     name: schedule.name,
     description: schedule.description,
     cronExpression: schedule.cronExpression,
@@ -232,7 +253,11 @@ function toScheduleSummary(schedule: Schedule): ScheduleSummary {
   return {
     id: schedule.id,
     userId: schedule.userId,
-    recordingId: schedule.recordingId,
+    projectId: schedule.projectId,
+    recordingId: schedule.recordingId ?? null,
+    targetType: schedule.targetType ?? 'recording',
+    testId: schedule.testId ?? null,
+    suiteId: schedule.suiteId ?? null,
     name: schedule.name,
     cronExpression: schedule.cronExpression,
     timezone: schedule.timezone,
@@ -260,7 +285,11 @@ export class ScheduleRepository {
   async create(data: ScheduleCreateData): Promise<SafeSchedule> {
     const newSchedule: NewSchedule = {
       userId: data.userId,
-      recordingId: data.recordingId,
+      projectId: data.projectId,
+      recordingId: data.recordingId ?? null,
+      targetType: data.targetType,
+      testId: data.testId ?? null,
+      suiteId: data.suiteId ?? null,
       name: data.name,
       description: data.description,
       cronExpression: data.cronExpression,
@@ -330,8 +359,24 @@ export class ScheduleRepository {
       conditions.push(isNull(schedules.deletedAt));
     }
 
+    if (filters.projectId) {
+      conditions.push(eq(schedules.projectId, filters.projectId));
+    }
+
     if (filters.recordingId) {
       conditions.push(eq(schedules.recordingId, filters.recordingId));
+    }
+
+    if (filters.targetType) {
+      conditions.push(eq(schedules.targetType, filters.targetType));
+    }
+
+    if (filters.testId) {
+      conditions.push(eq(schedules.testId, filters.testId));
+    }
+
+    if (filters.suiteId) {
+      conditions.push(eq(schedules.suiteId, filters.suiteId));
     }
 
     if (filters.status) {

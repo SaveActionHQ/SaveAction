@@ -16,6 +16,7 @@ import type {
   SafeRecording,
   RecordingSummary,
 } from '../repositories/RecordingRepository.js';
+import type { ProjectRepository } from '../repositories/ProjectRepository.js';
 import type { RecordingData } from '../db/schema/recordings.js';
 
 /**
@@ -114,6 +115,7 @@ export const recordingDataSchema = z
  * Create recording request schema
  */
 export const createRecordingSchema = z.object({
+  projectId: z.string().uuid().optional(),
   name: z.string().min(1).max(255).optional(),
   description: z.string().max(2000).optional().nullable(),
   tags: z.array(z.string().min(1).max(50)).max(20).optional().default([]),
@@ -134,6 +136,7 @@ export const updateRecordingSchema = z.object({
  * List recordings query schema
  */
 export const listRecordingsQuerySchema = z.object({
+  projectId: z.string().uuid(),
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(20),
   search: z.string().max(255).optional(),
@@ -168,6 +171,7 @@ const DEFAULT_CONFIG: RecordingServiceConfig = {
  */
 export interface RecordingResponse {
   id: string;
+  projectId: string | null;
   name: string;
   url: string;
   description: string | null;
@@ -191,6 +195,7 @@ export interface RecordingDetailResponse extends RecordingResponse {
 function toResponse(recording: SafeRecording): RecordingDetailResponse {
   return {
     id: recording.id,
+    projectId: recording.projectId,
     name: recording.name,
     url: recording.url,
     description: recording.description,
@@ -212,6 +217,7 @@ function toResponse(recording: SafeRecording): RecordingDetailResponse {
 function summaryToResponse(recording: RecordingSummary): RecordingResponse {
   return {
     id: recording.id,
+    projectId: recording.projectId,
     name: recording.name,
     url: recording.url,
     description: recording.description,
@@ -234,6 +240,7 @@ export class RecordingService {
 
   constructor(
     private readonly recordingRepository: RecordingRepository,
+    private readonly projectRepository: ProjectRepository,
     config?: Partial<RecordingServiceConfig>
   ) {
     this.config = { ...DEFAULT_CONFIG, ...config };
@@ -253,6 +260,22 @@ export class RecordingService {
     const dataSize = JSON.stringify(validatedData.data).length;
     if (dataSize > this.config.maxDataSizeBytes) {
       throw RecordingErrors.TOO_LARGE;
+    }
+
+    // Determine project ID - use provided or get/create default project
+    let projectId = validatedData.projectId;
+    if (!projectId) {
+      let defaultProject = await this.projectRepository.findDefaultProject(userId);
+      if (!defaultProject) {
+        defaultProject = await this.projectRepository.createDefaultProject(userId);
+      }
+      projectId = defaultProject.id;
+    } else {
+      // Verify user has access to the specified project
+      const project = await this.projectRepository.findByIdAndUser(projectId, userId);
+      if (!project) {
+        throw new RecordingError('Project not found or not accessible', 'PROJECT_NOT_FOUND', 404);
+      }
     }
 
     // Check recording limit
@@ -281,6 +304,7 @@ export class RecordingService {
     // Create recording
     const createData: RecordingCreateData = {
       userId,
+      projectId,
       name: validatedData.name || validatedData.data.testName,
       url: validatedData.data.url,
       description: validatedData.description || null,
@@ -322,6 +346,7 @@ export class RecordingService {
 
     const filters: RecordingListFilters = {
       userId,
+      projectId: validatedQuery.projectId,
       search: validatedQuery.search,
       tags: validatedQuery.tags ? validatedQuery.tags.split(',').map((t) => t.trim()) : undefined,
       url: validatedQuery.url,

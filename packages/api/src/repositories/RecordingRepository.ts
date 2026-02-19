@@ -19,6 +19,7 @@ import type { Database } from '../db/index.js';
  */
 export interface RecordingCreateData {
   userId: string;
+  projectId: string;
   name: string;
   url: string;
   description?: string | null;
@@ -43,6 +44,7 @@ export interface RecordingUpdateData {
  */
 export interface RecordingListFilters {
   userId: string;
+  projectId?: string;
   search?: string;
   tags?: string[];
   url?: string;
@@ -82,6 +84,7 @@ export interface PaginatedResult<T> {
 export interface SafeRecording {
   id: string;
   userId: string;
+  projectId: string;
   name: string;
   url: string;
   description: string | null;
@@ -103,6 +106,7 @@ export interface SafeRecording {
 export interface RecordingSummary {
   id: string;
   userId: string;
+  projectId: string;
   name: string;
   url: string;
   description: string | null;
@@ -123,6 +127,7 @@ function toSafeRecording(recording: Recording): SafeRecording {
   return {
     id: recording.id,
     userId: recording.userId,
+    projectId: recording.projectId,
     name: recording.name,
     url: recording.url,
     description: recording.description,
@@ -169,6 +174,7 @@ export class RecordingRepository {
       .insert(recordings)
       .values({
         userId: data.userId,
+        projectId: data.projectId,
         name: data.name,
         url: data.url,
         description: data.description || null,
@@ -234,6 +240,10 @@ export class RecordingRepository {
       conditions.push(isNull(recordings.deletedAt));
     }
 
+    if (filters.projectId) {
+      conditions.push(eq(recordings.projectId, filters.projectId));
+    }
+
     if (filters.search) {
       conditions.push(
         or(
@@ -289,6 +299,7 @@ export class RecordingRepository {
       .select({
         id: recordings.id,
         userId: recordings.userId,
+        projectId: recordings.projectId,
         name: recordings.name,
         url: recordings.url,
         description: recordings.description,
@@ -313,6 +324,7 @@ export class RecordingRepository {
       data: result.map((r) => ({
         id: r.id,
         userId: r.userId,
+        projectId: r.projectId,
         name: r.name,
         url: r.url,
         description: r.description,
@@ -495,6 +507,7 @@ export class RecordingRepository {
       .select({
         id: recordings.id,
         userId: recordings.userId,
+        projectId: recordings.projectId,
         name: recordings.name,
         url: recordings.url,
         description: recordings.description,
@@ -520,6 +533,7 @@ export class RecordingRepository {
     return result.map((r) => ({
       id: r.id,
       userId: r.userId,
+      projectId: r.projectId,
       name: r.name,
       url: r.url,
       description: r.description,

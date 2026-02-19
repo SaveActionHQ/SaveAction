@@ -6,6 +6,7 @@
 
 import { recordings, type Recording, type NewRecording, type RecordingData } from '../../../src/db/schema/index.js';
 import { getTestDb } from './database.js';
+import { getOrCreateDefaultProject } from './projectFactory.js';
 
 let recordingCounter = 0;
 
@@ -57,18 +58,28 @@ export interface CreateRecordingOptions {
   description?: string;
   tags?: string[];
   data?: RecordingData;
+  projectId?: string;
 }
 
 /**
  * Create a test recording in the database.
+ * If no projectId is provided, creates a default project for the user.
  */
 export async function createRecording(options: CreateRecordingOptions): Promise<Recording> {
   const db = await getTestDb();
 
   const data = options.data || createSampleRecordingData();
 
+  // Auto-create default project if not provided
+  let projectId = options.projectId;
+  if (!projectId) {
+    const defaultProject = await getOrCreateDefaultProject(options.userId);
+    projectId = defaultProject.id;
+  }
+
   const recordingData: NewRecording = {
     userId: options.userId,
+    projectId,
     name: options.name || data.testName,
     url: options.url || data.url,
     description: options.description || 'Test recording for integration tests',

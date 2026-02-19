@@ -27,6 +27,7 @@ const sampleRecordingData: RecordingData = {
 const mockRecording = {
   id: '550e8400-e29b-41d4-a716-446655440000',
   userId: 'user-123',
+  projectId: '550e8400-e29b-41d4-a716-446655440999',
   name: 'Test Recording',
   url: 'https://example.com',
   description: 'Test description',
@@ -42,26 +43,57 @@ const mockRecording = {
   updatedAt: new Date('2026-01-01'),
 };
 
+const mockDefaultProject = {
+  id: '550e8400-e29b-41d4-a716-446655440999',
+  userId: 'user-123',
+  name: 'Default Project',
+  description: 'Your default project for test recordings',
+  color: '#3B82F6',
+  isDefault: true,
+  deletedAt: null,
+  createdAt: new Date('2026-01-01'),
+  updatedAt: new Date('2026-01-01'),
+};
+
 // Mock database
 const createMockDb = () => {
+  // Track queries to return appropriate data
+  let lastFromTable: 'projects' | 'recordings' | 'unknown' = 'unknown';
+
   return {
     insert: vi.fn().mockReturnValue({
       values: vi.fn().mockReturnValue({
-        returning: vi.fn().mockResolvedValue([mockRecording]),
+        returning: vi.fn().mockImplementation(() => Promise.resolve([mockRecording])),
       }),
     }),
-    select: vi.fn().mockReturnValue({
-      from: vi.fn().mockReturnValue({
-        where: vi.fn().mockReturnValue({
-          limit: vi.fn().mockResolvedValue([mockRecording]),
-          orderBy: vi.fn().mockReturnValue({
-            limit: vi.fn().mockReturnValue({
-              offset: vi.fn().mockResolvedValue([mockRecording]),
+    select: vi.fn().mockImplementation(() => ({
+      from: vi.fn().mockImplementation((table: any) => {
+        // Check if table has isDefault column (projects) or actionCount column (recordings)
+        if (table && table.isDefault !== undefined) {
+          lastFromTable = 'projects';
+        } else if (table && table.actionCount !== undefined) {
+          lastFromTable = 'recordings';
+        } else {
+          lastFromTable = 'unknown';
+        }
+
+        return {
+          where: vi.fn().mockReturnValue({
+            limit: vi.fn().mockImplementation(() => {
+              if (lastFromTable === 'projects') {
+                return Promise.resolve([mockDefaultProject]);
+              }
+              return Promise.resolve([mockRecording]);
+            }),
+            orderBy: vi.fn().mockReturnValue({
+              limit: vi.fn().mockReturnValue({
+                offset: vi.fn().mockResolvedValue([mockRecording]),
+              }),
             }),
           }),
-        }),
+        };
       }),
-    }),
+    })),
     update: vi.fn().mockReturnValue({
       set: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
@@ -91,6 +123,19 @@ describe('Recording Routes', () => {
       (this as any).user = { sub: 'user-123', email: 'test@example.com' };
     });
 
+    // Mock authenticate decorator (dual-auth: JWT + API tokens)
+    app.decorate('authenticate', async function (request: any, reply: any) {
+      try {
+        await request.jwtVerify();
+        request.jwtPayload = request.user;
+      } catch {
+        return reply.status(401).send({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+        });
+      }
+    });
+
     // Register routes
     await app.register(recordingRoutes, {
       prefix: '/api/recordings',
@@ -106,25 +151,36 @@ describe('Recording Routes', () => {
 
   describe('POST /api/recordings', () => {
     it('should create a recording successfully', async () => {
-      // Reset select mock to return null for findByOriginalId (duplicate check)
-      // and then return recording for count check
+      // Reset select mock to:
+      // 1. Return default project for findDefaultProject
+      // 2. Return null for findByOriginalId (duplicate check)
+      // 3. Return count for countByUserId
       let selectCallCount = 0;
       mockDb.select = vi.fn(() => {
         selectCallCount++;
-        if (selectCallCount === 1) {
-          // findByOriginalId - no duplicate
-          return {
-            from: vi.fn().mockReturnValue({
-              where: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue([]),
-              }),
-            }),
-          };
-        }
-        // countByUserId
         return {
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([{ count: 0 }]),
+          from: vi.fn().mockImplementation((table: any) => {
+            // Check if this is a projects table query
+            if (table && table.isDefault !== undefined) {
+              return {
+                where: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue([mockDefaultProject]),
+                }),
+              };
+            }
+            // For recordings table
+            if (selectCallCount === 2) {
+              // findByOriginalId - no duplicate
+              return {
+                where: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue([]),
+                }),
+              };
+            }
+            // countByUserId
+            return {
+              where: vi.fn().mockResolvedValue([{ count: 0 }]),
+            };
           }),
         };
       });
@@ -149,22 +205,36 @@ describe('Recording Routes', () => {
     });
 
     it('should create recording without optional fields', async () => {
-      // Reset select mock for duplicate check
+      // Reset select mock for:
+      // 1. Return default project for findDefaultProject
+      // 2. Return null for findByOriginalId (duplicate check)
+      // 3. Return count for countByUserId
       let selectCallCount = 0;
       mockDb.select = vi.fn(() => {
         selectCallCount++;
-        if (selectCallCount === 1) {
-          return {
-            from: vi.fn().mockReturnValue({
-              where: vi.fn().mockReturnValue({
-                limit: vi.fn().mockResolvedValue([]),
-              }),
-            }),
-          };
-        }
         return {
-          from: vi.fn().mockReturnValue({
-            where: vi.fn().mockResolvedValue([{ count: 0 }]),
+          from: vi.fn().mockImplementation((table: any) => {
+            // Check if this is a projects table query
+            if (table && table.isDefault !== undefined) {
+              return {
+                where: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue([mockDefaultProject]),
+                }),
+              };
+            }
+            // For recordings table
+            if (selectCallCount === 2) {
+              // findByOriginalId - no duplicate
+              return {
+                where: vi.fn().mockReturnValue({
+                  limit: vi.fn().mockResolvedValue([]),
+                }),
+              };
+            }
+            // countByUserId
+            return {
+              where: vi.fn().mockResolvedValue([{ count: 0 }]),
+            };
           }),
         };
       });
@@ -206,6 +276,20 @@ describe('Recording Routes', () => {
       unauthApp.decorateRequest('jwtVerify', async function () {
         throw new Error('Unauthorized');
       });
+
+      // Mock authenticate decorator
+      unauthApp.decorate('authenticate', async function (request: any, reply: any) {
+        try {
+          await request.jwtVerify();
+          request.jwtPayload = request.user;
+        } catch {
+          return reply.status(401).send({
+            success: false,
+            error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          });
+        }
+      });
+
       await unauthApp.register(recordingRoutes, {
         prefix: '/api/recordings',
         db: mockDb as any,
@@ -251,7 +335,7 @@ describe('Recording Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/recordings',
+        url: '/api/recordings?projectId=00000000-0000-0000-0000-000000000001',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -288,7 +372,7 @@ describe('Recording Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/recordings?page=2&limit=10',
+        url: '/api/recordings?projectId=00000000-0000-0000-0000-000000000001&page=2&limit=10',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -324,7 +408,7 @@ describe('Recording Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/recordings?search=login',
+        url: '/api/recordings?projectId=00000000-0000-0000-0000-000000000001&search=login',
         headers: { authorization: 'Bearer valid-token' },
       });
 
@@ -357,7 +441,7 @@ describe('Recording Routes', () => {
 
       const response = await app.inject({
         method: 'GET',
-        url: '/api/recordings?sortBy=name&sortOrder=asc',
+        url: '/api/recordings?projectId=00000000-0000-0000-0000-000000000001&sortBy=name&sortOrder=asc',
         headers: { authorization: 'Bearer valid-token' },
       });
 

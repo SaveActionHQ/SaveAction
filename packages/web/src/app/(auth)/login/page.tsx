@@ -48,7 +48,7 @@ function LoginForm() {
   const [errors, setErrors] = React.useState<Record<string, string>>({});
 
   // Get redirect URL from query params
-  const redirectUrl = searchParams.get('redirect') || '/dashboard';
+  const redirectUrl = searchParams.get('redirect') || '/projects';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

@@ -25,6 +25,7 @@ describe('ApiTokenService', () => {
     tokenPrefix: 'sa_live_',
     tokenSuffix: 'xyz1',
     scopes: ['recordings:read', 'runs:execute'],
+    projectIds: ['*'],
     lastUsedAt: new Date('2024-01-15'),
     lastUsedIp: '192.168.1.1',
     useCount: 5,

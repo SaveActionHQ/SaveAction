@@ -14,7 +14,9 @@ import {
   listRecordingsQuerySchema,
 } from '../services/RecordingService.js';
 import { RecordingRepository } from '../repositories/RecordingRepository.js';
+import { ProjectRepository } from '../repositories/ProjectRepository.js';
 import type { Database } from '../db/index.js';
+import { requireScopes } from '../plugins/jwt.js';
 import { z } from 'zod';
 
 /**
@@ -69,25 +71,23 @@ function handleRecordingError(error: unknown, reply: FastifyReply): FastifyReply
 const recordingRoutes: FastifyPluginAsync<RecordingRoutesOptions> = async (fastify, options) => {
   const { db, maxDataSizeBytes, maxRecordingsPerUser } = options;
 
-  // Create repository and service
+  // Create repositories and service
   const recordingRepository = new RecordingRepository(db);
-  const recordingService = new RecordingService(recordingRepository, {
+  const projectRepository = new ProjectRepository(db);
+  const recordingService = new RecordingService(recordingRepository, projectRepository, {
     maxDataSizeBytes,
     maxRecordingsPerUser,
   });
 
-  // All routes require authentication
+  // All routes require authentication (JWT or API token)
   fastify.addHook('onRequest', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required',
-        },
-      });
+    await fastify.authenticate(request, reply);
+
+    // Scope enforcement for API token users (JWT users have full access)
+    if (request.apiToken) {
+      const isRead = request.method === 'GET' || request.method === 'HEAD';
+      const scope = isRead ? 'recordings:read' : 'recordings:write';
+      if (!requireScopes(request, reply, [scope as 'recordings:read' | 'recordings:write'])) return;
     }
   });
 
@@ -105,6 +105,7 @@ const recordingRoutes: FastifyPluginAsync<RecordingRoutesOptions> = async (fasti
             name: { type: 'string', minLength: 1, maxLength: 255 },
             description: { type: 'string', maxLength: 2000, nullable: true },
             tags: { type: 'array', items: { type: 'string' }, maxItems: 20 },
+            projectId: { type: 'string', format: 'uuid' },
             data: { type: 'object' },
           },
         },
@@ -117,12 +118,19 @@ const recordingRoutes: FastifyPluginAsync<RecordingRoutesOptions> = async (fasti
                 type: 'object',
                 properties: {
                   id: { type: 'string' },
+                  projectId: { type: 'string', nullable: true },
+                  originalId: { type: 'string', nullable: true },
                   name: { type: 'string' },
                   url: { type: 'string' },
                   description: { type: 'string', nullable: true },
                   tags: { type: 'array', items: { type: 'string' } },
                   actionCount: { type: 'number' },
+                  estimatedDurationMs: { type: 'number', nullable: true },
+                  schemaVersion: { type: 'string' },
+                  dataSizeBytes: { type: 'number', nullable: true },
+                  data: { type: 'object' },
                   createdAt: { type: 'string' },
+                  updatedAt: { type: 'string' },
                 },
               },
             },
@@ -158,6 +166,7 @@ const recordingRoutes: FastifyPluginAsync<RecordingRoutesOptions> = async (fasti
         querystring: {
           type: 'object',
           properties: {
+            projectId: { type: 'string', format: 'uuid' },
             page: { type: 'integer', minimum: 1 },
             limit: { type: 'integer', minimum: 1, maximum: 100 },
             search: { type: 'string', maxLength: 255 },
@@ -167,6 +176,7 @@ const recordingRoutes: FastifyPluginAsync<RecordingRoutesOptions> = async (fasti
             sortOrder: { type: 'string', enum: ['asc', 'desc'] },
             includeDeleted: { type: 'boolean' },
           },
+          required: ['projectId'],
         },
       },
     },

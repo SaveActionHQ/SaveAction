@@ -489,7 +489,7 @@ describe('PlaywrightRunner Integration Tests', () => {
       fs.rmdirSync(customDir);
     });
 
-    it('should name screenshots with correct format: {runId}-{index}-{actionId}.png', async () => {
+    it('should name screenshots with correct format: {runId}-{browser}-{index}-{actionId}.png', async () => {
       const recording = createRecording([
         createClickAction('act_001', '#click-btn', { id: 'click-btn' }),
       ]);
@@ -508,8 +508,8 @@ describe('PlaywrightRunner Integration Tests', () => {
       expect(result.screenshots!.length).toBeGreaterThan(0);
       const filename = path.basename(result.screenshots![0]);
 
-      // Expected format: run_12345-001-act_001.png
-      expect(filename).toMatch(/^run_12345-001-act_001\.png$/);
+      // Expected format: run_12345-chromium-001-act_001.png
+      expect(filename).toMatch(/^run_12345-chromium-001-act_001\.png$/);
     });
 
     it('should capture multiple screenshots for multiple actions', async () => {

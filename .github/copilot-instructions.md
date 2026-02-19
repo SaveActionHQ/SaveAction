@@ -6,7 +6,7 @@ SaveAction is an open-source test automation platform that replays browser inter
 
 **Architecture**: Monorepo with pnpm workspaces and Turborepo  
 **Primary Language**: TypeScript with ES modules  
-**Current Phase**: Phase 3 Complete (API + Database + Worker)
+**Current Phase**: Phase 4 In Progress (Web UI + Projects/Suites)
 
 ## Project Structure
 
@@ -37,16 +37,24 @@ SaveAction/
 │   │       └── analyzer/       # Recording analyzer
 │   ├── cli/                    # @saveaction/cli - Command line tool
 │   │   └── src/
-│   │       └── commands/       # run, validate, info, list
-│   └── api/                    # @saveaction/api - REST API + Worker
+│   │       ├── commands/       # run, validate, info, list
+│   │       ├── ci/             # CI environment detection
+│   │       └── platform/       # Platform API client
+│   ├── api/                    # @saveaction/api - REST API + Worker
+│   │   └── src/
+│   │       ├── routes/         # Fastify route handlers
+│   │       ├── services/       # Business logic layer (11 services)
+│   │       ├── repositories/   # Database access layer (9 repositories)
+│   │       ├── db/schema/      # Drizzle ORM table definitions (12 tables)
+│   │       ├── queues/         # BullMQ job processors (test, scheduled, cleanup)
+│   │       ├── auth/           # JWT authentication
+│   │       ├── redis/          # Redis client + pub/sub
+│   │       └── plugins/        # Fastify plugins (helmet, rateLimit, csrf, swagger)
+│   └── web/                    # @saveaction/web - Next.js Web UI
 │       └── src/
-│           ├── routes/         # Fastify route handlers
-│           ├── services/       # Business logic layer
-│           ├── repositories/   # Database access layer
-│           ├── db/schema/      # Drizzle ORM table definitions
-│           ├── queues/         # BullMQ job processors
-│           ├── auth/           # JWT authentication
-│           └── plugins/        # Fastify plugins
+│           ├── app/            # Next.js App Router pages
+│           ├── components/     # React components (shadcn/ui)
+│           └── lib/            # API client, utilities
 ├── docker/                     # Docker configurations
 ├── docs/                       # Technical documentation
 ├── eslint.config.js            # ESLint flat config
@@ -69,6 +77,8 @@ SaveAction/
 | Database | PostgreSQL + Drizzle ORM | 16 / 0.45.x |
 | Queue | Redis + BullMQ | 7 / 5.x |
 | CLI Framework | Commander.js | 11.1.0 |
+| Web Framework | Next.js (App Router) | 15.x |
+| UI Components | shadcn/ui + Tailwind CSS | - |
 | TypeScript | - | 5.3.3 |
 
 ## Development Guidelines
@@ -103,7 +113,8 @@ import { RecordingParser } from './parser/RecordingParser';
 ### Testing Standards
 
 - **Framework**: Vitest with v8 coverage
-- **Total Tests**: 1,019+ (140 core + 90 CLI + 792 API)
+- **Total Tests**: 1,505+ (163 core + 176 CLI + 1,169 API)
+- **Total Test Files**: 51 (5 core + 6 CLI + 40 API)
 - **Coverage Target**: 90%+ for critical components
 - **Test Files**: Place `.test.ts` next to source files
 - **Integration Tests**: `tests/integration/*.integration.ts`
@@ -169,35 +180,67 @@ node packages/cli/bin/saveaction.js run <recording.json> [options]
 
 **Options**: `--headless`, `--browser`, `--timeout`, `--video`, `--timing-mode`
 
+**Additional Modules**:
+- `CIDetector` - Detects CI environments (GitHub Actions, GitLab CI, etc.)
+- `PlatformClient` - HTTP client for SaveAction API integration
+
+### @saveaction/web (Web UI)
+
+**Purpose**: Web dashboard for managing projects, tests, and runs
+
+**Technology**: Next.js 15 (App Router) + Tailwind CSS + shadcn/ui
+
+| Feature | Description |
+|---------|-------------|
+| Projects | Create/manage test projects |
+| Test Suites | Group tests into suites |
+| Tests | Configure tests with multi-browser, headless, timeout |
+| Runs | View live run progress with SSE streaming |
+| Recording Library | Upload and manage recordings |
+| Schedules | Configure cron-scheduled test runs |
+| Dashboard | Aggregated statistics per project |
+| Settings | Profile, security, API tokens |
+
+**Route Groups**: `(auth)` for login/register, `(global)` for project list, `(project)` for project-scoped pages
+
 ### @saveaction/api (REST API + Worker)
 
 **Purpose**: Enterprise API for managing recordings and runs
 
 **Architecture**:
-- **API Server**: Fastify HTTP server with JWT auth
-- **Worker Process**: BullMQ job processor for test execution
-- **Database**: PostgreSQL with Drizzle ORM (8 tables)
+- **API Server**: Fastify HTTP server with JWT auth + Helmet + Rate Limiting + CSRF + Swagger
+- **Worker Process**: BullMQ job processor with 3 workers (test runs, scheduled tests, cleanup)
+- **Database**: PostgreSQL with Drizzle ORM (12 tables)
 - **Cache/Queue**: Redis with BullMQ
+- **Real-Time**: SSE via Redis pub/sub for live run progress
 
-**Database Tables**:
+**Database Tables (12)**:
 | Table | Purpose |
 |-------|---------|
 | `users` | User accounts |
+| `projects` | Project organization (default: "My Tests") |
 | `api_tokens` | API authentication |
-| `recordings` | Test recording storage |
-| `runs` | Test execution history |
-| `run_actions` | Per-action results |
-| `schedules` | Cron-scheduled runs |
+| `recordings` | Recording library storage |
+| `test_suites` | Test suite grouping within projects |
+| `tests` | Individual test definitions with config (multi-browser, headless, timeout) |
+| `runs` | Test execution history (types: test, suite, project, recording) |
+| `run_actions` | Per-action results (incrementally persisted during execution) |
+| `run_browser_results` | Per-browser results for multi-browser runs |
+| `schedules` | Cron-scheduled runs (targets: test, suite, project) |
 | `webhooks` | Event notifications |
 | `webhook_deliveries` | Delivery log |
 
 **API Routes**:
-- `/api/v1/auth/*` - Authentication
+- `/api/v1/auth/*` - Authentication (register, login, refresh, password reset)
 - `/api/v1/tokens/*` - API tokens
-- `/api/v1/recordings/*` - Recording CRUD
-- `/api/v1/runs/*` - Test runs
+- `/api/v1/projects/*` - Project CRUD
+- `/api/v1/projects/:projectId/suites/*` - Suite management (nested under projects)
+- `/api/v1/projects/:projectId/tests/*` - Test management (nested under projects)
+- `/api/v1/recordings/*` - Recording library
+- `/api/v1/runs/*` - Test runs + SSE progress stream (`GET /runs/:id/progress/stream`)
 - `/api/v1/schedules/*` - Scheduled tests
-- `/api/health/*` - Health checks
+- `/api/v1/dashboard/*` - Aggregated statistics
+- `/api/health/*` - Health checks (basic, detailed, live, ready)
 
 ## Recording Format
 
@@ -295,8 +338,7 @@ The `.github/instructions/` folder contains context-specific rules that are auto
 | `es-modules.instructions.md` | `packages/**/*.ts` |
 | `playwright-runner.instructions.md` | `packages/core/src/runner/**/*.ts` |
 | `testing.instructions.md` | `**/*.test.ts`, `tests/**/*.ts` |
-| `types.instructions.md` | `packages/core/src/types/**/*.ts` |
-
+| `types.instructions.md` | `packages/core/src/types/**/*.ts` || `web-ui.instructions.md` | `packages/web/**/*.ts`, `packages/web/**/*.tsx` |
 ## Known Issues and Solutions
 
 | Issue | Cause | Solution |
@@ -312,19 +354,29 @@ The `.github/instructions/` folder contains context-specific rules that are auto
 ### Completed ✅
 - Core Playwright runner with all action types
 - Multi-strategy element locator with retry
-- CLI with run, validate, info, list commands
-- REST API with Fastify
-- PostgreSQL + Drizzle ORM (8 tables)
-- Redis + BullMQ job queues
-- JWT + API token authentication
-- Recording/Run/Schedule management
-- Worker process for test execution
-- 1,019+ unit tests
+- CLI with run, validate, info, list commands + CI detection + platform client
+- REST API with Fastify + Helmet + Rate Limiting + CSRF + Swagger
+- PostgreSQL + Drizzle ORM (12 tables)
+- Redis + BullMQ job queues (3 workers: test runs, scheduled tests, cleanup)
+- JWT + API token authentication + account lockout + password reset (email)
+- Project/Suite/Test management with multi-browser support
+- Recording library (upload, manage, link to tests)
+- Run management with parent/child runs (suite → test runs)
+- SSE real-time progress streaming via Redis pub/sub
+- Incremental action persistence (actions saved to DB as they execute, not batched)
+- Schedule management (targets: test, suite, project)
+- Dashboard with aggregated statistics
+- Worker process for test execution (configurable concurrency)
+- Web UI with Next.js 15 (App Router) + Tailwind CSS + shadcn/ui
+- 1,505+ unit tests across 51 test files
 - Integration tests (API + browser)
 - CI/CD pipeline
 
+### In Progress 🚧
+- Web UI refinements and additional pages
+- API integration tests in CI (PostgreSQL + Redis services)
+
 ### Planned 📋
-- Phase 4: Web UI (React/Next.js)
 - Webhook notifications
 - Run comparison/history
 - Team/organization support
@@ -343,5 +395,9 @@ The `.github/instructions/` folder contains context-specific rules that are auto
 - **Keep 300ms delays** for animation stability in runner
 - **Use `beforeEach` for test data** - `afterEach` truncates tables (API)
 - **Run build before CLI** - TypeScript must compile first
-- **Worker is separate process** - scales independently from API
+- **Worker is separate process** - scales independently from API (3 concurrent jobs default)
 - **Soft delete by default** - recordings/runs use `deletedAt` column
+- **Actions persist incrementally** - saved to DB as each action completes, not batched at end
+- **SSE has no replay** - Redis pub/sub; frontend merges DB data with SSE on reconnect
+- **Parent run tracking** - suite runs create child test runs with `parentRunId`
+- **Multi-browser runs** - tests can configure multiple browsers; results stored in `run_browser_results`

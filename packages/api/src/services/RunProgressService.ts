@@ -41,9 +41,11 @@ interface BaseProgressEvent {
 export interface RunStartedEvent extends BaseProgressEvent {
   type: 'run:started';
   recordingId: string;
-  recordingName: string;
+  recordingName: string | null;
   totalActions: number;
   browser: string;
+  /** Summary of all actions in the recording (id + type) */
+  actions?: Array<{ id: string; type: string }>;
 }
 
 /**
@@ -55,6 +57,7 @@ export interface ActionStartedEvent extends BaseProgressEvent {
   actionType: string;
   actionIndex: number;
   totalActions: number;
+  browser?: string;
 }
 
 /**
@@ -68,6 +71,7 @@ export interface ActionSuccessEvent extends BaseProgressEvent {
   totalActions: number;
   durationMs: number;
   selectorUsed?: string;
+  browser?: string;
 }
 
 /**
@@ -81,6 +85,7 @@ export interface ActionFailedEvent extends BaseProgressEvent {
   totalActions: number;
   errorMessage: string;
   durationMs: number;
+  browser?: string;
 }
 
 /**
@@ -93,6 +98,7 @@ export interface ActionSkippedEvent extends BaseProgressEvent {
   actionIndex: number;
   totalActions: number;
   reason: string;
+  browser?: string;
 }
 
 /**

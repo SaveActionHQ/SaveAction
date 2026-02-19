@@ -29,16 +29,38 @@ vi.mock('../repositories/RecordingRepository.js', () => ({
   })),
 }));
 
+vi.mock('../repositories/RunBrowserResultRepository.js', () => ({
+  RunBrowserResultRepository: vi.fn().mockImplementation(() => ({
+    findByRunId: vi.fn().mockResolvedValue([]),
+    markStarted: vi.fn().mockResolvedValue(null),
+    markPassed: vi.fn().mockResolvedValue(null),
+    markFailed: vi.fn().mockResolvedValue(null),
+    update: vi.fn().mockResolvedValue(null),
+    cancelByRunId: vi.fn().mockResolvedValue(0),
+  })),
+}));
+
+vi.mock('../repositories/TestRepository.js', () => ({
+  TestRepository: vi.fn().mockImplementation(() => ({
+    findById: vi.fn(),
+    updateLastRun: vi.fn().mockResolvedValue(undefined),
+  })),
+}));
+
 import { createTestRunProcessor } from './testRunProcessor.js';
 import { PlaywrightRunner } from '@saveaction/core';
 import { RunRepository } from '../repositories/RunRepository.js';
 import { RecordingRepository } from '../repositories/RecordingRepository.js';
+import { RunBrowserResultRepository } from '../repositories/RunBrowserResultRepository.js';
+import { TestRepository } from '../repositories/TestRepository.js';
 
 describe('testRunProcessor', () => {
   let mockDb: any;
   let mockJob: Job<TestRunJobData>;
   let mockRunRepository: any;
   let mockRecordingRepository: any;
+  let mockBrowserResultRepository: any;
+  let mockTestRepository: any;
   let mockRunner: any;
 
   const mockRecording = {
@@ -74,6 +96,20 @@ describe('testRunProcessor', () => {
       findById: vi.fn().mockResolvedValue(mockRecording),
     };
 
+    mockBrowserResultRepository = {
+      findByRunId: vi.fn().mockResolvedValue([]),
+      markStarted: vi.fn().mockResolvedValue(null),
+      markPassed: vi.fn().mockResolvedValue(null),
+      markFailed: vi.fn().mockResolvedValue(null),
+      update: vi.fn().mockResolvedValue(null),
+      cancelByRunId: vi.fn().mockResolvedValue(0),
+    };
+
+    mockTestRepository = {
+      findById: vi.fn().mockResolvedValue(null),
+      updateLastRun: vi.fn().mockResolvedValue(undefined),
+    };
+
     mockRunner = {
       execute: vi.fn().mockResolvedValue({
         status: 'success',
@@ -87,6 +123,8 @@ describe('testRunProcessor', () => {
     // Setup mocks
     (RunRepository as any).mockImplementation(() => mockRunRepository);
     (RecordingRepository as any).mockImplementation(() => mockRecordingRepository);
+    (RunBrowserResultRepository as any).mockImplementation(() => mockBrowserResultRepository);
+    (TestRepository as any).mockImplementation(() => mockTestRepository);
     (PlaywrightRunner as any).mockImplementation(() => mockRunner);
 
     mockJob = {
@@ -342,6 +380,241 @@ describe('testRunProcessor', () => {
       const result = await processor(mockJob);
 
       expect(result.duration).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('multi-browser test runs', () => {
+    const mockTest = {
+      id: 'test-123',
+      userId: 'user-123',
+      name: 'Login Test',
+      recordingData: {
+        id: 'rec-123',
+        testName: 'Test',
+        url: 'https://example.com',
+        startTime: new Date().toISOString(),
+        userAgent: 'Mozilla/5.0',
+        viewport: { width: 1920, height: 1080 },
+        actions: [
+          { id: 'act_001', type: 'click', timestamp: 1000, url: 'https://example.com' },
+        ],
+        version: '1.0.0',
+      },
+      recordingUrl: 'https://example.com',
+      actionCount: 1,
+    };
+
+    let testRunJob: Job<TestRunJobData>;
+
+    beforeEach(() => {
+      mockTestRepository.findById.mockResolvedValue(mockTest);
+
+      testRunJob = {
+        id: 'job-test-123',
+        data: {
+          runId: 'run-test-123',
+          runType: 'test',
+          testId: 'test-123',
+          userId: 'user-123',
+          projectId: 'project-123',
+          browsers: ['chromium', 'firefox'],
+          parallelBrowsers: true,
+          createdAt: new Date().toISOString(),
+        },
+        updateProgress: vi.fn().mockResolvedValue(undefined),
+      } as unknown as Job<TestRunJobData>;
+
+      // Mock browser result rows (created by RunnerService)
+      mockBrowserResultRepository.findByRunId.mockResolvedValue([
+        { id: 'br-1', browser: 'chromium' },
+        { id: 'br-2', browser: 'firefox' },
+      ]);
+    });
+
+    it('should process multi-browser test run successfully', async () => {
+      const processor = createTestRunProcessor({ db: mockDb });
+
+      const result = await processor(testRunJob);
+
+      expect(result.runId).toBe('run-test-123');
+      expect(result.status).toBe('passed');
+      expect(result.browserResults).toBeDefined();
+      expect(result.browserResults).toHaveLength(2);
+    });
+
+    it('should execute browsers in parallel when parallelBrowsers is true', async () => {
+      const executionOrder: string[] = [];
+
+      (PlaywrightRunner as any).mockImplementation((options: any) => ({
+        execute: vi.fn().mockImplementation(async () => {
+          executionOrder.push(`start-${options.browser}`);
+          // Very brief delay
+          await new Promise(resolve => setTimeout(resolve, 10));
+          executionOrder.push(`end-${options.browser}`);
+          return { status: 'success', duration: 1000, errors: [] };
+        }),
+      }));
+
+      const processor = createTestRunProcessor({ db: mockDb });
+      await processor(testRunJob);
+
+      // With parallel execution, both starts should happen before both ends
+      expect(executionOrder[0]).toBe('start-chromium');
+      expect(executionOrder[1]).toBe('start-firefox');
+    });
+
+    it('should execute browsers sequentially when parallelBrowsers is false', async () => {
+      testRunJob.data.parallelBrowsers = false;
+
+      const executionOrder: string[] = [];
+
+      (PlaywrightRunner as any).mockImplementation((options: any) => ({
+        execute: vi.fn().mockImplementation(async () => {
+          executionOrder.push(`start-${options.browser}`);
+          await new Promise(resolve => setTimeout(resolve, 10));
+          executionOrder.push(`end-${options.browser}`);
+          return { status: 'success', duration: 1000, errors: [] };
+        }),
+      }));
+
+      const processor = createTestRunProcessor({ db: mockDb });
+      await processor(testRunJob);
+
+      // With sequential execution, start-end pairs should be in order
+      expect(executionOrder).toEqual([
+        'start-chromium',
+        'end-chromium',
+        'start-firefox',
+        'end-firefox',
+      ]);
+    });
+
+    it('should mark individual browser results as started', async () => {
+      const processor = createTestRunProcessor({ db: mockDb });
+
+      await processor(testRunJob);
+
+      expect(mockBrowserResultRepository.markStarted).toHaveBeenCalledWith('br-1');
+      expect(mockBrowserResultRepository.markStarted).toHaveBeenCalledWith('br-2');
+    });
+
+    it('should mark browser results as passed on success', async () => {
+      const processor = createTestRunProcessor({ db: mockDb });
+
+      await processor(testRunJob);
+
+      expect(mockBrowserResultRepository.markPassed).toHaveBeenCalledTimes(2);
+      expect(mockBrowserResultRepository.markPassed).toHaveBeenCalledWith(
+        'br-1',
+        expect.objectContaining({ actionsTotal: 1 })
+      );
+    });
+
+    it('should mark browser result as failed on failure for that browser', async () => {
+      let callCount = 0;
+      (PlaywrightRunner as any).mockImplementation(() => ({
+        execute: vi.fn().mockImplementation(async () => {
+          callCount++;
+          if (callCount === 2) {
+            return {
+              status: 'failure',
+              duration: 2000,
+              errors: [{ actionId: 'act_001', error: 'Element not found' }],
+            };
+          }
+          return { status: 'success', duration: 1000, errors: [] };
+        }),
+      }));
+
+      const processor = createTestRunProcessor({ db: mockDb });
+      const result = await processor(testRunJob);
+
+      // Overall should be failed since one browser failed
+      expect(result.status).toBe('failed');
+      expect(mockBrowserResultRepository.markPassed).toHaveBeenCalledTimes(1);
+      expect(mockBrowserResultRepository.markFailed).toHaveBeenCalledTimes(1);
+    });
+
+    it('should aggregate stats across browsers', async () => {
+      const processor = createTestRunProcessor({ db: mockDb });
+
+      const result = await processor(testRunJob);
+
+      // Each browser runs 1 action (mock returns 0 from reporter)
+      expect(result.actionsExecuted).toBeGreaterThanOrEqual(0);
+      expect(result.actionsFailed).toBe(0);
+    });
+
+    it('should update parent run with aggregated results', async () => {
+      const processor = createTestRunProcessor({ db: mockDb });
+
+      await processor(testRunJob);
+
+      // Verify the run was updated with completion
+      expect(mockRunRepository.update).toHaveBeenCalledWith(
+        'run-test-123',
+        expect.objectContaining({ status: 'passed' })
+      );
+    });
+
+    it('should update test lastRun tracking', async () => {
+      const processor = createTestRunProcessor({ db: mockDb });
+
+      await processor(testRunJob);
+
+      expect(mockTestRepository.updateLastRun).toHaveBeenCalledWith(
+        'test-123',
+        expect.objectContaining({
+          lastRunId: 'run-test-123',
+          lastRunStatus: 'passed',
+        })
+      );
+    });
+
+    it('should handle test not found', async () => {
+      mockTestRepository.findById.mockResolvedValue(null);
+
+      const processor = createTestRunProcessor({ db: mockDb });
+      const result = await processor(testRunJob);
+
+      expect(result.status).toBe('error');
+      expect(result.errorMessage).toContain('Test not found');
+    });
+
+    it('should handle unauthorized test access', async () => {
+      mockTestRepository.findById.mockResolvedValue({
+        ...mockTest,
+        userId: 'other-user',
+      });
+
+      const processor = createTestRunProcessor({ db: mockDb });
+      const result = await processor(testRunJob);
+
+      expect(result.status).toBe('error');
+      expect(result.errorMessage).toContain('Not authorized');
+    });
+
+    it('should cancel pending browser results on error', async () => {
+      mockTestRepository.findById.mockRejectedValue(new Error('DB error'));
+
+      const processor = createTestRunProcessor({ db: mockDb });
+      await processor(testRunJob);
+
+      expect(mockBrowserResultRepository.cancelByRunId).toHaveBeenCalledWith('run-test-123');
+    });
+
+    it('should handle single browser test run', async () => {
+      testRunJob.data.browsers = ['chromium'];
+      mockBrowserResultRepository.findByRunId.mockResolvedValue([
+        { id: 'br-1', browser: 'chromium' },
+      ]);
+
+      const processor = createTestRunProcessor({ db: mockDb });
+      const result = await processor(testRunJob);
+
+      expect(result.status).toBe('passed');
+      expect(result.browserResults).toHaveLength(1);
+      expect(result.browserResults![0].browser).toBe('chromium');
     });
   });
 });

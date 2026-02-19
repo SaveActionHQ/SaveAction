@@ -172,9 +172,9 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, option
         reply.setCookie('refreshToken', result.tokens.refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: 'lax',
           path: '/api/v1/auth',
-          maxAge: 7 * 24 * 60 * 60, // 7 days
+          maxAge: 30 * 24 * 60 * 60, // 30 days
         });
 
         return reply.status(201).send({
@@ -259,9 +259,9 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, option
         reply.setCookie('refreshToken', result.tokens.refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: 'lax',
           path: '/api/v1/auth',
-          maxAge: 7 * 24 * 60 * 60, // 7 days
+          maxAge: 30 * 24 * 60 * 60, // 30 days
         });
 
         return reply.status(200).send({
@@ -363,9 +363,9 @@ const authRoutes: FastifyPluginAsync<AuthRoutesOptions> = async (fastify, option
         reply.setCookie('refreshToken', tokens.refreshToken, {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
-          sameSite: 'strict',
+          sameSite: 'lax',
           path: '/api/v1/auth',
-          maxAge: 7 * 24 * 60 * 60, // 7 days
+          maxAge: 30 * 24 * 60 * 60, // 30 days
         });
 
         return reply.status(200).send({

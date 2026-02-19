@@ -2,6 +2,7 @@
  * API Token Types
  *
  * Types, schemas, and scopes for API token management.
+ * Supports hybrid project-scoped access control.
  */
 
 import { z } from 'zod';
@@ -10,6 +11,12 @@ import { z } from 'zod';
  * Available API token scopes
  *
  * Format: resource:action
+ * - projects:read - View projects
+ * - projects:write - Create/update/delete projects
+ * - suites:read - View test suites
+ * - suites:write - Create/update/delete test suites
+ * - tests:read - View tests
+ * - tests:write - Create/update/delete tests
  * - recordings:read - View recordings
  * - recordings:write - Create/update/delete recordings
  * - runs:read - View run results
@@ -20,6 +27,12 @@ import { z } from 'zod';
  * - webhooks:write - Create/update/delete webhooks
  */
 export const API_TOKEN_SCOPES = [
+  'projects:read',
+  'projects:write',
+  'suites:read',
+  'suites:write',
+  'tests:read',
+  'tests:write',
   'recordings:read',
   'recordings:write',
   'runs:read',
@@ -37,16 +50,44 @@ export type ApiTokenScope = (typeof API_TOKEN_SCOPES)[number];
  */
 export const SCOPE_GROUPS = {
   /** Read-only access to all resources */
-  readonly: ['recordings:read', 'runs:read', 'schedules:read', 'webhooks:read'] as ApiTokenScope[],
+  readonly: [
+    'projects:read',
+    'suites:read',
+    'tests:read',
+    'recordings:read',
+    'runs:read',
+    'schedules:read',
+    'webhooks:read',
+  ] as ApiTokenScope[],
   /** Full access to recordings */
   recordings: ['recordings:read', 'recordings:write'] as ApiTokenScope[],
   /** Full access to runs */
   runs: ['runs:read', 'runs:execute'] as ApiTokenScope[],
   /** CI/CD typical needs */
-  cicd: ['recordings:read', 'runs:read', 'runs:execute'] as ApiTokenScope[],
+  cicd: [
+    'projects:read',
+    'tests:read',
+    'recordings:read',
+    'runs:read',
+    'runs:execute',
+  ] as ApiTokenScope[],
+  /** Full project management */
+  management: [
+    'projects:read',
+    'projects:write',
+    'suites:read',
+    'suites:write',
+    'tests:read',
+    'tests:write',
+  ] as ApiTokenScope[],
   /** All scopes */
   all: [...API_TOKEN_SCOPES] as ApiTokenScope[],
 } as const;
+
+/**
+ * Project access: "*" means all projects, or an array of project UUIDs
+ */
+export const PROJECT_ACCESS_ALL = '*';
 
 /**
  * Check if a scope is valid
@@ -85,6 +126,13 @@ export function hasAnyScope(tokenScopes: string[], requiredScopes: ApiTokenScope
 }
 
 /**
+ * Check if a token has access to a specific project
+ */
+export function hasProjectAccess(tokenProjectIds: string[], projectId: string): boolean {
+  return tokenProjectIds.includes(PROJECT_ACCESS_ALL) || tokenProjectIds.includes(projectId);
+}
+
+/**
  * Token prefix for live/production tokens
  */
 export const TOKEN_PREFIX_LIVE = 'sa_live_';
@@ -107,6 +155,10 @@ export const createTokenSchema = z.object({
     .array(z.enum(API_TOKEN_SCOPES))
     .min(1, 'At least one scope is required')
     .default(['recordings:read', 'runs:read']),
+  projectIds: z
+    .array(z.string())
+    .min(1, 'At least one project must be selected')
+    .default(['*']),
   expiresAt: z
     .string()
     .datetime()
@@ -136,6 +188,7 @@ export interface ApiTokenResponse {
   tokenPrefix: string;
   tokenSuffix: string;
   scopes: ApiTokenScope[];
+  projectIds: string[];
   lastUsedAt: Date | null;
   useCount: number;
   expiresAt: Date | null;
@@ -167,4 +220,5 @@ export interface ValidatedApiToken {
   userId: string;
   name: string;
   scopes: ApiTokenScope[];
+  projectIds: string[];
 }

@@ -133,14 +133,14 @@ describe('Data Isolation & Permissions', () => {
     });
 
     it('should only list own recordings', async () => {
-      await createRecording({ userId: userA.id, name: 'A Recording 1' });
-      await createRecording({ userId: userA.id, name: 'A Recording 2' });
-      await createRecording({ userId: userB.id, name: 'B Recording 1' });
+      const recA1 = await createRecording({ userId: userA.id, name: 'A Recording 1' });
+      await createRecording({ userId: userA.id, name: 'A Recording 2', projectId: recA1.projectId });
+      const recB1 = await createRecording({ userId: userB.id, name: 'B Recording 1' });
 
       // List as User A
       const responseA = await testApp.app.inject({
         method: 'GET',
-        url: '/api/v1/recordings',
+        url: `/api/v1/recordings?projectId=${recA1.projectId}`,
         headers: {
           'Authorization': `Bearer ${tokenA}`,
         },
@@ -155,7 +155,7 @@ describe('Data Isolation & Permissions', () => {
       // List as User B
       const responseB = await testApp.app.inject({
         method: 'GET',
-        url: '/api/v1/recordings',
+        url: `/api/v1/recordings?projectId=${recB1.projectId}`,
         headers: {
           'Authorization': `Bearer ${tokenB}`,
         },
@@ -168,9 +168,10 @@ describe('Data Isolation & Permissions', () => {
   });
 
   describe('Runs Isolation', () => {
-    async function createDbRun(userId: string, recordingId: string) {
+    async function createDbRun(userId: string, recordingId: string, projectId: string) {
       const [run] = await testApp.db.insert(runs).values({
         userId,
+        projectId,
         recordingId,
         recordingName: 'Test Recording',
         recordingUrl: 'https://example.com',
@@ -188,7 +189,7 @@ describe('Data Isolation & Permissions', () => {
 
     it('should NOT allow User B to access User A run', async () => {
       const recordingA = await createRecording({ userId: userA.id });
-      const runA = await createDbRun(userA.id, recordingA.id);
+      const runA = await createDbRun(userA.id, recordingA.id, recordingA.projectId);
 
       const response = await testApp.app.inject({
         method: 'GET',
@@ -203,7 +204,7 @@ describe('Data Isolation & Permissions', () => {
 
     it('should NOT allow User B to delete User A run', async () => {
       const recordingA = await createRecording({ userId: userA.id });
-      const runA = await createDbRun(userA.id, recordingA.id);
+      const runA = await createDbRun(userA.id, recordingA.id, recordingA.projectId);
 
       const response = await testApp.app.inject({
         method: 'DELETE',
@@ -250,14 +251,14 @@ describe('Data Isolation & Permissions', () => {
       const recordingA = await createRecording({ userId: userA.id });
       const recordingB = await createRecording({ userId: userB.id });
 
-      await createDbRun(userA.id, recordingA.id);
-      await createDbRun(userA.id, recordingA.id);
-      await createDbRun(userB.id, recordingB.id);
+      await createDbRun(userA.id, recordingA.id, recordingA.projectId);
+      await createDbRun(userA.id, recordingA.id, recordingA.projectId);
+      await createDbRun(userB.id, recordingB.id, recordingB.projectId);
 
       // List as User A
       const responseA = await testApp.app.inject({
         method: 'GET',
-        url: '/api/v1/runs',
+        url: `/api/v1/runs?projectId=${recordingA.projectId}`,
         headers: {
           'Authorization': `Bearer ${tokenA}`,
         },
@@ -269,7 +270,7 @@ describe('Data Isolation & Permissions', () => {
       // List as User B
       const responseB = await testApp.app.inject({
         method: 'GET',
-        url: '/api/v1/runs',
+        url: `/api/v1/runs?projectId=${recordingB.projectId}`,
         headers: {
           'Authorization': `Bearer ${tokenB}`,
         },
@@ -283,10 +284,11 @@ describe('Data Isolation & Permissions', () => {
   describe('Cross-Resource Attacks', () => {
     it('should prevent accessing other user data via filter parameters', async () => {
       const recordingA = await createRecording({ userId: userA.id });
+      const recordingB = await createRecording({ userId: userB.id });
 
       const response = await testApp.app.inject({
         method: 'GET',
-        url: `/api/v1/runs?recordingId=${recordingA.id}`,
+        url: `/api/v1/runs?projectId=${recordingB.projectId}&recordingId=${recordingA.id}`,
         headers: {
           'Authorization': `Bearer ${tokenB}`,
         },

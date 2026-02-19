@@ -18,6 +18,9 @@ import type {
   PaginatedResult,
 } from '../repositories/RunRepository.js';
 import type { RecordingRepository } from '../repositories/RecordingRepository.js';
+import type { TestRepository } from '../repositories/TestRepository.js';
+import type { TestSuiteRepository } from '../repositories/TestSuiteRepository.js';
+import type { RunBrowserResultRepository } from '../repositories/RunBrowserResultRepository.js';
 import type { JobQueueManager } from '../queues/JobQueueManager.js';
 import type { TestRunJobData } from '../queues/types.js';
 import type { BrowserType, RunStatus } from '../db/schema/runs.js';
@@ -43,6 +46,9 @@ export class RunError extends Error {
 export const RunErrors = {
   NOT_FOUND: new RunError('Run not found', 'RUN_NOT_FOUND', 404),
   RECORDING_NOT_FOUND: new RunError('Recording not found', 'RECORDING_NOT_FOUND', 404),
+  TEST_NOT_FOUND: new RunError('Test not found', 'TEST_NOT_FOUND', 404),
+  SUITE_NOT_FOUND: new RunError('Suite not found', 'SUITE_NOT_FOUND', 404),
+  SUITE_EMPTY: new RunError('Suite has no tests to run', 'SUITE_EMPTY', 400),
   NOT_AUTHORIZED: new RunError('Not authorized to access this run', 'NOT_AUTHORIZED', 403),
   ALREADY_RUNNING: new RunError('Run is already in progress', 'ALREADY_RUNNING', 409),
   CANNOT_CANCEL: new RunError('Run cannot be cancelled in current state', 'CANNOT_CANCEL', 400),
@@ -72,6 +78,11 @@ export const createRunSchema = z.object({
  * List runs query schema
  */
 export const listRunsQuerySchema = z.object({
+  projectId: z.string().uuid(),
+  testId: z.string().uuid().optional(),
+  suiteId: z.string().uuid().optional(),
+  parentRunId: z.string().uuid().optional(),
+  runType: z.enum(['test', 'suite', 'project', 'recording']).optional(),
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(20),
   recordingId: z.string().uuid().optional(),
@@ -93,6 +104,43 @@ export const listRunsQuerySchema = z.object({
 
 export type CreateRunRequest = z.infer<typeof createRunSchema>;
 export type ListRunsQuery = z.infer<typeof listRunsQuerySchema>;
+
+/**
+ * Queue a test run request schema (new test-based runs)
+ */
+export const queueTestRunSchema = z.object({
+  testId: z.string().uuid(),
+  /** Override browsers from test config */
+  browsers: z.array(z.enum(['chromium', 'firefox', 'webkit'])).min(1).optional(),
+  /** Override parallel browsers setting */
+  parallelBrowsers: z.boolean().optional(),
+  /** Override headless from test config */
+  headless: z.boolean().optional(),
+  /** Override timeout from test config */
+  timeout: z.number().int().positive().max(600000).optional(),
+  /** Trigger source */
+  triggeredBy: z.enum(['manual', 'schedule', 'api', 'webhook', 'ci']).optional().default('manual'),
+});
+
+/**
+ * Queue a suite run request schema
+ */
+export const queueSuiteRunSchema = z.object({
+  suiteId: z.string().uuid(),
+  /** Override browsers for all tests */
+  browsers: z.array(z.enum(['chromium', 'firefox', 'webkit'])).min(1).optional(),
+  /** Override parallel browsers setting */
+  parallelBrowsers: z.boolean().optional(),
+  /** Override headless for all tests */
+  headless: z.boolean().optional(),
+  /** Override timeout for all tests */
+  timeout: z.number().int().positive().max(600000).optional(),
+  /** Trigger source */
+  triggeredBy: z.enum(['manual', 'schedule', 'api', 'webhook', 'ci']).optional().default('manual'),
+});
+
+export type QueueTestRunRequest = z.infer<typeof queueTestRunSchema>;
+export type QueueSuiteRunRequest = z.infer<typeof queueSuiteRunSchema>;
 
 /**
  * Run execution result (from @saveaction/core)
@@ -153,7 +201,10 @@ export class RunnerService {
     private readonly runRepository: RunRepository,
     private readonly recordingRepository: RecordingRepository,
     private readonly jobQueueManager?: JobQueueManager,
-    _options: RunnerServiceOptions = {}
+    _options: RunnerServiceOptions = {},
+    private readonly testRepository?: TestRepository,
+    private readonly testSuiteRepository?: TestSuiteRepository,
+    private readonly browserResultRepository?: RunBrowserResultRepository,
   ) {
     // Options will be used in future for building run configuration
   }
@@ -181,6 +232,7 @@ export class RunnerService {
     // Create run record
     const runData: RunCreateData = {
       userId,
+      projectId: recording.projectId,
       recordingId: validated.recordingId,
       recordingName: recording.name,
       recordingUrl: recording.url,
@@ -239,6 +291,202 @@ export class RunnerService {
   }
 
   /**
+   * Queue a test run (new test-based execution with multi-browser support)
+   *
+   * Creates a run record, creates browser result rows for each browser,
+   * and queues a job for the worker to execute.
+   */
+  async queueTestRun(userId: string, projectId: string, request: QueueTestRunRequest, options?: { parentRunId?: string }): Promise<SafeRun> {
+    const validated = queueTestRunSchema.parse(request);
+
+    if (!this.testRepository) {
+      throw new RunError('Test repository not configured', 'CONFIG_ERROR', 500);
+    }
+
+    // Get the test and verify ownership
+    const test = await this.testRepository.findById(validated.testId);
+    if (!test) {
+      throw RunErrors.TEST_NOT_FOUND;
+    }
+    if (test.userId !== userId) {
+      throw RunErrors.NOT_AUTHORIZED;
+    }
+    if (test.projectId !== projectId) {
+      throw RunErrors.NOT_AUTHORIZED;
+    }
+
+    // Determine browsers and config
+    const browsers = validated.browsers ?? (test.browsers as Array<'chromium' | 'firefox' | 'webkit'>);
+    const testConfig = test.config as { headless?: boolean; timeout?: number; video?: boolean; screenshot?: string; parallelBrowsers?: boolean } | null;
+    const headless = validated.headless ?? testConfig?.headless ?? true;
+    const timeout = validated.timeout ?? testConfig?.timeout ?? 30000;
+    const parallelBrowsers = validated.parallelBrowsers ?? testConfig?.parallelBrowsers ?? true;
+    const videoEnabled = testConfig?.video ?? false;
+    const screenshotEnabled = testConfig?.screenshot !== 'off';
+    const screenshotMode = testConfig?.screenshot === 'on' ? 'always' as const : 'on-failure' as const;
+
+    // Create run record
+    const runData: RunCreateData = {
+      userId,
+      projectId,
+      runType: 'test',
+      testId: test.id,
+      suiteId: test.suiteId,
+      parentRunId: options?.parentRunId ?? null,
+      testName: test.name,
+      testSlug: test.slug,
+      recordingUrl: test.recordingUrl,
+      browser: browsers[0] as BrowserType, // Primary browser
+      headless,
+      videoEnabled,
+      screenshotEnabled,
+      timeout,
+      triggeredBy: validated.triggeredBy ?? 'manual',
+    };
+
+    const run = await this.runRepository.create(runData);
+
+    // Create browser result rows for each browser
+    if (this.browserResultRepository) {
+      const browserResultData = browsers.map(browser => ({
+        userId,
+        runId: run.id,
+        testId: test.id,
+        browser,
+        status: 'pending' as const,
+      }));
+      await this.browserResultRepository.createMany(browserResultData);
+    }
+
+    // Queue job for execution
+    if (this.jobQueueManager) {
+      try {
+        const jobData: TestRunJobData = {
+          userId,
+          runId: run.id,
+          runType: 'test',
+          testId: test.id,
+          projectId,
+          browsers,
+          parallelBrowsers,
+          headless,
+          recordVideo: videoEnabled,
+          recordScreenshots: screenshotEnabled,
+          screenshotMode,
+          timeout,
+          createdAt: new Date().toISOString(),
+        };
+
+        const job = await this.jobQueueManager.addJob('test-runs', 'execute-test-run', jobData, {
+          jobId: run.id,
+        });
+
+        await this.runRepository.update(run.id, {
+          jobId: job.id ?? run.id,
+          queueName: 'test-runs',
+        });
+
+        run.jobId = job.id ?? run.id;
+        run.queueName = 'test-runs';
+      } catch {
+        await this.runRepository.update(run.id, {
+          status: 'failed',
+          errorMessage: 'Failed to queue test run for execution',
+        });
+        throw RunErrors.QUEUE_ERROR;
+      }
+    }
+
+    return run;
+  }
+
+  /**
+   * Queue a suite run (runs all tests in a suite)
+   *
+   * Creates a parent run for the suite, then queues individual test runs
+   * for each test in the suite.
+   */
+  async queueSuiteRun(userId: string, projectId: string, request: QueueSuiteRunRequest): Promise<{ suiteRun: SafeRun; testRuns: SafeRun[] }> {
+    const validated = queueSuiteRunSchema.parse(request);
+
+    if (!this.testRepository || !this.testSuiteRepository) {
+      throw new RunError('Test/Suite repositories not configured', 'CONFIG_ERROR', 500);
+    }
+
+    // Get suite and verify ownership
+    const suite = await this.testSuiteRepository.findById(validated.suiteId);
+    if (!suite) {
+      throw RunErrors.SUITE_NOT_FOUND;
+    }
+    if (suite.userId !== userId) {
+      throw RunErrors.NOT_AUTHORIZED;
+    }
+    if (suite.projectId !== projectId) {
+      throw RunErrors.NOT_AUTHORIZED;
+    }
+
+    // Get all tests in the suite
+    const testResults = await this.testRepository.findMany(
+      { userId, projectId, suiteId: validated.suiteId },
+      { limit: 1000 }
+    );
+    const tests = testResults.data;
+
+    if (tests.length === 0) {
+      throw RunErrors.SUITE_EMPTY;
+    }
+
+    // Create parent suite run
+    const suiteRunData: RunCreateData = {
+      userId,
+      projectId,
+      runType: 'suite',
+      suiteId: suite.id,
+      testName: suite.name,
+      browser: (validated.browsers?.[0] ?? 'chromium') as BrowserType,
+      headless: validated.headless ?? true,
+      timeout: validated.timeout ?? 30000,
+      triggeredBy: validated.triggeredBy ?? 'manual',
+    };
+
+    const suiteRun = await this.runRepository.create(suiteRunData);
+
+    // Queue individual test runs for each test
+    const testRuns: SafeRun[] = [];
+    for (const test of tests) {
+      try {
+        const testRun = await this.queueTestRun(userId, projectId, {
+          testId: test.id,
+          browsers: validated.browsers,
+          parallelBrowsers: validated.parallelBrowsers,
+          headless: validated.headless,
+          timeout: validated.timeout,
+          triggeredBy: validated.triggeredBy,
+        }, { parentRunId: suiteRun.id });
+        testRuns.push(testRun);
+      } catch {
+        // If individual test queueing fails, continue with others
+      }
+    }
+
+    // Update suite run status
+    if (testRuns.length === 0) {
+      await this.runRepository.update(suiteRun.id, {
+        status: 'failed',
+        errorMessage: 'Failed to queue any test runs',
+        completedAt: new Date(),
+      });
+    } else {
+      await this.runRepository.update(suiteRun.id, {
+        status: 'running',
+        startedAt: new Date(),
+      });
+    }
+
+    return { suiteRun, testRuns };
+  }
+
+  /**
    * Get run by ID
    */
   async getRunById(userId: string, runId: string, includeDeleted = false): Promise<SafeRun> {
@@ -260,6 +508,11 @@ export class RunnerService {
 
     const filters: RunListFilters = {
       userId,
+      projectId: validated.projectId,
+      testId: validated.testId,
+      suiteId: validated.suiteId,
+      parentRunId: validated.parentRunId,
+      runType: validated.runType,
       recordingId: validated.recordingId,
       scheduleId: validated.scheduleId,
       status: validated.status as RunStatus | RunStatus[] | undefined,
@@ -278,12 +531,23 @@ export class RunnerService {
   }
 
   /**
-   * Get run actions
+   * Get run actions, optionally filtered by browser
    */
-  async getRunActions(userId: string, runId: string): Promise<SafeRunAction[]> {
+  async getRunActions(userId: string, runId: string, browser?: string): Promise<SafeRunAction[]> {
     // Verify access
     await this.getRunById(userId, runId);
-    return this.runRepository.findActionsByRunId(runId);
+    return this.runRepository.findActionsByRunId(runId, browser);
+  }
+
+  /**
+   * Get browser results for a run (matrix view)
+   */
+  async getBrowserResults(userId: string, runId: string): Promise<import('../repositories/RunBrowserResultRepository.js').SafeBrowserResult[]> {
+    await this.getRunById(userId, runId);
+    if (!this.browserResultRepository) {
+      return [];
+    }
+    return this.browserResultRepository.findByRunId(runId);
   }
 
   /**
@@ -306,6 +570,46 @@ export class RunnerService {
     }
 
     await this.runRepository.softDelete(runId);
+  }
+
+  /**
+   * Retry a completed/failed run by creating a new run with the same parameters
+   */
+  async retryRun(userId: string, runId: string): Promise<SafeRun> {
+    const run = await this.getRunById(userId, runId);
+
+    // Only completed runs can be retried
+    if (run.status === 'queued' || run.status === 'running') {
+      throw RunErrors.ALREADY_RUNNING;
+    }
+
+    // If this was a test-based run, re-queue via queueTestRun
+    if (run.runType === 'test' && run.testId && this.testRepository) {
+      return this.queueTestRun(userId, run.projectId, {
+        testId: run.testId,
+        headless: run.headless,
+        timeout: run.timeout ?? 30000,
+        triggeredBy: 'manual',
+      });
+    }
+
+    // Legacy recording-based run: re-queue via queueRun
+    if (run.recordingId) {
+      return this.queueRun(userId, {
+        recordingId: run.recordingId,
+        browser: (run.browser as 'chromium' | 'firefox' | 'webkit') ?? 'chromium',
+        headless: run.headless,
+        videoEnabled: run.videoEnabled,
+        screenshotEnabled: run.screenshotEnabled ?? false,
+        screenshotMode: 'on-failure',
+        timeout: run.timeout ?? 30000,
+        timingEnabled: true,
+        timingMode: 'realistic',
+        speedMultiplier: 1.0,
+      });
+    }
+
+    throw new RunError('Cannot determine how to retry this run', 'RETRY_ERROR', 400);
   }
 
   /**

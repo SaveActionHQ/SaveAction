@@ -38,19 +38,10 @@ const dashboardRoutes: FastifyPluginAsync<DashboardRoutesOptions> = async (fasti
   const { db } = options;
   const dashboardService = new DashboardService(db);
 
-  // All routes require authentication
+  // All routes require authentication (JWT or API token)
+  // Dashboard is read-only; no specific scope required (any authenticated user/token can view)
   fastify.addHook('onRequest', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required',
-        },
-      });
-    }
+    await fastify.authenticate(request, reply);
   });
 
   /**
@@ -109,11 +100,18 @@ const dashboardRoutes: FastifyPluginAsync<DashboardRoutesOptions> = async (fasti
                       type: 'object',
                       properties: {
                         id: { type: 'string', format: 'uuid' },
-                        recordingName: { type: 'string' },
-                        recordingUrl: { type: 'string' },
+                        runType: { type: 'string', nullable: true },
+                        testName: { type: 'string', nullable: true },
+                        recordingName: { type: 'string', nullable: true },
+                        recordingUrl: { type: 'string', nullable: true },
                         status: { type: 'string' },
                         browser: { type: 'string' },
+                        parentRunId: { type: 'string', nullable: true },
+                        actionsTotal: { type: 'integer', nullable: true },
+                        actionsExecuted: { type: 'integer', nullable: true },
+                        actionsFailed: { type: 'integer', nullable: true },
                         durationMs: { type: 'integer', nullable: true },
+                        triggeredBy: { type: 'string', nullable: true },
                         createdAt: { type: 'string', format: 'date-time' },
                         completedAt: { type: 'string', format: 'date-time', nullable: true },
                       },
@@ -126,13 +124,24 @@ const dashboardRoutes: FastifyPluginAsync<DashboardRoutesOptions> = async (fasti
                       properties: {
                         id: { type: 'string', format: 'uuid' },
                         name: { type: 'string' },
-                        recordingId: { type: 'string', format: 'uuid' },
-                        recordingName: { type: 'string' },
+                        targetType: { type: 'string' },
                         cronExpression: { type: 'string' },
                         nextRunAt: { type: 'string', format: 'date-time', nullable: true },
                         totalRuns: { type: 'integer' },
                         successfulRuns: { type: 'integer' },
                         failedRuns: { type: 'integer' },
+                      },
+                    },
+                  },
+                  runTrend: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        date: { type: 'string' },
+                        total: { type: 'integer' },
+                        passed: { type: 'integer' },
+                        failed: { type: 'integer' },
                       },
                     },
                   },
@@ -172,7 +181,8 @@ const dashboardRoutes: FastifyPluginAsync<DashboardRoutesOptions> = async (fasti
     async (request, reply) => {
       try {
         const userId = (request.user as { sub: string }).sub;
-        const data = await dashboardService.getDashboardData(userId);
+        const { projectId } = (request.query as { projectId?: string }) || {};
+        const data = await dashboardService.getDashboardData(userId, projectId);
 
         return reply.send({
           success: true,
@@ -239,7 +249,8 @@ const dashboardRoutes: FastifyPluginAsync<DashboardRoutesOptions> = async (fasti
     async (request, reply) => {
       try {
         const userId = (request.user as { sub: string }).sub;
-        const stats = await dashboardService.getStats(userId);
+        const { projectId } = (request.query as { projectId?: string }) || {};
+        const stats = await dashboardService.getStats(userId, projectId);
 
         return reply.send({
           success: true,

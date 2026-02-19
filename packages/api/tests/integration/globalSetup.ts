@@ -37,17 +37,23 @@ export default async function globalSetup() {
     await db.execute(sql`SELECT 1`);
     console.log('✅ PostgreSQL connection successful');
 
+    // Clean up test database BEFORE running migrations
+    // Drop both schemas to ensure a completely clean state:
+    // - "public" holds all application tables and enum types
+    // - "drizzle" holds the __drizzle_migrations tracking table
+    // Without dropping "drizzle", migrate() thinks all migrations are applied and skips them.
+    console.log('🧹 Cleaning up test database...');
+    await db.execute(sql`DROP SCHEMA IF EXISTS drizzle CASCADE`);
+    await db.execute(sql`DROP SCHEMA public CASCADE`);
+    await db.execute(sql`CREATE SCHEMA public`);
+    console.log('✅ Test database cleaned');
+
     // Run migrations to ensure tables exist
     console.log('🔄 Running database migrations...');
     const __dirname = path.dirname(fileURLToPath(import.meta.url));
     const migrationsFolder = path.resolve(__dirname, '../../drizzle');
     await migrate(db, { migrationsFolder });
     console.log('✅ Migrations completed');
-
-    // Clean up test database before running tests
-    console.log('🧹 Cleaning up test database...');
-    await db.execute(sql`TRUNCATE TABLE users, api_tokens, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries CASCADE`);
-    console.log('✅ Test database cleaned');
 
     await closeTestDb();
   } catch (error) {

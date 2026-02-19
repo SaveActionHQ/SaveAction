@@ -12,7 +12,8 @@ import {
   TableCell,
 } from '@/components/shared/data-table';
 import { formatDuration, cn } from '@/lib/utils';
-import { ScreenshotIndicator } from './screenshot-gallery';
+import { api } from '@/lib/api';
+import { BrowserIcon, browserLabel } from './browser-result-cell';
 
 // Run action type from API
 export interface RunAction {
@@ -33,6 +34,17 @@ export interface RunAction {
   elementTagName?: string;
   pageUrl?: string;
   pageTitle?: string;
+  browser?: string;
+}
+
+// Grouped action — one entry per unique actionId
+interface GroupedAction {
+  actionId: string;
+  actionType: string;
+  actionIndex: number;
+  selectorUsed?: string;
+  selectorValue?: string;
+  browsers: RunAction[]; // one per browser
 }
 
 // Icons
@@ -162,6 +174,20 @@ function ChevronDownIcon({ className }: { className?: string }) {
   );
 }
 
+// Small status dot for browser icons
+function StatusDot({ status }: { status: RunAction['status'] }) {
+  const colors: Record<RunAction['status'], string> = {
+    success: 'bg-emerald-500',
+    failed: 'bg-red-500',
+    skipped: 'bg-amber-500',
+    running: 'bg-blue-500 animate-pulse',
+    pending: 'bg-zinc-400',
+  };
+  return (
+    <span className={cn('absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full ring-1 ring-background', colors[status])} />
+  );
+}
+
 // Status icon component
 function StatusIcon({ status }: { status: RunAction['status'] }) {
   switch (status) {
@@ -263,64 +289,188 @@ function ActionTypeIcon({ type }: { type: string }) {
   }
 }
 
-// Expanded row details
-function ActionDetails({ action }: { action: RunAction }) {
+// Build screenshot URL with JWT token
+function getScreenshotUrl(runId: string, actionId: string, browser?: string): string {
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const token = api.getAccessToken();
+  let url = `${apiUrl}/api/v1/runs/${runId}/actions/${actionId}/screenshot?token=${token}`;
+  if (browser) {
+    url += `&browser=${browser}`;
+  }
+  return url;
+}
+
+// Screenshot thumbnail for expanded rows
+function ActionScreenshot({
+  runId,
+  actionId,
+  browser,
+}: {
+  runId: string;
+  actionId: string;
+  browser?: string;
+}) {
+  const [isLoading, setIsLoading] = React.useState(true);
+  const [hasError, setHasError] = React.useState(false);
+
+  const url = getScreenshotUrl(runId, actionId, browser);
+
+  if (hasError) {
+    return (
+      <div className="w-full aspect-video bg-secondary/50 rounded-md flex items-center justify-center">
+        <p className="text-xs text-muted-foreground">Failed to load</p>
+      </div>
+    );
+  }
+
   return (
-    <div className="p-4 bg-secondary/30 space-y-3">
-      {action.errorMessage && (
-        <div className="space-y-1">
-          <p className="text-sm font-medium text-destructive">Error Message</p>
-          <pre className="text-xs text-destructive bg-destructive/10 p-2 rounded-md whitespace-pre-wrap font-mono overflow-x-auto">
-            {action.errorMessage}
-          </pre>
+    <div className="relative w-full aspect-video bg-secondary/30 rounded-md overflow-hidden">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center">
+          <Skeleton className="w-full h-full" />
         </div>
       )}
+      <img
+        src={url}
+        alt={`Screenshot ${actionId} ${browser || ''}`}
+        className={cn(
+          'w-full h-full object-contain transition-opacity',
+          isLoading ? 'opacity-0' : 'opacity-100'
+        )}
+        onLoad={() => setIsLoading(false)}
+        onError={() => {
+          setIsLoading(false);
+          setHasError(true);
+        }}
+      />
+    </div>
+  );
+}
 
+// Expanded row details — shows per-browser details + screenshots
+function GroupedActionDetails({
+  group,
+  runId,
+  isMultiBrowser,
+}: {
+  group: GroupedAction;
+  runId?: string;
+  isMultiBrowser: boolean;
+}) {
+  // For single-browser runs, show simple details
+  const representative = group.browsers[0];
+
+  return (
+    <div className="p-4 bg-secondary/30 space-y-4">
+      {/* Per-browser details */}
+      {isMultiBrowser ? (
+        <div className="space-y-3">
+          {group.browsers.map((action) => (
+            <div key={action.id} className="space-y-2">
+              <div className="flex items-center gap-2">
+                <BrowserIcon browser={action.browser || 'unknown'} className="h-4 w-4" />
+                <span className="text-sm font-medium">{browserLabel(action.browser || 'unknown')}</span>
+                <StatusBadge status={action.status} />
+                {action.durationMs !== undefined && (
+                  <span className="text-xs text-muted-foreground ml-auto">{formatDuration(action.durationMs)}</span>
+                )}
+              </div>
+              {action.errorMessage && (
+                <pre className="text-xs text-destructive bg-destructive/10 p-2 rounded-md whitespace-pre-wrap font-mono overflow-x-auto ml-6">
+                  {action.errorMessage}
+                </pre>
+              )}
+            </div>
+          ))}
+        </div>
+      ) : (
+        <>
+          {representative?.errorMessage && (
+            <div className="space-y-1">
+              <p className="text-sm font-medium text-destructive">Error Message</p>
+              <pre className="text-xs text-destructive bg-destructive/10 p-2 rounded-md whitespace-pre-wrap font-mono overflow-x-auto">
+                {representative.errorMessage}
+              </pre>
+            </div>
+          )}
+        </>
+      )}
+
+      {/* Common details (selector, element, page) */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        {action.selectorUsed && (
+        {representative?.selectorUsed && (
           <div>
             <p className="text-muted-foreground">Selector Type</p>
-            <p className="font-medium">{action.selectorUsed}</p>
+            <p className="font-medium">{representative.selectorUsed}</p>
           </div>
         )}
-        {action.selectorValue && (
+        {representative?.selectorValue && (
           <div className="col-span-2">
             <p className="text-muted-foreground">Selector Value</p>
-            <code className="text-xs bg-secondary px-1 py-0.5 rounded">{action.selectorValue}</code>
+            <code className="text-xs bg-secondary px-1 py-0.5 rounded">{representative.selectorValue}</code>
           </div>
         )}
-        {action.elementTagName && (
+        {representative?.elementTagName && (
           <div>
             <p className="text-muted-foreground">Element Tag</p>
-            <code className="text-xs bg-secondary px-1 py-0.5 rounded">&lt;{action.elementTagName}&gt;</code>
+            <code className="text-xs bg-secondary px-1 py-0.5 rounded">&lt;{representative.elementTagName}&gt;</code>
           </div>
         )}
-        {action.retryCount !== undefined && action.retryCount > 0 && (
+        {representative?.retryCount !== undefined && representative.retryCount > 0 && (
           <div>
             <p className="text-muted-foreground">Retries</p>
-            <p className="font-medium">{action.retryCount}</p>
+            <p className="font-medium">{representative.retryCount}</p>
           </div>
         )}
-        {action.pageUrl && (
+        {representative?.pageUrl && (
           <div className="col-span-2">
             <p className="text-muted-foreground">Page URL</p>
             <a
-              href={action.pageUrl}
+              href={representative.pageUrl}
               target="_blank"
               rel="noopener noreferrer"
               className="text-xs text-primary hover:underline truncate block"
             >
-              {action.pageUrl}
+              {representative.pageUrl}
             </a>
           </div>
         )}
-        {action.pageTitle && (
+        {representative?.pageTitle && (
           <div className="col-span-2">
             <p className="text-muted-foreground">Page Title</p>
-            <p className="font-medium truncate">{action.pageTitle}</p>
+            <p className="font-medium truncate">{representative.pageTitle}</p>
           </div>
         )}
       </div>
+
+      {/* Screenshots grid — side by side for each browser */}
+      {runId && group.browsers.some((a) => a.screenshotPath) && (
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-muted-foreground">Screenshots</p>
+          <div className={cn(
+            'grid gap-3',
+            isMultiBrowser ? 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1 max-w-md'
+          )}>
+            {group.browsers
+              .filter((a) => a.screenshotPath)
+              .map((action) => (
+                <div key={action.id} className="space-y-1">
+                  {isMultiBrowser && (
+                    <div className="flex items-center gap-1.5">
+                      <BrowserIcon browser={action.browser || 'unknown'} className="h-3.5 w-3.5 text-muted-foreground" />
+                      <span className="text-xs text-muted-foreground">{browserLabel(action.browser || 'unknown')}</span>
+                    </div>
+                  )}
+                  <ActionScreenshot
+                    runId={runId}
+                    actionId={action.actionId}
+                    browser={action.browser}
+                  />
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -342,14 +492,67 @@ function ActionsSkeleton() {
   );
 }
 
+// Group flat actions by actionId
+function groupActions(actions: RunAction[]): GroupedAction[] {
+  const map = new Map<string, GroupedAction>();
+  // Canonical browser order
+  const browserOrder = ['chromium', 'firefox', 'webkit'];
+
+  for (const action of actions) {
+    const existing = map.get(action.actionId);
+    if (existing) {
+      existing.browsers.push(action);
+    } else {
+      map.set(action.actionId, {
+        actionId: action.actionId,
+        actionType: action.actionType,
+        actionIndex: action.actionIndex,
+        selectorUsed: action.selectorUsed,
+        selectorValue: action.selectorValue,
+        browsers: [action],
+      });
+    }
+  }
+
+  const groups = Array.from(map.values());
+  // Sort by actionIndex
+  groups.sort((a, b) => a.actionIndex - b.actionIndex);
+  // Sort browsers within each group by canonical order
+  for (const group of groups) {
+    group.browsers.sort((a, b) => {
+      const ai = browserOrder.indexOf(a.browser || '');
+      const bi = browserOrder.indexOf(b.browser || '');
+      return (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi);
+    });
+  }
+  return groups;
+}
+
+// Compute aggregate status for a group
+function aggregateStatus(browsers: RunAction[]): RunAction['status'] {
+  if (browsers.some((a) => a.status === 'failed')) return 'failed';
+  if (browsers.some((a) => a.status === 'running')) return 'running';
+  if (browsers.every((a) => a.status === 'success')) return 'success';
+  if (browsers.every((a) => a.status === 'skipped')) return 'skipped';
+  if (browsers.every((a) => a.status === 'pending')) return 'pending';
+  return 'success'; // mixed success/skipped
+}
+
 interface RunActionsTableProps {
   actions: RunAction[];
   isLoading?: boolean;
+  runId?: string;
   onScreenshotClick?: (actionId: string) => void;
 }
 
-export function RunActionsTable({ actions, isLoading, onScreenshotClick }: RunActionsTableProps) {
+export function RunActionsTable({ actions, isLoading, runId, onScreenshotClick }: RunActionsTableProps) {
   const [expandedRows, setExpandedRows] = React.useState<Set<string>>(new Set());
+
+  const grouped = React.useMemo(() => groupActions(actions), [actions]);
+  const isMultiBrowser = React.useMemo(
+    () => grouped.length > 0 && grouped[0].browsers.length > 1,
+    [grouped]
+  );
 
   const toggleRow = (actionId: string) => {
     setExpandedRows((prev) => {
@@ -401,79 +604,112 @@ export function RunActionsTable({ actions, isLoading, onScreenshotClick }: RunAc
           <TableRow>
             <TableHead className="w-12">#</TableHead>
             <TableHead>Action</TableHead>
-            <TableHead>Status</TableHead>
+            <TableHead>{isMultiBrowser ? 'Browsers' : 'Status'}</TableHead>
             <TableHead>Duration</TableHead>
             <TableHead>Selector</TableHead>
-            <TableHead className="w-12 text-center" title="Screenshot">📷</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
-          {actions.map((action) => (
-            <React.Fragment key={action.id}>
-              <TableRow
-                className={cn(
-                  'cursor-pointer',
-                  action.status === 'failed' && 'bg-destructive/5',
-                  expandedRows.has(action.id) && 'border-b-0'
-                )}
-                onClick={() => toggleRow(action.id)}
-              >
-                <TableCell className="font-medium text-muted-foreground">
-                  {action.actionIndex + 1}
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <ActionTypeIcon type={action.actionType} />
-                    <span className="font-medium capitalize">{action.actionType}</span>
-                  </div>
-                </TableCell>
-                <TableCell>
-                  <div className="flex items-center gap-2">
-                    <StatusIcon status={action.status} />
-                    <StatusBadge status={action.status} />
-                  </div>
-                </TableCell>
-                <TableCell>
-                  {action.durationMs !== undefined ? (
-                    formatDuration(action.durationMs)
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
+          {grouped.map((group) => {
+            const isExpanded = expandedRows.has(group.actionId);
+            const aggStatus = aggregateStatus(group.browsers);
+            // Max duration across browsers
+            const maxDuration = group.browsers.reduce(
+              (max, a) => Math.max(max, a.durationMs ?? 0),
+              0
+            );
+            const hasAnyFailed = group.browsers.some((a) => a.status === 'failed');
+
+            return (
+              <React.Fragment key={group.actionId}>
+                <TableRow
+                  className={cn(
+                    'cursor-pointer',
+                    hasAnyFailed && 'bg-destructive/5',
+                    isExpanded && 'border-b-0'
                   )}
-                </TableCell>
-                <TableCell>
-                  {action.selectorUsed ? (
-                    <Badge variant="secondary" className="text-xs">
-                      {action.selectorUsed}
-                    </Badge>
-                  ) : (
-                    <span className="text-muted-foreground">-</span>
-                  )}
-                </TableCell>
-                <TableCell className="text-center">
-                  <ScreenshotIndicator
-                    hasScreenshot={!!action.screenshotPath}
-                    onClick={() => onScreenshotClick?.(action.actionId)}
-                  />
-                </TableCell>
-                <TableCell>
-                  <ChevronDownIcon
-                    className={cn(
-                      'h-4 w-4 text-muted-foreground transition-transform',
-                      expandedRows.has(action.id) && 'rotate-180'
+                  onClick={() => toggleRow(group.actionId)}
+                >
+                  <TableCell className="font-medium text-muted-foreground">
+                    {group.actionIndex + 1}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2">
+                      <ActionTypeIcon type={group.actionType} />
+                      <span className="font-medium capitalize">{group.actionType}</span>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    {isMultiBrowser ? (
+                      <div className="flex items-center gap-2">
+                        {group.browsers.map((action) => (
+                          <div
+                            key={action.id}
+                            className="relative"
+                            title={`${browserLabel(action.browser || 'unknown')}: ${action.status}`}
+                          >
+                            <BrowserIcon
+                              browser={action.browser || 'unknown'}
+                              className={cn(
+                                'h-4.5 w-4.5',
+                                action.status === 'success' && 'text-emerald-600 dark:text-emerald-400',
+                                action.status === 'failed' && 'text-red-600 dark:text-red-400',
+                                action.status === 'skipped' && 'text-amber-600 dark:text-amber-400',
+                                action.status === 'running' && 'text-blue-600 dark:text-blue-400 animate-pulse',
+                                action.status === 'pending' && 'text-muted-foreground'
+                              )}
+                            />
+                            <StatusDot status={action.status} />
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <StatusIcon status={aggStatus} />
+                        <StatusBadge status={aggStatus} />
+                      </div>
                     )}
-                  />
-                </TableCell>
-              </TableRow>
-              {expandedRows.has(action.id) && (
-                <tr>
-                  <td colSpan={7} className="p-0">
-                    <ActionDetails action={action} />
-                  </td>
-                </tr>
-              )}
-            </React.Fragment>
-          ))}
+                  </TableCell>
+                  <TableCell>
+                    {maxDuration > 0 ? (
+                      formatDuration(maxDuration)
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {group.selectorUsed ? (
+                      <Badge variant="secondary" className="text-xs">
+                        {group.selectorUsed}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <ChevronDownIcon
+                      className={cn(
+                        'h-4 w-4 text-muted-foreground transition-transform',
+                        isExpanded && 'rotate-180'
+                      )}
+                    />
+                  </TableCell>
+                </TableRow>
+                {isExpanded && (
+                  <tr>
+                    <td colSpan={6} className="p-0">
+                      <GroupedActionDetails
+                        group={group}
+                        runId={runId}
+                        isMultiBrowser={isMultiBrowser}
+                      />
+                    </td>
+                  </tr>
+                )}
+              </React.Fragment>
+            );
+          })}
         </TableBody>
       </Table>
     </div>

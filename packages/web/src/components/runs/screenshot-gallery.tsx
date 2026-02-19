@@ -203,10 +203,14 @@ interface ScreenshotItem {
 }
 
 // Build screenshot URL with JWT token for auth
-function getScreenshotUrl(runId: string, actionId: string): string {
+function getScreenshotUrl(runId: string, actionId: string, browser?: string): string {
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
   const token = api.getAccessToken();
-  return `${apiUrl}/api/v1/runs/${runId}/actions/${actionId}/screenshot?token=${token}`;
+  let url = `${apiUrl}/api/v1/runs/${runId}/actions/${actionId}/screenshot?token=${token}`;
+  if (browser) {
+    url += `&browser=${browser}`;
+  }
+  return url;
 }
 
 // Thumbnail Component with lazy loading
@@ -215,9 +219,10 @@ interface ThumbnailProps {
   item: ScreenshotItem;
   onClick: () => void;
   isSelected?: boolean;
+  browser?: string;
 }
 
-function Thumbnail({ runId, item, onClick, isSelected }: ThumbnailProps) {
+function Thumbnail({ runId, item, onClick, isSelected, browser }: ThumbnailProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
@@ -300,7 +305,7 @@ function Thumbnail({ runId, item, onClick, isSelected }: ThumbnailProps) {
       {isVisible && !hasError && (
         <img
           ref={imgRef}
-          src={getScreenshotUrl(runId, item.actionId)}
+          src={getScreenshotUrl(runId, item.actionId, browser)}
           alt={`Screenshot for ${item.actionType} action #${item.actionIndex + 1}`}
           className={cn(
             'w-full h-full object-cover transition-opacity duration-300',
@@ -334,9 +339,10 @@ interface LightboxProps {
   runId: string;
   items: ScreenshotItem[];
   initialIndex: number;
+  browser?: string;
 }
 
-function Lightbox({ open, onClose, runId, items, initialIndex }: LightboxProps) {
+function Lightbox({ open, onClose, runId, items, initialIndex, browser }: LightboxProps) {
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -429,8 +435,9 @@ function Lightbox({ open, onClose, runId, items, initialIndex }: LightboxProps) 
     try {
       const token = api.getAccessToken();
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const screenshotUrl = `${apiUrl}/api/v1/runs/${runId}/actions/${currentItem.actionId}/screenshot${browser ? `?browser=${browser}` : ''}`;
       const response = await fetch(
-        `${apiUrl}/api/v1/runs/${runId}/actions/${currentItem.actionId}/screenshot`,
+        screenshotUrl,
         {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -606,7 +613,7 @@ function Lightbox({ open, onClose, runId, items, initialIndex }: LightboxProps) 
           {!hasError && (
             <img
               ref={imgRef}
-              src={getScreenshotUrl(runId, currentItem.actionId)}
+              src={getScreenshotUrl(runId, currentItem.actionId, browser)}
               alt={`Screenshot for ${currentItem.actionType} action #${currentItem.actionIndex + 1}`}
               className={cn(
                 'max-h-[calc(100vh-160px)] max-w-[calc(100vw-100px)] object-contain transition-all duration-200',
@@ -654,7 +661,7 @@ function Lightbox({ open, onClose, runId, items, initialIndex }: LightboxProps) 
                   )}
                 >
                   <img
-                    src={getScreenshotUrl(runId, item.actionId)}
+                    src={getScreenshotUrl(runId, item.actionId, browser)}
                     alt={`Thumbnail ${index + 1}`}
                     className="w-full h-full object-cover"
                     loading="lazy"
@@ -674,9 +681,10 @@ interface ScreenshotGalleryProps {
   runId: string;
   actions: RunAction[];
   className?: string;
+  browser?: string;
 }
 
-export function ScreenshotGallery({ runId, actions, className }: ScreenshotGalleryProps) {
+export function ScreenshotGallery({ runId, actions, className, browser }: ScreenshotGalleryProps) {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(0);
 
@@ -748,6 +756,7 @@ export function ScreenshotGallery({ runId, actions, className }: ScreenshotGalle
             item={item}
             onClick={() => handleThumbnailClick(index)}
             isSelected={lightboxOpen && selectedIndex === index}
+            browser={browser}
           />
         ))}
       </div>
@@ -759,6 +768,7 @@ export function ScreenshotGallery({ runId, actions, className }: ScreenshotGalle
         runId={runId}
         items={screenshotItems}
         initialIndex={selectedIndex}
+        browser={browser}
       />
     </div>
   );

@@ -24,8 +24,12 @@ import {
 } from '../services/ScheduleService.js';
 import { ScheduleRepository } from '../repositories/ScheduleRepository.js';
 import { RecordingRepository } from '../repositories/RecordingRepository.js';
+import { TestRepository } from '../repositories/TestRepository.js';
+import { TestSuiteRepository } from '../repositories/TestSuiteRepository.js';
+import { RunRepository } from '../repositories/RunRepository.js';
 import type { Database } from '../db/index.js';
 import type { JobQueueManager } from '../queues/JobQueueManager.js';
+import { requireScopes } from '../plugins/jwt.js';
 import { z } from 'zod';
 
 /**
@@ -41,6 +45,7 @@ interface ScheduleRoutesOptions {
  * List schedules query params schema
  */
 const listSchedulesQuerySchema = z.object({
+  projectId: z.string().uuid(),
   page: z.coerce.number().int().positive().optional(),
   limit: z.coerce.number().int().positive().max(100).optional(),
   sortBy: z.enum(['createdAt', 'name', 'nextRunAt', 'status']).optional(),
@@ -96,25 +101,28 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
   // Create repositories and service
   const scheduleRepository = new ScheduleRepository(db);
   const recordingRepository = new RecordingRepository(db);
+  const testRepository = new TestRepository(db);
+  const testSuiteRepository = new TestSuiteRepository(db);
+  const runRepository = new RunRepository(db);
   const scheduleService = new ScheduleService(
     scheduleRepository,
     recordingRepository,
+    testRepository,
+    testSuiteRepository,
     jobQueueManager,
-    { maxSchedulesPerUser }
+    { maxSchedulesPerUser },
+    runRepository
   );
 
-  // All routes require authentication
+  // All routes require authentication (JWT or API token)
   fastify.addHook('onRequest', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required',
-        },
-      });
+    await fastify.authenticate(request, reply);
+
+    // Scope enforcement for API token users
+    if (request.apiToken) {
+      const isRead = request.method === 'GET' || request.method === 'HEAD';
+      const scope = isRead ? 'schedules:read' : 'schedules:write';
+      if (!requireScopes(request, reply, [scope as 'schedules:read' | 'schedules:write'])) return;
     }
   });
 
@@ -127,9 +135,12 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
       schema: {
         body: {
           type: 'object',
-          required: ['recordingId', 'name', 'cronExpression'],
+          required: ['targetType', 'suiteId', 'projectId', 'name', 'cronExpression'],
           properties: {
-            recordingId: { type: 'string', format: 'uuid' },
+            targetType: { type: 'string', enum: ['test', 'suite'] },
+            testId: { type: 'string', format: 'uuid' },
+            suiteId: { type: 'string', format: 'uuid' },
+            projectId: { type: 'string', format: 'uuid' },
             name: { type: 'string', minLength: 1, maxLength: 255 },
             description: { type: 'string', maxLength: 1000 },
             cronExpression: { type: 'string', minLength: 9, maxLength: 100 },
@@ -192,7 +203,9 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
           data: {
             id: schedule.id,
             name: schedule.name,
-            recordingId: schedule.recordingId,
+            targetType: schedule.targetType,
+            testId: schedule.testId,
+            suiteId: schedule.suiteId,
             cronExpression: schedule.cronExpression,
             timezone: schedule.timezone,
             status: schedule.status,
@@ -216,6 +229,7 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
         querystring: {
           type: 'object',
           properties: {
+            projectId: { type: 'string', format: 'uuid' },
             page: { type: 'number' },
             limit: { type: 'number' },
             sortBy: { type: 'string', enum: ['createdAt', 'name', 'nextRunAt', 'status'] },
@@ -224,6 +238,7 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
             status: { type: 'string', enum: ['active', 'paused', 'disabled', 'expired'] },
             includeDeleted: { type: 'boolean' },
           },
+          required: ['projectId'],
         },
         response: {
           200: {
@@ -241,7 +256,7 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
                     cronExpression: { type: 'string' },
                     timezone: { type: 'string' },
                     status: { type: 'string' },
-                    browser: { type: 'string' },
+                    browsers: { type: 'array', items: { type: 'string' } },
                     headless: { type: 'boolean' },
                     recordVideo: { type: 'boolean' },
                     screenshotMode: { type: 'string' },
@@ -279,6 +294,7 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
         const result = await scheduleService.listSchedules(
           userId,
           {
+            projectId: query.projectId,
             recordingId: query.recordingId,
             status: query.status,
             includeDeleted: query.includeDeleted,
@@ -296,12 +312,15 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
           data: result.data.map((s) => ({
             id: s.id,
             name: s.name,
+            targetType: s.targetType,
+            testId: s.testId,
+            suiteId: s.suiteId,
             recordingId: s.recordingId,
             cronExpression: s.cronExpression,
             timezone: s.timezone,
             status: s.status,
             // Flatten runConfig fields for frontend convenience
-            browser: s.runConfig?.browser ?? 'chromium',
+            browsers: s.runConfig?.browsers ?? ['chromium'],
             headless: s.runConfig?.headless ?? true,
             recordVideo: s.runConfig?.recordVideo ?? false,
             screenshotMode: s.runConfig?.screenshotMode ?? 'on-failure',
@@ -344,14 +363,17 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
                 type: 'object',
                 properties: {
                   id: { type: 'string' },
-                  recordingId: { type: 'string' },
+                  targetType: { type: 'string' },
+                  testId: { type: 'string', nullable: true },
+                  suiteId: { type: 'string', nullable: true },
+                  recordingId: { type: 'string', nullable: true },
                   name: { type: 'string' },
                   description: { type: 'string', nullable: true },
                   cronExpression: { type: 'string' },
                   timezone: { type: 'string' },
                   status: { type: 'string' },
                   runConfig: { type: 'object', nullable: true },
-                  browser: { type: 'string' },
+                  browsers: { type: 'array', items: { type: 'string' } },
                   headless: { type: 'boolean' },
                   recordVideo: { type: 'boolean' },
                   screenshotMode: { type: 'string' },
@@ -383,10 +405,16 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
         const userId = (request.user as { sub: string }).sub;
         const schedule = await scheduleService.getSchedule(userId, request.params.id);
 
+        // Compute accurate run stats from actual run data
+        const runStats = await runRepository.getRunStatsForSchedule(schedule.id);
+
         return reply.status(200).send({
           success: true,
           data: {
             id: schedule.id,
+            targetType: schedule.targetType,
+            testId: schedule.testId,
+            suiteId: schedule.suiteId,
             recordingId: schedule.recordingId,
             name: schedule.name,
             description: schedule.description,
@@ -395,7 +423,7 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
             status: schedule.status,
             runConfig: schedule.runConfig,
             // Flatten runConfig fields for frontend convenience
-            browser: schedule.runConfig?.browser ?? 'chromium',
+            browsers: schedule.runConfig?.browsers ?? ['chromium'],
             headless: schedule.runConfig?.headless ?? true,
             recordVideo: schedule.runConfig?.recordVideo ?? false,
             screenshotMode: schedule.runConfig?.screenshotMode ?? 'on-failure',
@@ -405,9 +433,9 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
             lastRunId: schedule.lastRunId,
             lastRunAt: schedule.lastRunAt?.toISOString() ?? null,
             lastRunStatus: schedule.lastRunStatus,
-            totalRuns: schedule.totalRuns,
-            successfulRuns: schedule.successfulRuns,
-            failedRuns: schedule.failedRuns,
+            totalRuns: runStats.total,
+            successfulRuns: runStats.passed,
+            failedRuns: runStats.failed,
             runsToday: schedule.runsToday,
             runsThisMonth: schedule.runsThisMonth,
             notifyOnFailure: schedule.notifyOnFailure,
@@ -447,7 +475,10 @@ const scheduleRoutes: FastifyPluginAsync<ScheduleRoutesOptions> = async (fastify
             runConfig: {
               type: 'object',
               properties: {
-                browser: { type: 'string', enum: ['chromium', 'firefox', 'webkit'] },
+                browsers: {
+                  type: 'array',
+                  items: { type: 'string', enum: ['chromium', 'firefox', 'webkit'] },
+                },
                 headless: { type: 'boolean' },
                 timeout: { type: 'number', minimum: 1000, maximum: 600000 },
                 viewport: {

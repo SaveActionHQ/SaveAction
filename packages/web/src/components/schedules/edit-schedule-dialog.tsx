@@ -13,7 +13,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/components/providers/toast-provider';
-import { api, type Schedule, ApiClientError } from '@/lib/api';
+import { api, type Schedule, type TestBrowser, ApiClientError } from '@/lib/api';
+import { BrowserSelector } from '@/components/tests/browser-selector';
 
 // Icons
 function LoaderIcon({ className }: { className?: string }) {
@@ -251,7 +252,7 @@ export function EditScheduleDialog({
     detectCronPreset(schedule.cronExpression) === 'custom' ? schedule.cronExpression : ''
   );
   const [timezone, setTimezone] = useState(schedule.timezone);
-  const [browser, setBrowser] = useState<'chromium' | 'firefox' | 'webkit'>(schedule.browser ?? 'chromium');
+  const [browsers, setBrowsers] = useState<TestBrowser[]>(schedule.browsers ?? (schedule.browser ? [schedule.browser] : ['chromium']));
   const [recordVideo, setRecordVideo] = useState(schedule.recordVideo ?? false);
   const [screenshotMode, setScreenshotMode] = useState<ScreenshotMode>(schedule.screenshotMode ?? 'on-failure');
 
@@ -269,7 +270,7 @@ export function EditScheduleDialog({
       setCronPreset(preset);
       setCustomCron(preset === 'custom' ? schedule.cronExpression : '');
       setTimezone(schedule.timezone);
-      setBrowser(schedule.browser ?? 'chromium');
+      setBrowsers(schedule.browsers ?? (schedule.browser ? [schedule.browser] : ['chromium']));
       setRecordVideo(schedule.recordVideo ?? false);
       setScreenshotMode(schedule.screenshotMode ?? 'on-failure');
       setErrors({});
@@ -313,7 +314,7 @@ export function EditScheduleDialog({
         name: name.trim(),
         cronExpression,
         timezone,
-        browser,
+        browsers,
         recordVideo,
         screenshotMode,
       });
@@ -357,14 +358,22 @@ export function EditScheduleDialog({
             )}
           </div>
 
-          {/* Recording Info (Read Only) */}
+          {/* Target Info (Read Only) */}
           <div className="space-y-2">
-            <Label>Recording</Label>
+            <Label>Target</Label>
             <div className="text-sm text-muted-foreground bg-secondary/50 px-3 py-2 rounded-md">
-              Recording ID: {schedule.recordingId}
+              {schedule.targetType === 'suite' && 'Entire Suite'}
+              {schedule.targetType === 'test' && 'Individual Test'}
+              {schedule.targetType === 'recording' && 'Recording (legacy)'}
+              {schedule.suiteId && (
+                <span className="block mt-1 text-xs">Suite ID: {schedule.suiteId}</span>
+              )}
+              {schedule.testId && (
+                <span className="block mt-1 text-xs">Test ID: {schedule.testId}</span>
+              )}
             </div>
             <p className="text-xs text-muted-foreground">
-              Recording cannot be changed. Create a new schedule for a different recording.
+              Target cannot be changed. Create a new schedule for a different target.
             </p>
           </div>
 
@@ -431,20 +440,13 @@ export function EditScheduleDialog({
 
             {/* Browser Selection */}
             <div className="space-y-2">
-              <Label>Browser</Label>
-              <div className="flex gap-2">
-                {(['chromium', 'firefox', 'webkit'] as const).map((b) => (
-                  <Button
-                    key={b}
-                    type="button"
-                    variant={browser === b ? 'default' : 'outline'}
-                    onClick={() => setBrowser(b)}
-                    className="flex-1 capitalize"
-                  >
-                    {b}
-                  </Button>
-                ))}
-              </div>
+              <Label>Target Browsers</Label>
+              <BrowserSelector value={browsers} onChange={setBrowsers} />
+              {browsers.length > 1 && (
+                <p className="text-xs text-muted-foreground">
+                  Tests will run in {browsers.length} browsers. A separate run is created for each browser.
+                </p>
+              )}
             </div>
 
             {/* Record Video */}

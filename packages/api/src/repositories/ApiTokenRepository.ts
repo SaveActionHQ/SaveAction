@@ -19,6 +19,7 @@ export interface ApiTokenCreateData {
   tokenPrefix: string;
   tokenSuffix: string;
   scopes: string[];
+  projectIds: string[];
   expiresAt?: Date | null;
 }
 
@@ -32,6 +33,7 @@ export interface SafeApiToken {
   tokenPrefix: string;
   tokenSuffix: string;
   scopes: string[];
+  projectIds: string[];
   lastUsedAt: Date | null;
   lastUsedIp: string | null;
   useCount: number;
@@ -59,6 +61,7 @@ function toSafeToken(token: ApiToken): SafeApiToken {
     tokenPrefix: token.tokenPrefix,
     tokenSuffix: token.tokenSuffix,
     scopes: JSON.parse(token.scopes) as string[],
+    projectIds: JSON.parse(token.projectIds) as string[],
     lastUsedAt: token.lastUsedAt,
     lastUsedIp: token.lastUsedIp,
     useCount: parseInt(token.useCount, 10),
@@ -98,6 +101,7 @@ export class ApiTokenRepository {
         tokenPrefix: data.tokenPrefix,
         tokenSuffix: data.tokenSuffix,
         scopes: JSON.stringify(data.scopes),
+        projectIds: JSON.stringify(data.projectIds),
         expiresAt: data.expiresAt || null,
       })
       .returning();

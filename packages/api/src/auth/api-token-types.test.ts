@@ -30,8 +30,8 @@ describe('API_TOKEN_SCOPES', () => {
     expect(API_TOKEN_SCOPES).toContain('webhooks:write');
   });
 
-  it('should have exactly 8 scopes', () => {
-    expect(API_TOKEN_SCOPES).toHaveLength(8);
+  it('should have exactly 14 scopes', () => {
+    expect(API_TOKEN_SCOPES).toHaveLength(14);
   });
 });
 

@@ -22,6 +22,9 @@ const sampleSafeSchedule: SafeSchedule = {
   id: 'sched-123',
   userId: 'user-123',
   recordingId: 'rec-123',
+  targetType: 'suite',
+  testId: null,
+  suiteId: 'suite-123',
   name: 'Daily Test Run',
   description: 'Runs tests every day at 9 AM',
   cronExpression: '0 9 * * *',
@@ -31,7 +34,7 @@ const sampleSafeSchedule: SafeSchedule = {
   endsAt: null,
   bullmqJobKey: 'schedule:sched-123',
   bullmqJobPattern: '0 9 * * *',
-  runConfig: { browser: 'chromium', headless: true },
+  runConfig: { browsers: ['chromium'], headless: true },
   maxConcurrent: 1,
   maxDailyRuns: null,
   runsToday: 0,
@@ -55,6 +58,9 @@ const sampleScheduleSummary: ScheduleSummary = {
   id: 'sched-123',
   userId: 'user-123',
   recordingId: 'rec-123',
+  targetType: 'suite',
+  testId: null,
+  suiteId: 'suite-123',
   name: 'Daily Test Run',
   cronExpression: '0 9 * * *',
   timezone: 'UTC',
@@ -106,9 +112,19 @@ type MockedRecordingRepository = {
   findById: ReturnType<typeof vi.fn>;
 };
 
+type MockedTestRepository = {
+  findByIdAndUser: ReturnType<typeof vi.fn>;
+  findAllBySuite: ReturnType<typeof vi.fn>;
+};
+
+type MockedTestSuiteRepository = {
+  findByIdAndUser: ReturnType<typeof vi.fn>;
+};
+
 type MockedJobQueueManager = {
   addRepeatableJob: ReturnType<typeof vi.fn>;
   removeRepeatableJob: ReturnType<typeof vi.fn>;
+  removeAllRepeatableJobs: ReturnType<typeof vi.fn>;
 };
 
 const createMockScheduleRepository = (): MockedScheduleRepository => ({
@@ -141,24 +157,52 @@ const createMockRecordingRepository = (): MockedRecordingRepository => ({
   findById: vi.fn().mockResolvedValue(sampleRecording),
 });
 
+const createMockTestRepository = (): MockedTestRepository => ({
+  findByIdAndUser: vi.fn().mockResolvedValue({
+    id: 'test-123',
+    name: 'Sample Test',
+    suiteId: 'suite-123',
+    recordingId: 'rec-123',
+    recordingData: sampleRecording.data,
+    config: { headless: true },
+    browsers: ['chromium'],
+  }),
+  findAllBySuite: vi.fn().mockResolvedValue([]),
+});
+
+const createMockTestSuiteRepository = (): MockedTestSuiteRepository => ({
+  findByIdAndUser: vi.fn().mockResolvedValue({
+    id: 'suite-123',
+    name: 'Sample Suite',
+    projectId: 'proj-123',
+  }),
+});
+
 const createMockJobQueueManager = (): MockedJobQueueManager => ({
   addRepeatableJob: vi.fn().mockResolvedValue(undefined),
   removeRepeatableJob: vi.fn().mockResolvedValue(true),
+  removeAllRepeatableJobs: vi.fn().mockResolvedValue(0),
 });
 
 describe('ScheduleService', () => {
   let service: ScheduleService;
   let mockScheduleRepository: MockedScheduleRepository;
   let mockRecordingRepository: MockedRecordingRepository;
+  let mockTestRepository: MockedTestRepository;
+  let mockTestSuiteRepository: MockedTestSuiteRepository;
   let mockJobQueueManager: MockedJobQueueManager;
 
   beforeEach(() => {
     mockScheduleRepository = createMockScheduleRepository();
     mockRecordingRepository = createMockRecordingRepository();
+    mockTestRepository = createMockTestRepository();
+    mockTestSuiteRepository = createMockTestSuiteRepository();
     mockJobQueueManager = createMockJobQueueManager();
     service = new ScheduleService(
       mockScheduleRepository as unknown as ScheduleRepository,
       mockRecordingRepository as any,
+      mockTestRepository as any,
+      mockTestSuiteRepository as any,
       mockJobQueueManager as any
     );
   });
@@ -197,9 +241,11 @@ describe('ScheduleService', () => {
   });
 
   describe('createSchedule', () => {
-    it('should create schedule successfully', async () => {
+    it('should create schedule for suite successfully', async () => {
       const request = {
-        recordingId: 'rec-123',
+        targetType: 'suite' as const,
+        suiteId: 'suite-123',
+        projectId: 'proj-123',
         name: 'Daily Test Run',
         cronExpression: '0 9 * * *',
       };
@@ -208,15 +254,35 @@ describe('ScheduleService', () => {
 
       expect(result).toBeDefined();
       expect(result.id).toBe('sched-123');
-      expect(mockRecordingRepository.findById).toHaveBeenCalledWith('rec-123');
+      expect(mockTestSuiteRepository.findByIdAndUser).toHaveBeenCalledWith('suite-123', 'user-123');
       expect(mockScheduleRepository.create).toHaveBeenCalled();
     });
 
-    it('should throw when recording not found', async () => {
-      mockRecordingRepository.findById.mockResolvedValue(null);
+    it('should create schedule for individual test successfully', async () => {
+      const request = {
+        targetType: 'test' as const,
+        suiteId: 'suite-123',
+        testId: 'test-123',
+        projectId: 'proj-123',
+        name: 'Daily Test Run',
+        cronExpression: '0 9 * * *',
+      };
+
+      const result = await service.createSchedule('user-123', request);
+
+      expect(result).toBeDefined();
+      expect(result.id).toBe('sched-123');
+      expect(mockTestRepository.findByIdAndUser).toHaveBeenCalledWith('test-123', 'user-123');
+      expect(mockScheduleRepository.create).toHaveBeenCalled();
+    });
+
+    it('should throw when suite not found', async () => {
+      mockTestSuiteRepository.findByIdAndUser.mockResolvedValue(null);
 
       const request = {
-        recordingId: 'nonexistent',
+        targetType: 'suite' as const,
+        suiteId: 'nonexistent',
+        projectId: 'proj-123',
         name: 'Test',
         cronExpression: '0 9 * * *',
       };
@@ -224,14 +290,14 @@ describe('ScheduleService', () => {
       await expect(service.createSchedule('user-123', request)).rejects.toThrow(ScheduleError);
     });
 
-    it('should throw when recording belongs to another user', async () => {
-      mockRecordingRepository.findById.mockResolvedValue({
-        ...sampleRecording,
-        userId: 'other-user',
-      });
+    it('should throw when test not found', async () => {
+      mockTestRepository.findByIdAndUser.mockResolvedValue(null);
 
       const request = {
-        recordingId: 'rec-123',
+        targetType: 'test' as const,
+        suiteId: 'suite-123',
+        testId: 'nonexistent',
+        projectId: 'proj-123',
         name: 'Test',
         cronExpression: '0 9 * * *',
       };
@@ -241,7 +307,9 @@ describe('ScheduleService', () => {
 
     it('should throw when cron expression is invalid', async () => {
       const request = {
-        recordingId: 'rec-123',
+        targetType: 'suite' as const,
+        suiteId: 'suite-123',
+        projectId: 'proj-123',
         name: 'Test',
         cronExpression: 'invalid cron',
       };
@@ -251,7 +319,9 @@ describe('ScheduleService', () => {
 
     it('should throw when timezone is invalid', async () => {
       const request = {
-        recordingId: 'rec-123',
+        targetType: 'suite' as const,
+        suiteId: 'suite-123',
+        projectId: 'proj-123',
         name: 'Test',
         cronExpression: '0 9 * * *',
         timezone: 'Invalid/Timezone',
@@ -264,7 +334,9 @@ describe('ScheduleService', () => {
       mockScheduleRepository.countByUser.mockResolvedValue(50);
 
       const request = {
-        recordingId: 'rec-123',
+        targetType: 'suite' as const,
+        suiteId: 'suite-123',
+        projectId: 'proj-123',
         name: 'Test',
         cronExpression: '0 9 * * *',
       };
@@ -274,7 +346,9 @@ describe('ScheduleService', () => {
 
     it('should add BullMQ repeatable job when job queue manager is available', async () => {
       const request = {
-        recordingId: 'rec-123',
+        targetType: 'suite' as const,
+        suiteId: 'suite-123',
+        projectId: 'proj-123',
         name: 'Test',
         cronExpression: '0 9 * * *',
       };
@@ -469,7 +543,9 @@ describe('ScheduleService', () => {
     it('should return zeros when job queue manager not available', async () => {
       const serviceWithoutQueue = new ScheduleService(
         mockScheduleRepository as unknown as ScheduleRepository,
-        mockRecordingRepository as any
+        mockRecordingRepository as any,
+        mockTestRepository as any,
+        mockTestSuiteRepository as any
       );
 
       const result = await serviceWithoutQueue.syncSchedulesOnStartup();
@@ -506,9 +582,25 @@ describe('ScheduleService', () => {
 
   describe('Validation Schemas', () => {
     describe('createScheduleSchema', () => {
-      it('should validate valid create request', () => {
+      it('should validate valid create request for suite', () => {
         const data = {
-          recordingId: '123e4567-e89b-12d3-a456-426614174000',
+          targetType: 'suite',
+          suiteId: '123e4567-e89b-12d3-a456-426614174000',
+          projectId: '123e4567-e89b-12d3-a456-426614174001',
+          name: 'Test Schedule',
+          cronExpression: '0 9 * * *',
+        };
+
+        const result = createScheduleSchema.safeParse(data);
+        expect(result.success).toBe(true);
+      });
+
+      it('should validate valid create request for test', () => {
+        const data = {
+          targetType: 'test',
+          suiteId: '123e4567-e89b-12d3-a456-426614174000',
+          projectId: '123e4567-e89b-12d3-a456-426614174001',
+          testId: '123e4567-e89b-12d3-a456-426614174002',
           name: 'Test Schedule',
           cronExpression: '0 9 * * *',
         };
@@ -526,35 +618,32 @@ describe('ScheduleService', () => {
         expect(result.success).toBe(false);
       });
 
-      it('should validate optional fields', () => {
+      it('should reject test targetType without testId', () => {
         const data = {
-          recordingId: '123e4567-e89b-12d3-a456-426614174000',
+          targetType: 'test',
+          suiteId: '123e4567-e89b-12d3-a456-426614174000',
+          projectId: '123e4567-e89b-12d3-a456-426614174001',
           name: 'Test Schedule',
           cronExpression: '0 9 * * *',
-          description: 'Test description',
-          timezone: 'America/New_York',
-          runConfig: {
-            browser: 'firefox',
-            headless: false,
-          },
-        };
-
-        const result = createScheduleSchema.safeParse(data);
-        expect(result.success).toBe(true);
-      });
-
-      it('should reject invalid browser type', () => {
-        const data = {
-          recordingId: '123e4567-e89b-12d3-a456-426614174000',
-          name: 'Test',
-          cronExpression: '0 9 * * *',
-          runConfig: {
-            browser: 'invalid',
-          },
         };
 
         const result = createScheduleSchema.safeParse(data);
         expect(result.success).toBe(false);
+      });
+
+      it('should validate optional fields', () => {
+        const data = {
+          targetType: 'suite',
+          suiteId: '123e4567-e89b-12d3-a456-426614174000',
+          projectId: '123e4567-e89b-12d3-a456-426614174001',
+          name: 'Test Schedule',
+          cronExpression: '0 9 * * *',
+          description: 'Test description',
+          timezone: 'America/New_York',
+        };
+
+        const result = createScheduleSchema.safeParse(data);
+        expect(result.success).toBe(true);
       });
     });
 
@@ -595,15 +684,21 @@ describe('ScheduleService', () => {
     beforeEach(() => {
       mockScheduleRepository = createMockScheduleRepository();
       mockRecordingRepository = createMockRecordingRepository();
+      mockTestRepository = createMockTestRepository();
+      mockTestSuiteRepository = createMockTestSuiteRepository();
       serviceWithoutQueue = new ScheduleService(
         mockScheduleRepository as unknown as ScheduleRepository,
-        mockRecordingRepository as any
+        mockRecordingRepository as any,
+        mockTestRepository as any,
+        mockTestSuiteRepository as any
       );
     });
 
     it('should create schedule without BullMQ integration', async () => {
       const request = {
-        recordingId: 'rec-123',
+        targetType: 'suite' as const,
+        suiteId: 'suite-123',
+        projectId: 'proj-123',
         name: 'Test',
         cronExpression: '0 9 * * *',
       };
@@ -632,7 +727,9 @@ describe('ScheduleService', () => {
 
       for (const cronExpression of expressions) {
         const request = {
-          recordingId: 'rec-123',
+          targetType: 'suite' as const,
+          suiteId: 'suite-123',
+          projectId: 'proj-123',
           name: 'Test',
           cronExpression,
         };
@@ -653,7 +750,9 @@ describe('ScheduleService', () => {
 
       for (const timezone of timezones) {
         const request = {
-          recordingId: 'rec-123',
+          targetType: 'suite' as const,
+          suiteId: 'suite-123',
+          projectId: 'proj-123',
           name: 'Test',
           cronExpression: '0 9 * * *',
           timezone,

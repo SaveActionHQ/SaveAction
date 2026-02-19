@@ -60,16 +60,18 @@ const apiTokenRoutes: FastifyPluginAsync<ApiTokenRoutesOptions> = async (fastify
   const tokenRepository = new ApiTokenRepository(db);
   const tokenService = new ApiTokenService(tokenRepository, { maxTokensPerUser });
 
-  // All routes require authentication
+  // All routes require JWT authentication only
+  // API tokens cannot manage other API tokens (prevents token escalation)
   fastify.addHook('onRequest', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
+    await fastify.authenticate(request, reply);
+
+    // Block API token auth for token management routes
+    if (request.apiToken) {
+      return reply.status(403).send({
         success: false,
         error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required',
+          code: 'JWT_REQUIRED',
+          message: 'API token management requires JWT authentication (login session)',
         },
       });
     }
@@ -92,6 +94,11 @@ const apiTokenRoutes: FastifyPluginAsync<ApiTokenRoutesOptions> = async (fastify
               items: { type: 'string' },
               minItems: 1,
             },
+            projectIds: {
+              type: 'array',
+              items: { type: 'string' },
+              minItems: 1,
+            },
             expiresAt: { type: 'string', format: 'date-time', nullable: true },
           },
         },
@@ -109,6 +116,7 @@ const apiTokenRoutes: FastifyPluginAsync<ApiTokenRoutesOptions> = async (fastify
                   tokenPrefix: { type: 'string' },
                   tokenSuffix: { type: 'string' },
                   scopes: { type: 'array', items: { type: 'string' } },
+                  projectIds: { type: 'array', items: { type: 'string' } },
                   expiresAt: { type: 'string', nullable: true },
                   createdAt: { type: 'string' },
                 },
@@ -176,6 +184,7 @@ const apiTokenRoutes: FastifyPluginAsync<ApiTokenRoutesOptions> = async (fastify
                         tokenPrefix: { type: 'string' },
                         tokenSuffix: { type: 'string' },
                         scopes: { type: 'array', items: { type: 'string' } },
+                        projectIds: { type: 'array', items: { type: 'string' } },
                         lastUsedAt: { type: 'string', nullable: true },
                         useCount: { type: 'number' },
                         expiresAt: { type: 'string', nullable: true },
@@ -238,6 +247,7 @@ const apiTokenRoutes: FastifyPluginAsync<ApiTokenRoutesOptions> = async (fastify
                   tokenPrefix: { type: 'string' },
                   tokenSuffix: { type: 'string' },
                   scopes: { type: 'array', items: { type: 'string' } },
+                  projectIds: { type: 'array', items: { type: 'string' } },
                   lastUsedAt: { type: 'string', nullable: true },
                   useCount: { type: 'number' },
                   expiresAt: { type: 'string', nullable: true },
