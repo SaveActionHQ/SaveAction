@@ -38,20 +38,14 @@ export default async function globalSetup() {
     console.log('✅ PostgreSQL connection successful');
 
     // Clean up test database BEFORE running migrations
-    // This prevents migration failures when adding NOT NULL columns to tables with existing data
+    // Drop both schemas to ensure a completely clean state:
+    // - "public" holds all application tables and enum types
+    // - "drizzle" holds the __drizzle_migrations tracking table
+    // Without dropping "drizzle", migrate() thinks all migrations are applied and skips them.
     console.log('🧹 Cleaning up test database...');
-    try {
-      // Try full truncate with all tables including projects
-      await db.execute(sql`TRUNCATE TABLE users, api_tokens, projects, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries, test_suites, tests, run_browser_results CASCADE`);
-    } catch {
-      // Projects table might not exist yet on first run
-      try {
-        await db.execute(sql`TRUNCATE TABLE users, api_tokens, recordings, runs, run_actions, schedules, webhooks, webhook_deliveries CASCADE`);
-      } catch {
-        // Tables might not exist yet, that's OK
-        console.log('ℹ️ Tables do not exist yet, skipping truncation');
-      }
-    }
+    await db.execute(sql`DROP SCHEMA IF EXISTS drizzle CASCADE`);
+    await db.execute(sql`DROP SCHEMA public CASCADE`);
+    await db.execute(sql`CREATE SCHEMA public`);
     console.log('✅ Test database cleaned');
 
     // Run migrations to ensure tables exist
