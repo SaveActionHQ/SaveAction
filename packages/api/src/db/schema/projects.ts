@@ -19,6 +19,7 @@ import { users } from './users.js';
  * - Default project is hidden in UI if user has only one project
  * - Recordings belong to exactly one project
  * - Soft delete with cascade to child entities
+ * - Slug is unique per user, used in URLs (like GitHub org slugs)
  *
  * Use cases:
  * - Enterprise: Separate project per product (E-commerce, Mobile App)
@@ -38,6 +39,7 @@ export const projects = pgTable(
 
     // Project metadata
     name: varchar('name', { length: 255 }).notNull(),
+    slug: varchar('slug', { length: 255 }).notNull(),
     description: text('description'),
 
     // UI customization
@@ -67,6 +69,9 @@ export const projects = pgTable(
     // Unique project name per user (case-insensitive)
     uniqueIndex('projects_user_name_unique_idx').on(table.userId, sql`LOWER(${table.name})`),
 
+    // Unique slug per user (case-insensitive, used in URLs)
+    uniqueIndex('projects_user_slug_unique_idx').on(table.userId, sql`LOWER(${table.slug})`),
+
     // Find default project for user
     index('projects_user_default_idx')
       .on(table.userId, table.isDefault)
@@ -89,3 +94,28 @@ export type NewProject = typeof projects.$inferInsert;
  * Default project name constant
  */
 export const DEFAULT_PROJECT_NAME = 'My Tests';
+
+/**
+ * Default project slug constant
+ */
+export const DEFAULT_PROJECT_SLUG = 'my-tests';
+
+/**
+ * Generate a URL-safe slug from a string.
+ * Converts to lowercase, replaces non-alphanumeric chars with hyphens,
+ * collapses multiple hyphens, and trims leading/trailing hyphens.
+ */
+export function generateSlug(name: string): string {
+  return name
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+/**
+ * Slug validation regex: lowercase letters, numbers, hyphens only.
+ * Must start and end with letter/number. 1-255 chars.
+ */
+export const SLUG_REGEX = /^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?$/;

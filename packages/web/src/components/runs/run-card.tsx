@@ -29,7 +29,7 @@ import type { Run } from '@/lib/api';
 
 interface RunCardProps {
   run: Run;
-  projectId: string;
+  projectSlug: string;
   onCancel?: (run: Run) => void;
   onRetry?: (run: Run) => void;
   onDelete?: (run: Run) => void;
@@ -38,7 +38,7 @@ interface RunCardProps {
 
 export function RunCard({
   run,
-  projectId,
+  projectSlug,
   onCancel,
   onRetry,
   onDelete,
@@ -91,7 +91,7 @@ export function RunCard({
             {/* Title + Status */}
             <div className="flex items-center gap-2 flex-wrap">
               <Link
-                href={`/projects/${projectId}/runs/${run.id}`}
+                href={`/projects/${projectSlug}/runs/${run.id}`}
                 className="font-semibold text-sm hover:text-primary truncate max-w-[260px]"
                 title={title}
               >
@@ -203,7 +203,7 @@ export function RunCard({
             {showMenu && (
               <div className="absolute right-0 top-8 z-50 w-44 rounded-md border bg-popover shadow-md py-1">
                 <Link
-                  href={`/projects/${projectId}/runs/${run.id}`}
+                  href={`/projects/${projectSlug}/runs/${run.id}`}
                   className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-accent w-full"
                   onClick={() => setShowMenu(false)}
                 >

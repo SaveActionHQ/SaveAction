@@ -99,6 +99,7 @@ const projectRoutes: FastifyPluginAsync<ProjectRoutesOptions> = async (fastify, 
           required: ['name'],
           properties: {
             name: { type: 'string', minLength: 1, maxLength: 255 },
+            slug: { type: 'string', minLength: 1, maxLength: 255 },
             description: { type: 'string', maxLength: 2000, nullable: true },
             color: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', nullable: true },
           },
@@ -113,6 +114,7 @@ const projectRoutes: FastifyPluginAsync<ProjectRoutesOptions> = async (fastify, 
                 properties: {
                   id: { type: 'string' },
                   name: { type: 'string' },
+                  slug: { type: 'string' },
                   description: { type: 'string', nullable: true },
                   color: { type: 'string', nullable: true },
                   isDefault: { type: 'boolean' },
@@ -197,6 +199,7 @@ const projectRoutes: FastifyPluginAsync<ProjectRoutesOptions> = async (fastify, 
                 properties: {
                   id: { type: 'string' },
                   name: { type: 'string' },
+                  slug: { type: 'string' },
                   description: { type: 'string', nullable: true },
                   color: { type: 'string', nullable: true },
                   isDefault: { type: 'boolean' },
@@ -250,6 +253,7 @@ const projectRoutes: FastifyPluginAsync<ProjectRoutesOptions> = async (fastify, 
                 properties: {
                   id: { type: 'string' },
                   name: { type: 'string' },
+                  slug: { type: 'string' },
                   description: { type: 'string', nullable: true },
                   color: { type: 'string', nullable: true },
                   isDefault: { type: 'boolean' },
@@ -297,6 +301,7 @@ const projectRoutes: FastifyPluginAsync<ProjectRoutesOptions> = async (fastify, 
           type: 'object',
           properties: {
             name: { type: 'string', minLength: 1, maxLength: 255 },
+            slug: { type: 'string', minLength: 1, maxLength: 255 },
             description: { type: 'string', maxLength: 2000, nullable: true },
             color: { type: 'string', pattern: '^#[0-9A-Fa-f]{6}$', nullable: true },
           },
@@ -311,6 +316,7 @@ const projectRoutes: FastifyPluginAsync<ProjectRoutesOptions> = async (fastify, 
                 properties: {
                   id: { type: 'string' },
                   name: { type: 'string' },
+                  slug: { type: 'string' },
                   description: { type: 'string', nullable: true },
                   color: { type: 'string', nullable: true },
                   isDefault: { type: 'boolean' },
@@ -372,6 +378,119 @@ const projectRoutes: FastifyPluginAsync<ProjectRoutesOptions> = async (fastify, 
         await projectService.deleteProject(userId, request.params.id);
 
         return reply.status(204).send();
+      } catch (error) {
+        return handleProjectError(error, reply);
+      }
+    }
+  );
+
+  /**
+   * GET /projects/check-slug/:slug - Check if a slug is available
+   */
+  fastify.get<{
+    Params: { slug: string };
+    Querystring: { excludeProjectId?: string };
+  }>(
+    '/check-slug/:slug',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['slug'],
+          properties: {
+            slug: { type: 'string', minLength: 1, maxLength: 255 },
+          },
+        },
+        querystring: {
+          type: 'object',
+          properties: {
+            excludeProjectId: { type: 'string' },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  available: { type: 'boolean' },
+                  slug: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request.user as { sub: string }).sub;
+        const available = await projectService.checkSlugAvailability(
+          userId,
+          request.params.slug,
+          request.query.excludeProjectId
+        );
+
+        return reply.send({
+          success: true,
+          data: { available, slug: request.params.slug },
+        });
+      } catch (error) {
+        return handleProjectError(error, reply);
+      }
+    }
+  );
+
+  /**
+   * GET /projects/by-slug/:slug - Get a project by slug
+   */
+  fastify.get<{
+    Params: { slug: string };
+  }>(
+    '/by-slug/:slug',
+    {
+      schema: {
+        params: {
+          type: 'object',
+          required: ['slug'],
+          properties: {
+            slug: { type: 'string', minLength: 1, maxLength: 255 },
+          },
+        },
+        response: {
+          200: {
+            type: 'object',
+            properties: {
+              success: { type: 'boolean' },
+              data: {
+                type: 'object',
+                properties: {
+                  id: { type: 'string' },
+                  name: { type: 'string' },
+                  slug: { type: 'string' },
+                  description: { type: 'string', nullable: true },
+                  color: { type: 'string', nullable: true },
+                  isDefault: { type: 'boolean' },
+                  createdAt: { type: 'string' },
+                  updatedAt: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      try {
+        const userId = (request.user as { sub: string }).sub;
+        const result = await projectService.getProjectBySlug(userId, request.params.slug);
+
+        return reply.send({
+          success: true,
+          data: result,
+        });
       } catch (error) {
         return handleProjectError(error, reply);
       }

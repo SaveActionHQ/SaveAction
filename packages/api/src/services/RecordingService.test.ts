@@ -43,6 +43,7 @@ const sampleProject: SafeProject = {
   id: 'proj-123',
   userId: 'user-123',
   name: 'Default Project',
+  slug: 'default-project',
   description: 'Default project',
   color: '#3B82F6',
   isDefault: true,
@@ -263,18 +264,28 @@ describe('RecordingService', () => {
       });
 
       it('should coerce string numbers', () => {
-        const result = listRecordingsQuerySchema.parse({ projectId: validProjectId, page: '2', limit: '50' });
+        const result = listRecordingsQuerySchema.parse({
+          projectId: validProjectId,
+          page: '2',
+          limit: '50',
+        });
         expect(result.page).toBe(2);
         expect(result.limit).toBe(50);
       });
 
       it('should reject invalid sortBy', () => {
-        const result = listRecordingsQuerySchema.safeParse({ projectId: validProjectId, sortBy: 'invalid' });
+        const result = listRecordingsQuerySchema.safeParse({
+          projectId: validProjectId,
+          sortBy: 'invalid',
+        });
         expect(result.success).toBe(false);
       });
 
       it('should reject limit over 100', () => {
-        const result = listRecordingsQuerySchema.safeParse({ projectId: validProjectId, limit: 200 });
+        const result = listRecordingsQuerySchema.safeParse({
+          projectId: validProjectId,
+          limit: 200,
+        });
         expect(result.success).toBe(false);
       });
     });

@@ -3,11 +3,13 @@
 import * as React from 'react';
 import { useState, useCallback } from 'react';
 import Link from 'next/link';
+import { Loader2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useProjects } from '@/components/providers/project-provider';
+import { useSlugCheck, slugify, isValidSlug } from '@/lib/hooks';
 import type { Project } from '@/lib/api';
 
 // Icons
@@ -70,47 +72,6 @@ function FolderIcon({ className }: { className?: string }) {
   );
 }
 
-function EditIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-      <path d="m15 5 4 4" />
-    </svg>
-  );
-}
-
-function TrashIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M3 6h18" />
-      <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6" />
-      <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2" />
-    </svg>
-  );
-}
-
 function CheckIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -142,17 +103,27 @@ const PROJECT_COLORS = [
   '#06B6D4', // Cyan
 ];
 
+// ─── Slug status indicator ──────────────────────────────────
+
+function SlugStatusIcon({ status }: { status: string }) {
+  if (status === 'checking') {
+    return <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />;
+  }
+  if (status === 'available') {
+    return <Check className="h-4 w-4 text-emerald-500" />;
+  }
+  if (status === 'taken' || status === 'invalid') {
+    return <X className="h-4 w-4 text-destructive" />;
+  }
+  return null;
+}
+
 interface ProjectDialogProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (data: { name: string; description: string; color: string }) => Promise<void>;
+  onSubmit: (data: { name: string; slug: string; description: string; color: string }) => Promise<void>;
   title: string;
   submitLabel: string;
-  initialData?: {
-    name: string;
-    description: string;
-    color: string;
-  };
 }
 
 function ProjectDialog({
@@ -161,23 +132,26 @@ function ProjectDialog({
   onSubmit,
   title,
   submitLabel,
-  initialData,
 }: ProjectDialogProps) {
-  const [name, setName] = useState(initialData?.name || '');
-  const [description, setDescription] = useState(initialData?.description || '');
-  const [color, setColor] = useState(initialData?.color || PROJECT_COLORS[0]);
+  const [name, setName] = useState('');
+  const { slug, setSlugValue, slugStatus, slugError, slugBlocked } = useSlugCheck();
+  const [slugManuallyEdited, setSlugManuallyEdited] = useState(false);
+  const [description, setDescription] = useState('');
+  const [color, setColor] = useState(PROJECT_COLORS[0]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Reset form when dialog opens with new data
+  // Reset form when dialog opens
   React.useEffect(() => {
     if (open) {
-      setName(initialData?.name || '');
-      setDescription(initialData?.description || '');
-      setColor(initialData?.color || PROJECT_COLORS[0]);
+      setName('');
+      setSlugValue('');
+      setSlugManuallyEdited(false);
+      setDescription('');
+      setColor(PROJECT_COLORS[0]);
       setError(null);
     }
-  }, [open, initialData]);
+  }, [open, setSlugValue]);
 
   // Handle escape key
   React.useEffect(() => {
@@ -204,12 +178,20 @@ function ProjectDialog({
       setError('Project name is required');
       return;
     }
+    const finalSlug = slug || slugify(name);
+    if (!isValidSlug(finalSlug)) {
+      setError('Invalid slug. Use lowercase letters, numbers, and hyphens.');
+      return;
+    }
+    if (slugBlocked) {
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
 
     try {
-      await onSubmit({ name: name.trim(), description: description.trim(), color });
+      await onSubmit({ name: name.trim(), slug: finalSlug, description: description.trim(), color });
       onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save project');
@@ -246,11 +228,53 @@ function ProjectDialog({
             <Input
               id="project-name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                if (!slugManuallyEdited) {
+                  setSlugValue(slugify(e.target.value));
+                }
+              }}
               placeholder="My Test Project"
               disabled={isSubmitting}
               autoFocus
             />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="project-slug" className="text-sm font-medium">
+              Project Slug <span className="text-destructive">*</span>
+            </label>
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-muted-foreground whitespace-nowrap">
+                /projects/
+              </span>
+              <Input
+                id="project-slug"
+                value={slug}
+                onChange={(e) => {
+                  const cleaned = e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '');
+                  setSlugValue(cleaned);
+                  setSlugManuallyEdited(true);
+                }}
+                placeholder="my-test-project"
+                disabled={isSubmitting}
+                className={slugError ? 'border-destructive' : slugStatus === 'available' ? 'border-emerald-500' : ''}
+              />
+              <div className="flex items-center justify-center w-6">
+                <SlugStatusIcon status={slugStatus} />
+              </div>
+            </div>
+            {slugError ? (
+              <p className="text-xs text-destructive">{slugError}</p>
+            ) : slugStatus === 'available' ? (
+              <p className="text-xs text-emerald-500">Slug is available!</p>
+            ) : slugStatus === 'checking' ? (
+              <p className="text-xs text-muted-foreground">Checking availability...</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Used in URLs. Auto-generated from name or customize it.
+              </p>
+            )}
           </div>
 
           <div className="space-y-2">
@@ -295,104 +319,11 @@ function ProjectDialog({
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
+            <Button type="submit" disabled={isSubmitting || slugBlocked || slugStatus === 'checking'}>
               {isSubmitting ? 'Saving...' : submitLabel}
             </Button>
           </div>
         </form>
-      </div>
-    </>
-  );
-}
-
-interface DeleteConfirmDialogProps {
-  open: boolean;
-  onClose: () => void;
-  onConfirm: () => Promise<void>;
-  projectName: string;
-}
-
-function DeleteConfirmDialog({
-  open,
-  onClose,
-  onConfirm,
-  projectName,
-}: DeleteConfirmDialogProps) {
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Reset state when dialog opens
-  React.useEffect(() => {
-    if (open) {
-      setError(null);
-    }
-  }, [open]);
-
-  // Handle escape key
-  React.useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && open && !isDeleting) {
-        onClose();
-      }
-    };
-
-    if (open) {
-      document.addEventListener('keydown', handleEscape);
-      document.body.style.overflow = 'hidden';
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleEscape);
-      document.body.style.overflow = '';
-    };
-  }, [open, isDeleting, onClose]);
-
-  const handleConfirm = async () => {
-    setIsDeleting(true);
-    setError(null);
-
-    try {
-      await onConfirm();
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete project');
-    } finally {
-      setIsDeleting(false);
-    }
-  };
-
-  if (!open) return null;
-
-  return (
-    <>
-      {/* Backdrop */}
-      <div
-        className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm"
-        onClick={() => !isDeleting && onClose()}
-      />
-
-      {/* Dialog */}
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-background p-6 shadow-lg">
-        <h2 className="text-lg font-semibold text-destructive">Delete Project</h2>
-        <p className="mt-2 text-sm text-muted-foreground">
-          Are you sure you want to delete <strong>{projectName}</strong>? This action cannot
-          be undone. All recordings, runs, and schedules in this project will be deleted.
-        </p>
-
-        {error && (
-          <div className="mt-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
-          </div>
-        )}
-
-        <div className="mt-6 flex justify-end gap-3">
-          <Button variant="outline" onClick={onClose} disabled={isDeleting}>
-            Cancel
-          </Button>
-          <Button variant="destructive" onClick={handleConfirm} disabled={isDeleting}>
-            {isDeleting ? 'Deleting...' : 'Delete Project'}
-          </Button>
-        </div>
       </div>
     </>
   );
@@ -422,21 +353,17 @@ function ArrowRightIcon({ className }: { className?: string }) {
 function ProjectCard({
   project,
   isActive,
-  onEdit,
-  onDelete,
 }: {
   project: Project;
   isActive: boolean;
-  onEdit: () => void;
-  onDelete: () => void;
 }) {
   return (
-    <Card
-      className={`group transition-all hover:shadow-md ${
-        isActive ? 'ring-2 ring-primary' : ''
-      }`}
-    >
-      <Link href={`/projects/${project.id}`} className="block">
+    <Link href={`/projects/${project.slug}`} className="block">
+      <Card
+        className={`group transition-all hover:shadow-md ${
+          isActive ? 'ring-2 ring-primary' : ''
+        }`}
+      >
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between">
             <div className="flex items-center gap-3">
@@ -470,32 +397,13 @@ function ProjectCard({
             <ArrowRightIcon className="h-5 w-5 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
           </div>
         </CardHeader>
-      </Link>
-      <div className="flex items-center justify-between border-t border-border px-6 py-3">
-        <p className="text-xs text-muted-foreground">
-          Created {new Date(project.createdAt).toLocaleDateString()}
-        </p>
-        <div
-          className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100"
-          onClick={(e) => e.stopPropagation()}
-        >
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onEdit} title="Edit project">
-            <EditIcon className="h-3.5 w-3.5" />
-          </Button>
-          {!project.isDefault && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-destructive hover:text-destructive"
-              onClick={onDelete}
-              title="Delete project"
-            >
-              <TrashIcon className="h-3.5 w-3.5" />
-            </Button>
-          )}
+        <div className="border-t border-border px-6 py-3">
+          <p className="text-xs text-muted-foreground">
+            Created {new Date(project.createdAt).toLocaleDateString()}
+          </p>
         </div>
-      </div>
-    </Card>
+      </Card>
+    </Link>
   );
 }
 
@@ -554,14 +462,10 @@ export default function ProjectsPage() {
     isLoading,
     error,
     createProject,
-    updateProject,
-    deleteProject,
     refreshProjects,
   } = useProjects();
 
   const [showCreateDialog, setShowCreateDialog] = useState(false);
-  const [editingProject, setEditingProject] = useState<Project | null>(null);
-  const [deletingProject, setDeletingProject] = useState<Project | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Filter projects by search query
@@ -576,32 +480,16 @@ export default function ProjectsPage() {
   }, [projects, searchQuery]);
 
   const handleCreateProject = useCallback(
-    async (data: { name: string; description: string; color: string }) => {
+    async (data: { name: string; slug: string; description: string; color: string }) => {
       await createProject({
         name: data.name,
+        slug: data.slug,
         description: data.description || undefined,
         color: data.color,
       });
     },
     [createProject]
   );
-
-  const handleUpdateProject = useCallback(
-    async (data: { name: string; description: string; color: string }) => {
-      if (!editingProject) return;
-      await updateProject(editingProject.id, {
-        name: data.name,
-        description: data.description || undefined,
-        color: data.color,
-      });
-    },
-    [editingProject, updateProject]
-  );
-
-  const handleDeleteProject = useCallback(async () => {
-    if (!deletingProject) return;
-    await deleteProject(deletingProject.id);
-  }, [deletingProject, deleteProject]);
 
   return (
     <div className="space-y-6">
@@ -680,8 +568,6 @@ export default function ProjectsPage() {
               key={project.id}
               project={project}
               isActive={activeProject?.id === project.id}
-              onEdit={() => setEditingProject(project)}
-              onDelete={() => setDeletingProject(project)}
             />
           ))}
         </div>
@@ -694,32 +580,6 @@ export default function ProjectsPage() {
         onSubmit={handleCreateProject}
         title="Create Project"
         submitLabel="Create Project"
-      />
-
-      {/* Edit Dialog */}
-      <ProjectDialog
-        open={!!editingProject}
-        onClose={() => setEditingProject(null)}
-        onSubmit={handleUpdateProject}
-        title="Edit Project"
-        submitLabel="Save Changes"
-        initialData={
-          editingProject
-            ? {
-                name: editingProject.name,
-                description: editingProject.description || '',
-                color: editingProject.color || PROJECT_COLORS[0],
-              }
-            : undefined
-        }
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteConfirmDialog
-        open={!!deletingProject}
-        onClose={() => setDeletingProject(null)}
-        onConfirm={handleDeleteProject}
-        projectName={deletingProject?.name || ''}
       />
     </div>
   );

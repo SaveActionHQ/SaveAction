@@ -59,7 +59,9 @@ export interface CsrfPluginOptions {
 
   /**
    * Routes that require CSRF protection (cookie-based auth).
-   * @default ['/api/v1/auth/refresh', '/api/v1/auth/logout', '/api/v1/auth/change-password']
+   * Note: /auth/refresh is NOT CSRF-protected because the response tokens are
+   * protected by CORS same-origin policy, and the httpOnly cookie is sufficient.
+   * @default ['/api/v1/auth/logout', '/api/v1/auth/change-password']
    */
   protectedRoutes?: string[];
 
@@ -127,11 +129,7 @@ async function csrfPluginImpl(app: FastifyInstance, options: CsrfPluginOptions):
     cookieName = '_csrf',
     headerName = 'x-csrf-token',
     cookie = {},
-    protectedRoutes = [
-      '/api/v1/auth/refresh',
-      '/api/v1/auth/logout',
-      '/api/v1/auth/change-password',
-    ],
+    protectedRoutes = ['/api/v1/auth/logout', '/api/v1/auth/change-password'],
     protectedMethods = ['POST', 'PUT', 'PATCH', 'DELETE'],
     skip = false,
     secret,

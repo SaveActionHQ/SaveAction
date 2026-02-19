@@ -40,7 +40,7 @@ function formatRelativeTime(dateStr: string | null | undefined) {
 
 interface TestCardProps {
   test: Test;
-  projectId: string;
+  projectSlug: string;
   suiteId: string;
   onEdit?: (test: Test) => void;
   onDelete?: (test: Test) => void;
@@ -48,7 +48,7 @@ interface TestCardProps {
 
 export function TestCard({
   test,
-  projectId,
+  projectSlug,
   suiteId,
   onEdit,
   onDelete,
@@ -76,7 +76,7 @@ export function TestCard({
   return (
     <Card className="group relative transition-all hover:shadow-md">
       <Link
-        href={`/projects/${projectId}/suites/${suiteId}/tests/${test.id}`}
+        href={`/projects/${projectSlug}/suites/${suiteId}/tests/${test.id}`}
         className="absolute inset-0 z-0"
       >
         <span className="sr-only">View {test.name}</span>
@@ -158,7 +158,7 @@ export function TestCard({
                   )}
                   {!onEdit && (
                     <Link
-                      href={`/projects/${projectId}/suites/${suiteId}/tests/${test.id}/edit`}
+                      href={`/projects/${projectSlug}/suites/${suiteId}/tests/${test.id}/edit`}
                       className="flex w-full items-center gap-2 px-3 py-2 text-sm hover:bg-muted transition-colors"
                       onClick={() => setMenuOpen(false)}
                     >

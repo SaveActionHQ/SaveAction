@@ -74,7 +74,7 @@ export function formatCronExpression(cron: string): string {
 
 interface ScheduleCardProps {
   schedule: Schedule;
-  projectId: string;
+  projectSlug: string;
   onToggle: (schedule: Schedule) => void;
   onEdit: (schedule: Schedule) => void;
   onDelete: (schedule: Schedule) => void;
@@ -84,7 +84,7 @@ interface ScheduleCardProps {
 
 export function ScheduleCard({
   schedule,
-  projectId,
+  projectSlug,
   onToggle,
   onEdit,
   onDelete,
@@ -120,7 +120,7 @@ export function ScheduleCard({
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               <Link
-                href={`/projects/${projectId}/schedules/${schedule.id}`}
+                href={`/projects/${projectSlug}/schedules/${schedule.id}`}
                 className="font-semibold text-sm hover:text-primary truncate"
               >
                 {schedule.name}

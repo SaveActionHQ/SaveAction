@@ -197,6 +197,7 @@ export interface Schedule {
 export interface Project {
   id: string;
   name: string;
+  slug: string;
   description?: string | null;
   color?: string | null;
   isDefault: boolean;
@@ -206,12 +207,14 @@ export interface Project {
 
 export interface CreateProjectRequest {
   name: string;
+  slug?: string;
   description?: string;
   color?: string;
 }
 
 export interface UpdateProjectRequest {
   name?: string;
+  slug?: string;
   description?: string;
   color?: string;
 }
@@ -531,7 +534,13 @@ class ApiClient {
     });
 
     // Handle 401 - try to refresh token
-    if (response.status === 401 && this.accessToken) {
+    if (response.status === 401) {
+      // If we have no access token, session is already expired
+      if (!this.accessToken) {
+        this.notifySessionExpired();
+        return new Promise<T>(() => {});
+      }
+
       const newToken = await this.refreshAccessToken();
       if (newToken) {
         // Retry the request with new token
@@ -748,6 +757,26 @@ class ApiClient {
    */
   async getProject(id: string): Promise<Project> {
     return this.request<Project>(`/api/v1/projects/${id}`);
+  }
+
+  /**
+   * Get a project by slug
+   */
+  async getProjectBySlug(slug: string): Promise<Project> {
+    return this.request<Project>(`/api/v1/projects/by-slug/${slug}`);
+  }
+
+  /**
+   * Check if a project slug is available
+   */
+  async checkSlugAvailability(
+    slug: string,
+    excludeProjectId?: string
+  ): Promise<{ available: boolean; slug: string }> {
+    const params = excludeProjectId ? `?excludeProjectId=${excludeProjectId}` : '';
+    return this.request<{ available: boolean; slug: string }>(
+      `/api/v1/projects/check-slug/${encodeURIComponent(slug)}${params}`
+    );
   }
 
   /**

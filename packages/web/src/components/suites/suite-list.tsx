@@ -10,6 +10,7 @@ import { api, TestSuiteWithStats } from '@/lib/api';
 
 interface SuiteListProps {
   projectId: string;
+  projectSlug: string;
   onEdit?: (suite: TestSuiteWithStats) => void;
   onDelete?: (suite: TestSuiteWithStats) => void;
   onRun?: (suite: TestSuiteWithStats) => void;
@@ -19,6 +20,7 @@ interface SuiteListProps {
 
 export function SuiteList({
   projectId,
+  projectSlug,
   onEdit,
   onDelete,
   onRun,
@@ -94,7 +96,7 @@ export function SuiteList({
           Create your first suite to get started.
         </p>
         <Button className="mt-6" asChild>
-          <Link href={`/projects/${projectId}/suites/new`}>
+          <Link href={`/projects/${projectSlug}/suites/new`}>
             <Plus className="mr-2 h-4 w-4" />
             Create Test Suite
           </Link>
@@ -137,7 +139,7 @@ export function SuiteList({
             <SuiteCard
               key={suite.id}
               suite={suite}
-              projectId={projectId}
+              projectSlug={projectSlug}
               onEdit={onEdit}
               onDelete={onDelete}
               onRun={onRun}

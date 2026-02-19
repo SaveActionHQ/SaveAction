@@ -19,23 +19,25 @@ import { api, type TestSuiteWithStats, type Test } from '@/lib/api';
 
 interface SuiteTreeNavProps {
   projectId: string;
+  projectSlug: string;
   collapsed?: boolean;
 }
 
 interface SuiteNodeProps {
   suite: TestSuiteWithStats;
   projectId: string;
+  projectSlug: string;
   isActive: boolean;
   pathname: string;
 }
 
-function SuiteNode({ suite, projectId, isActive, pathname }: SuiteNodeProps) {
+function SuiteNode({ suite, projectId, projectSlug, isActive, pathname }: SuiteNodeProps) {
   const [expanded, setExpanded] = React.useState(isActive);
   const [tests, setTests] = React.useState<Test[]>([]);
   const [testsLoading, setTestsLoading] = React.useState(false);
   const [testsLoaded, setTestsLoaded] = React.useState(false);
 
-  const suiteBasePath = `/projects/${projectId}/suites/${suite.id}`;
+  const suiteBasePath = `/projects/${projectSlug}/suites/${suite.id}`;
 
   // Auto-expand if we're viewing this suite or any of its children
   React.useEffect(() => {
@@ -193,7 +195,7 @@ function SuiteNode({ suite, projectId, isActive, pathname }: SuiteNodeProps) {
   );
 }
 
-export function SuiteTreeNav({ projectId, collapsed }: SuiteTreeNavProps) {
+export function SuiteTreeNav({ projectId, projectSlug, collapsed }: SuiteTreeNavProps) {
   const pathname = usePathname();
   const [suites, setSuites] = React.useState<TestSuiteWithStats[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -201,6 +203,7 @@ export function SuiteTreeNav({ projectId, collapsed }: SuiteTreeNavProps) {
   const hasLoadedRef = React.useRef(false);
 
   const loadSuites = React.useCallback(async () => {
+    if (!projectId) return;
     try {
       // Only show loading skeleton on initial load
       if (!hasLoadedRef.current) {
@@ -280,7 +283,7 @@ export function SuiteTreeNav({ projectId, collapsed }: SuiteTreeNavProps) {
           Test Suites
         </span>
         <Link
-          href={`/projects/${projectId}/suites/new`}
+          href={`/projects/${projectSlug}/suites/new`}
           className="flex items-center justify-center h-5 w-5 rounded hover:bg-sidebar-accent transition-colors"
           title="New Suite"
         >
@@ -292,7 +295,7 @@ export function SuiteTreeNav({ projectId, collapsed }: SuiteTreeNavProps) {
       {suites.length > 0 ? (
         <div className="space-y-0.5 px-1">
           {suites.map((suite) => {
-            const suiteBasePath = `/projects/${projectId}/suites/${suite.id}`;
+            const suiteBasePath = `/projects/${projectSlug}/suites/${suite.id}`;
             const isActive = pathname.startsWith(suiteBasePath);
 
             return (
@@ -300,6 +303,7 @@ export function SuiteTreeNav({ projectId, collapsed }: SuiteTreeNavProps) {
                 key={suite.id}
                 suite={suite}
                 projectId={projectId}
+                projectSlug={projectSlug}
                 isActive={isActive}
                 pathname={pathname}
               />
@@ -310,7 +314,7 @@ export function SuiteTreeNav({ projectId, collapsed }: SuiteTreeNavProps) {
         <div className="px-3 py-2">
           <p className="text-xs text-muted-foreground">No suites yet</p>
           <Link
-            href={`/projects/${projectId}/suites/new`}
+            href={`/projects/${projectSlug}/suites/new`}
             className="inline-flex items-center gap-1 mt-1 text-xs text-primary hover:underline"
           >
             <Plus className="h-3 w-3" />

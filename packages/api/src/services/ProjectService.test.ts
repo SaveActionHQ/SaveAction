@@ -10,11 +10,11 @@ import {
   createProjectSchema,
   updateProjectSchema,
   listProjectsQuerySchema,
-  type CreateProjectInput,
-  type UpdateProjectInput,
+  type CreateProjectRequest,
+  type UpdateProjectRequest,
   type ListProjectsQuery,
 } from './ProjectService.js';
-import type { SafeProject, ProjectSummary } from '../repositories/ProjectRepository.js';
+import type { SafeProject } from '../repositories/ProjectRepository.js';
 import { DEFAULT_PROJECT_NAME } from '../db/schema/projects.js';
 
 // Sample project data
@@ -22,6 +22,7 @@ const sampleSafeProject: SafeProject = {
   id: 'proj-123',
   userId: 'user-123',
   name: 'Test Project',
+  slug: 'test-project',
   description: 'A test project',
   color: '#3B82F6',
   isDefault: false,
@@ -34,6 +35,7 @@ const sampleDefaultProject: SafeProject = {
   id: 'proj-default',
   userId: 'user-123',
   name: DEFAULT_PROJECT_NAME,
+  slug: 'my-tests',
   description: 'Your default project for test recordings',
   color: '#3B82F6',
   isDefault: true,
@@ -42,13 +44,15 @@ const sampleDefaultProject: SafeProject = {
   updatedAt: new Date('2026-01-01'),
 };
 
-const sampleProjectSummary: ProjectSummary = {
+const sampleProjectSummary: SafeProject = {
   id: 'proj-123',
   userId: 'user-123',
   name: 'Test Project',
+  slug: 'test-project',
   description: 'A test project',
   color: '#3B82F6',
   isDefault: false,
+  deletedAt: null,
   createdAt: new Date('2026-01-01'),
   updatedAt: new Date('2026-01-01'),
 };
@@ -60,12 +64,14 @@ type MockedRepository = {
   findById: ReturnType<typeof vi.fn>;
   findByIdAndUser: ReturnType<typeof vi.fn>;
   findByNameAndUser: ReturnType<typeof vi.fn>;
+  findBySlugAndUser: ReturnType<typeof vi.fn>;
   findDefaultProject: ReturnType<typeof vi.fn>;
   findMany: ReturnType<typeof vi.fn>;
   update: ReturnType<typeof vi.fn>;
   softDelete: ReturnType<typeof vi.fn>;
   countByUser: ReturnType<typeof vi.fn>;
   isNameAvailable: ReturnType<typeof vi.fn>;
+  isSlugAvailable: ReturnType<typeof vi.fn>;
 };
 
 const createMockRepository = (): MockedRepository => ({
@@ -74,6 +80,7 @@ const createMockRepository = (): MockedRepository => ({
   findById: vi.fn().mockResolvedValue(sampleSafeProject),
   findByIdAndUser: vi.fn().mockResolvedValue(sampleSafeProject),
   findByNameAndUser: vi.fn().mockResolvedValue(null),
+  findBySlugAndUser: vi.fn().mockResolvedValue(null),
   findDefaultProject: vi.fn().mockResolvedValue(sampleDefaultProject),
   findMany: vi.fn().mockResolvedValue({
     data: [sampleProjectSummary],
@@ -90,6 +97,7 @@ const createMockRepository = (): MockedRepository => ({
   softDelete: vi.fn().mockResolvedValue(true),
   countByUser: vi.fn().mockResolvedValue(1),
   isNameAvailable: vi.fn().mockResolvedValue(true),
+  isSlugAvailable: vi.fn().mockResolvedValue(true),
 });
 
 describe('ProjectService', () => {
@@ -192,7 +200,7 @@ describe('ProjectService', () => {
 
   describe('createProject', () => {
     it('should create a project successfully', async () => {
-      const input: CreateProjectInput = {
+      const input: CreateProjectRequest = {
         name: 'New Project',
         description: 'A new project',
       };
@@ -205,7 +213,7 @@ describe('ProjectService', () => {
     });
 
     it('should check for name availability', async () => {
-      const input: CreateProjectInput = {
+      const input: CreateProjectRequest = {
         name: 'Existing Project',
       };
 
@@ -217,7 +225,7 @@ describe('ProjectService', () => {
     it('should throw error when name is taken', async () => {
       mockRepository.isNameAvailable.mockResolvedValue(false);
 
-      const input: CreateProjectInput = {
+      const input: CreateProjectRequest = {
         name: 'Existing Project',
       };
 
@@ -227,8 +235,48 @@ describe('ProjectService', () => {
     it('should enforce max projects limit', async () => {
       mockRepository.countByUser.mockResolvedValue(100);
 
-      const input: CreateProjectInput = {
+      const input: CreateProjectRequest = {
         name: 'New Project',
+      };
+
+      await expect(service.createProject('user-123', input)).rejects.toThrow(ProjectError);
+    });
+
+    it('should auto-generate slug from name', async () => {
+      const input: CreateProjectRequest = {
+        name: 'My Awesome Project',
+      };
+
+      await service.createProject('user-123', input);
+
+      expect(mockRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          slug: 'my-awesome-project',
+        })
+      );
+    });
+
+    it('should use provided slug', async () => {
+      const input: CreateProjectRequest = {
+        name: 'My Project',
+        slug: 'custom-slug',
+      };
+
+      await service.createProject('user-123', input);
+
+      expect(mockRepository.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          slug: 'custom-slug',
+        })
+      );
+    });
+
+    it('should throw when provided slug is taken', async () => {
+      mockRepository.isSlugAvailable.mockResolvedValue(false);
+
+      const input: CreateProjectRequest = {
+        name: 'My Project',
+        slug: 'taken-slug',
       };
 
       await expect(service.createProject('user-123', input)).rejects.toThrow(ProjectError);
@@ -330,7 +378,7 @@ describe('ProjectService', () => {
 
   describe('updateProject', () => {
     it('should update a project', async () => {
-      const input: UpdateProjectInput = {
+      const input: UpdateProjectRequest = {
         name: 'Updated Name',
         description: 'Updated description',
       };
@@ -342,7 +390,7 @@ describe('ProjectService', () => {
     });
 
     it('should check name availability when updating name', async () => {
-      const input: UpdateProjectInput = {
+      const input: UpdateProjectRequest = {
         name: 'New Name',
       };
 
@@ -358,7 +406,7 @@ describe('ProjectService', () => {
     it('should throw when project not found', async () => {
       mockRepository.findByIdAndUser.mockResolvedValue(null);
 
-      const input: UpdateProjectInput = { name: 'Test' };
+      const input: UpdateProjectRequest = { name: 'Test' };
 
       await expect(service.updateProject('user-123', 'non-existent', input)).rejects.toThrow(
         'Project not found'
@@ -368,7 +416,31 @@ describe('ProjectService', () => {
     it('should throw when name is taken', async () => {
       mockRepository.isNameAvailable.mockResolvedValue(false);
 
-      const input: UpdateProjectInput = { name: 'Existing Name' };
+      const input: UpdateProjectRequest = { name: 'Existing Name' };
+
+      await expect(service.updateProject('user-123', 'proj-123', input)).rejects.toThrow(
+        ProjectError
+      );
+    });
+
+    it('should check slug availability when updating slug', async () => {
+      const input: UpdateProjectRequest = {
+        slug: 'new-slug',
+      };
+
+      await service.updateProject('user-123', 'proj-123', input);
+
+      expect(mockRepository.isSlugAvailable).toHaveBeenCalledWith(
+        'user-123',
+        'new-slug',
+        'proj-123'
+      );
+    });
+
+    it('should throw when slug is taken', async () => {
+      mockRepository.isSlugAvailable.mockResolvedValue(false);
+
+      const input: UpdateProjectRequest = { slug: 'taken-slug' };
 
       await expect(service.updateProject('user-123', 'proj-123', input)).rejects.toThrow(
         ProjectError

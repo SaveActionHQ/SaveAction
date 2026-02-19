@@ -32,6 +32,7 @@ import { formatRelativeTime, formatDuration, cn } from '@/lib/utils';
 interface SuiteRunDetailProps {
   run: Run;
   projectId: string;
+  projectSlug: string;
   onRunUpdated: (run: Run) => void;
 }
 
@@ -76,17 +77,17 @@ function StatCard({
 
 function TestRunRow({
   run,
-  projectId,
+  projectSlug,
 }: {
   run: Run;
-  projectId: string;
+  projectSlug: string;
 }) {
   const browsers = run.browsers ?? [run.browser];
   const isActive = run.status === 'running' || run.status === 'queued';
 
   return (
     <Link
-      href={`/projects/${projectId}/runs/${run.id}`}
+      href={`/projects/${projectSlug}/runs/${run.id}`}
       className="flex items-center gap-4 px-4 py-3 hover:bg-muted/50 transition-colors border-b last:border-b-0"
     >
       {/* Test icon */}
@@ -140,7 +141,7 @@ function TestRunRow({
 
 // ─── Main Component ─────────────────────────────────────────────
 
-export function SuiteRunDetail({ run, projectId, onRunUpdated }: SuiteRunDetailProps) {
+export function SuiteRunDetail({ run, projectId, projectSlug, onRunUpdated }: SuiteRunDetailProps) {
   const router = useRouter();
   const { success, error: toastError } = useToast();
 
@@ -225,7 +226,7 @@ export function SuiteRunDetail({ run, projectId, onRunUpdated }: SuiteRunDetailP
     try {
       await api.deleteRun(run.id);
       success('Suite run deleted', 'The suite run has been deleted.');
-      router.push(`/projects/${projectId}/runs`);
+      router.push(`/projects/${projectSlug}/runs`);
     } catch (err) {
       const msg = err instanceof ApiClientError ? err.message : 'Failed to delete';
       toastError('Delete failed', msg);
@@ -258,7 +259,7 @@ export function SuiteRunDetail({ run, projectId, onRunUpdated }: SuiteRunDetailP
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
         <div className="flex items-start gap-4">
           <Button variant="ghost" size="icon" asChild>
-            <Link href={`/projects/${projectId}/runs`}>
+            <Link href={`/projects/${projectSlug}/runs`}>
               <ArrowLeft className="h-5 w-5" />
             </Link>
           </Button>
@@ -430,7 +431,7 @@ export function SuiteRunDetail({ run, projectId, onRunUpdated }: SuiteRunDetailP
                 <TestRunRow
                   key={childRun.id}
                   run={childRun}
-                  projectId={projectId}
+                  projectSlug={projectSlug}
                 />
               ))}
             </div>

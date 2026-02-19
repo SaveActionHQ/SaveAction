@@ -9,6 +9,7 @@ import { eq, and, isNull, sql, desc, asc, ilike } from 'drizzle-orm';
 import {
   projects,
   DEFAULT_PROJECT_NAME,
+  DEFAULT_PROJECT_SLUG,
   type Project,
   type NewProject,
 } from '../db/schema/projects.js';
@@ -20,6 +21,7 @@ import type { Database } from '../db/index.js';
 export interface ProjectCreateData {
   userId: string;
   name: string;
+  slug: string;
   description?: string | null;
   color?: string | null;
   isDefault?: boolean;
@@ -30,6 +32,7 @@ export interface ProjectCreateData {
  */
 export interface ProjectUpdateData {
   name?: string;
+  slug?: string;
   description?: string | null;
   color?: string | null;
 }
@@ -75,6 +78,7 @@ export interface SafeProject {
   id: string;
   userId: string;
   name: string;
+  slug: string;
   description: string | null;
   color: string | null;
   isDefault: boolean;
@@ -100,6 +104,7 @@ function toSafeProject(project: Project): SafeProject {
     id: project.id,
     userId: project.userId,
     name: project.name,
+    slug: project.slug,
     description: project.description,
     color: project.color,
     isDefault: project.isDefault,
@@ -122,6 +127,7 @@ export class ProjectRepository {
     const newProject: NewProject = {
       userId: data.userId,
       name: data.name,
+      slug: data.slug,
       description: data.description || null,
       color: data.color || null,
       isDefault: data.isDefault ?? false,
@@ -139,6 +145,7 @@ export class ProjectRepository {
     return this.create({
       userId,
       name: DEFAULT_PROJECT_NAME,
+      slug: DEFAULT_PROJECT_SLUG,
       description: 'Your default project for test recordings',
       isDefault: true,
     });
@@ -293,6 +300,7 @@ export class ProjectRepository {
       .update(projects)
       .set({
         ...(data.name !== undefined && { name: data.name }),
+        ...(data.slug !== undefined && { slug: data.slug }),
         ...(data.description !== undefined && { description: data.description }),
         ...(data.color !== undefined && { color: data.color }),
       })
@@ -357,6 +365,47 @@ export class ProjectRepository {
     const conditions = [
       eq(projects.userId, userId),
       sql`LOWER(${projects.name}) = LOWER(${name})`,
+      isNull(projects.deletedAt),
+    ];
+
+    if (excludeId) {
+      conditions.push(sql`${projects.id} != ${excludeId}`);
+    }
+
+    const result = await this.db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(projects)
+      .where(and(...conditions));
+
+    return (result[0]?.count || 0) === 0;
+  }
+
+  /**
+   * Find a project by slug and user (case-insensitive)
+   */
+  async findBySlugAndUser(slug: string, userId: string): Promise<SafeProject | null> {
+    const result = await this.db
+      .select()
+      .from(projects)
+      .where(
+        and(
+          eq(projects.userId, userId),
+          sql`LOWER(${projects.slug}) = LOWER(${slug})`,
+          isNull(projects.deletedAt)
+        )
+      )
+      .limit(1);
+
+    return result[0] ? toSafeProject(result[0]) : null;
+  }
+
+  /**
+   * Check if a project slug is available for a user
+   */
+  async isSlugAvailable(userId: string, slug: string, excludeId?: string): Promise<boolean> {
+    const conditions = [
+      eq(projects.userId, userId),
+      sql`LOWER(${projects.slug}) = LOWER(${slug})`,
       isNull(projects.deletedAt),
     ];
 

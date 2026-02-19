@@ -21,6 +21,7 @@ import { SuiteTreeNav } from './suite-tree-nav';
 
 interface ProjectSidebarProps {
   projectId: string;
+  projectSlug: string;
   projectName?: string;
   className?: string;
   onSwitchProject?: () => void;
@@ -34,6 +35,7 @@ interface NavItem {
 
 export function ProjectSidebar({
   projectId,
+  projectSlug,
   projectName,
   className,
   onSwitchProject,
@@ -41,7 +43,7 @@ export function ProjectSidebar({
   const pathname = usePathname();
   const [collapsed, setCollapsed] = React.useState(false);
 
-  const basePath = `/projects/${projectId}`;
+  const basePath = `/projects/${projectSlug}`;
 
   const topNavItems: NavItem[] = [
     { href: basePath, label: 'Overview', icon: LayoutDashboard },
@@ -153,7 +155,7 @@ export function ProjectSidebar({
         {/* Suite tree (only when expanded) */}
         {!collapsed && (
           <div className="border-t border-sidebar-border pt-2 pb-2">
-            <SuiteTreeNav projectId={projectId} collapsed={collapsed} />
+            <SuiteTreeNav projectId={projectId} projectSlug={projectSlug} collapsed={collapsed} />
           </div>
         )}
 

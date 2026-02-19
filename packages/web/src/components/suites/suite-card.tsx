@@ -20,7 +20,7 @@ import type { TestSuiteWithStats } from '@/lib/api';
 
 interface SuiteCardProps {
   suite: TestSuiteWithStats;
-  projectId: string;
+  projectSlug: string;
   onEdit?: (suite: TestSuiteWithStats) => void;
   onDelete?: (suite: TestSuiteWithStats) => void;
   onRun?: (suite: TestSuiteWithStats) => void;
@@ -28,7 +28,7 @@ interface SuiteCardProps {
 
 export function SuiteCard({
   suite,
-  projectId,
+  projectSlug,
   onEdit,
   onDelete,
   onRun,
@@ -65,7 +65,7 @@ export function SuiteCard({
   return (
     <Card className="group relative transition-all hover:shadow-md">
       <Link
-        href={`/projects/${projectId}/suites/${suite.id}`}
+        href={`/projects/${projectSlug}/suites/${suite.id}`}
         className="absolute inset-0 z-0"
       >
         <span className="sr-only">View {suite.name}</span>

@@ -12,6 +12,7 @@ const createMockDb = () => {
     id: 'proj-123',
     userId: 'user-123',
     name: 'Default Project',
+    slug: 'default-project',
     description: 'Your default project for test recordings',
     color: '#3B82F6',
     isDefault: true,
@@ -73,6 +74,7 @@ describe('ProjectRepository', () => {
       const createData = {
         userId: 'user-123',
         name: 'Test Project',
+        slug: 'test-project',
         description: 'A test project',
         color: '#FF0000',
         isDefault: false,
@@ -90,6 +92,7 @@ describe('ProjectRepository', () => {
       const createData = {
         userId: 'user-123',
         name: 'Minimal Project',
+        slug: 'minimal-project',
       };
 
       const result = await repository.create(createData);

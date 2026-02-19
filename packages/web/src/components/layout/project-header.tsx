@@ -12,7 +12,6 @@ import { useAuth, useUser } from '@/components/providers/auth-provider';
 import { useProjects } from '@/components/providers/project-provider';
 
 interface ProjectHeaderProps {
-  projectId: string;
   projectName?: string;
   className?: string;
   onMenuClick?: () => void;
@@ -20,7 +19,6 @@ interface ProjectHeaderProps {
 }
 
 export function ProjectHeader({
-  projectId,
   projectName,
   className,
   onMenuClick,

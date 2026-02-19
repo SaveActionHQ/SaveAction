@@ -26,6 +26,7 @@ import { api, TestSuiteWithStats, Test } from '@/lib/api';
 
 interface ProjectMobileNavProps {
   projectId: string;
+  projectSlug: string;
   projectName?: string;
   open: boolean;
   onClose: () => void;
@@ -47,6 +48,7 @@ interface SuiteWithTests {
 
 export function ProjectMobileNav({
   projectId,
+  projectSlug,
   projectName,
   open,
   onClose,
@@ -59,7 +61,7 @@ export function ProjectMobileNav({
   const [suites, setSuites] = React.useState<SuiteWithTests[]>([]);
   const [suitesLoading, setSuitesLoading] = React.useState(false);
 
-  const basePath = `/projects/${projectId}`;
+  const basePath = `/projects/${projectSlug}`;
 
   const topNavItems: NavItem[] = [
     { href: basePath, label: 'Overview', icon: LayoutDashboard },

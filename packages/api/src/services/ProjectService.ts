@@ -13,7 +13,7 @@ import type {
   ProjectListFilters,
   SafeProject,
 } from '../repositories/ProjectRepository.js';
-import { DEFAULT_PROJECT_NAME } from '../db/schema/projects.js';
+import { DEFAULT_PROJECT_NAME, generateSlug, SLUG_REGEX } from '../db/schema/projects.js';
 
 /**
  * Project Service Error
@@ -39,6 +39,16 @@ export const ProjectErrors = {
     'A project with this name already exists',
     'PROJECT_NAME_TAKEN',
     409
+  ),
+  SLUG_TAKEN: new ProjectError(
+    'A project with this slug already exists',
+    'PROJECT_SLUG_TAKEN',
+    409
+  ),
+  SLUG_INVALID: new ProjectError(
+    'Slug must contain only lowercase letters, numbers, and hyphens, and must start/end with a letter or number',
+    'PROJECT_SLUG_INVALID',
+    400
   ),
   CANNOT_DELETE_DEFAULT: new ProjectError(
     'Default project cannot be deleted. Create another project first.',
@@ -68,6 +78,12 @@ const hexColorRegex = /^#[0-9A-Fa-f]{6}$/;
  */
 export const createProjectSchema = z.object({
   name: z.string().min(1).max(255),
+  slug: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(SLUG_REGEX, 'Slug must contain only lowercase letters, numbers, and hyphens')
+    .optional(),
   description: z.string().max(2000).optional().nullable(),
   color: z
     .string()
@@ -81,6 +97,12 @@ export const createProjectSchema = z.object({
  */
 export const updateProjectSchema = z.object({
   name: z.string().min(1).max(255).optional(),
+  slug: z
+    .string()
+    .min(1)
+    .max(255)
+    .regex(SLUG_REGEX, 'Slug must contain only lowercase letters, numbers, and hyphens')
+    .optional(),
   description: z.string().max(2000).optional().nullable(),
   color: z
     .string()
@@ -123,6 +145,7 @@ const DEFAULT_CONFIG: ProjectServiceConfig = {
 export interface ProjectResponse {
   id: string;
   name: string;
+  slug: string;
   description: string | null;
   color: string | null;
   isDefault: boolean;
@@ -137,6 +160,7 @@ function toResponse(project: SafeProject): ProjectResponse {
   return {
     id: project.id,
     name: project.name,
+    slug: project.slug,
     description: project.description,
     color: project.color,
     isDefault: project.isDefault,
@@ -191,10 +215,34 @@ export class ProjectService {
       throw ProjectErrors.NAME_TAKEN;
     }
 
+    // Generate or validate slug
+    const slug = validatedData.slug || generateSlug(validatedData.name);
+    if (!SLUG_REGEX.test(slug)) {
+      throw ProjectErrors.SLUG_INVALID;
+    }
+
+    // Check slug uniqueness (try appending a suffix if auto-generated)
+    let finalSlug = slug;
+    const isSlugAvailable = await this.projectRepository.isSlugAvailable(userId, finalSlug);
+    if (!isSlugAvailable) {
+      if (validatedData.slug) {
+        // User explicitly provided slug - throw error
+        throw ProjectErrors.SLUG_TAKEN;
+      }
+      // Auto-generated slug - try with numeric suffix
+      for (let i = 2; i <= 100; i++) {
+        finalSlug = `${slug}-${i}`;
+        const available = await this.projectRepository.isSlugAvailable(userId, finalSlug);
+        if (available) break;
+        if (i === 100) throw ProjectErrors.SLUG_TAKEN;
+      }
+    }
+
     // Create project
     const createData: ProjectCreateData = {
       userId,
       name: validatedData.name,
+      slug: finalSlug,
       description: validatedData.description || null,
       color: validatedData.color || null,
       isDefault: false,
@@ -222,6 +270,19 @@ export class ProjectService {
    */
   async getProjectByName(userId: string, name: string): Promise<ProjectResponse> {
     const project = await this.projectRepository.findByNameAndUser(name, userId);
+
+    if (!project) {
+      throw ProjectErrors.NOT_FOUND;
+    }
+
+    return toResponse(project);
+  }
+
+  /**
+   * Get a project by slug (case-insensitive)
+   */
+  async getProjectBySlug(userId: string, slug: string): Promise<ProjectResponse> {
+    const project = await this.projectRepository.findBySlugAndUser(slug, userId);
 
     if (!project) {
       throw ProjectErrors.NOT_FOUND;
@@ -338,9 +399,25 @@ export class ProjectService {
       }
     }
 
+    // Check slug uniqueness if changing slug
+    if (validatedData.slug && validatedData.slug !== existing.slug) {
+      if (!SLUG_REGEX.test(validatedData.slug)) {
+        throw ProjectErrors.SLUG_INVALID;
+      }
+      const isSlugAvailable = await this.projectRepository.isSlugAvailable(
+        userId,
+        validatedData.slug,
+        projectId
+      );
+      if (!isSlugAvailable) {
+        throw ProjectErrors.SLUG_TAKEN;
+      }
+    }
+
     // Update project
     const updateData: ProjectUpdateData = {};
     if (validatedData.name !== undefined) updateData.name = validatedData.name;
+    if (validatedData.slug !== undefined) updateData.slug = validatedData.slug;
     if (validatedData.description !== undefined) updateData.description = validatedData.description;
     if (validatedData.color !== undefined) updateData.color = validatedData.color;
 
@@ -397,6 +474,17 @@ export class ProjectService {
    */
   async countProjects(userId: string): Promise<number> {
     return this.projectRepository.countByUser(userId);
+  }
+
+  /**
+   * Check if a slug is available for a user
+   */
+  async checkSlugAvailability(
+    userId: string,
+    slug: string,
+    excludeProjectId?: string
+  ): Promise<boolean> {
+    return this.projectRepository.isSlugAvailable(userId, slug, excludeProjectId);
   }
 }
 

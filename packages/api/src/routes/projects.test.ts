@@ -12,6 +12,7 @@ const mockProject = {
   id: '550e8400-e29b-41d4-a716-446655440000',
   userId: 'user-123',
   name: 'Test Project',
+  slug: 'test-project',
   description: 'Test description',
   color: '#3B82F6',
   isDefault: false,
@@ -24,6 +25,7 @@ const mockDefaultProject = {
   ...mockProject,
   id: '550e8400-e29b-41d4-a716-446655440001',
   name: DEFAULT_PROJECT_NAME,
+  slug: 'my-tests',
   isDefault: true,
   description: 'Your default project for test recordings',
 };
@@ -109,15 +111,16 @@ describe('Project Routes', () => {
 
   describe('POST /api/projects - Create Project', () => {
     it('should create a project successfully', async () => {
-      // Mock name availability check
+      // Mock name availability check + slug availability check
       let callCount = 0;
       mockDb.select.mockImplementation(() => ({
         from: vi.fn().mockReturnValue({
           where: vi.fn().mockReturnValue({
             limit: vi.fn().mockImplementation(() => {
               callCount++;
-              // First call is name check (returns empty), subsequent calls return project
-              return Promise.resolve(callCount === 1 ? [] : [mockProject]);
+              // First two calls are availability checks (name + slug) - return empty
+              // Subsequent calls return project
+              return Promise.resolve(callCount <= 2 ? [] : [mockProject]);
             }),
           }),
         }),

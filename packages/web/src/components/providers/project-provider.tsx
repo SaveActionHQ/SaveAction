@@ -15,8 +15,8 @@ interface ProjectState {
 interface ProjectActions {
   setActiveProject: (project: Project) => void;
   refreshProjects: () => Promise<void>;
-  createProject: (data: { name: string; description?: string; color?: string }) => Promise<Project>;
-  updateProject: (id: string, data: { name?: string; description?: string; color?: string }) => Promise<Project>;
+  createProject: (data: { name: string; slug?: string; description?: string; color?: string }) => Promise<Project>;
+  updateProject: (id: string, data: { name?: string; slug?: string; description?: string; color?: string }) => Promise<Project>;
   deleteProject: (id: string) => Promise<void>;
 }
 
@@ -111,7 +111,7 @@ export function ProjectProvider({ children }: ProjectProviderProps) {
 
   // Create project
   const createProject = React.useCallback(
-    async (data: { name: string; description?: string; color?: string }): Promise<Project> => {
+    async (data: { name: string; slug?: string; description?: string; color?: string }): Promise<Project> => {
       const project = await api.createProject(data);
       setState((prev) => ({
         ...prev,
@@ -126,7 +126,7 @@ export function ProjectProvider({ children }: ProjectProviderProps) {
   const updateProject = React.useCallback(
     async (
       id: string,
-      data: { name?: string; description?: string; color?: string }
+      data: { name?: string; slug?: string; description?: string; color?: string }
     ): Promise<Project> => {
       const updated = await api.updateProject(id, data);
       setState((prev) => ({

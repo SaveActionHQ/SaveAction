@@ -49,7 +49,7 @@ export function ProjectSwitcher({
 
   const handleSelect = (project: Project) => {
     onClose();
-    router.push(`/projects/${project.id}`);
+    router.push(`/projects/${project.slug}`);
   };
 
   const handleCreateNew = () => {
