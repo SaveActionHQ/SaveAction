@@ -8,7 +8,8 @@ import { users } from './users.js';
  * Enterprise considerations:
  * - Token hash stored, never raw token (security)
  * - Prefix format: sa_live_xxx or sa_test_xxx
- * - Scopes for fine-grained permissions
+ * - Scopes for fine-grained permissions (resource:action)
+ * - Project-level access control (hybrid: all projects or specific ones)
  * - Usage tracking (last_used_at, use_count)
  * - Expiration support
  * - Multiple tokens per user
@@ -34,8 +35,12 @@ export const apiTokens = pgTable(
     tokenSuffix: varchar('token_suffix', { length: 8 }).notNull(), // Last 4 chars for identification
 
     // Permissions - JSON array of scopes
-    // ["recordings:read", "recordings:write", "runs:execute", "runs:read"]
+    // ["recordings:read", "recordings:write", "runs:execute", "runs:read", "projects:read", ...]
     scopes: text('scopes').notNull().default('[]'),
+
+    // Project access control - JSON array of project UUIDs or ["*"] for all projects
+    // ["*"] = all projects (default), ["uuid1", "uuid2"] = specific projects only
+    projectIds: text('project_ids').notNull().default('["*"]'),
 
     // Usage tracking
     lastUsedAt: timestamp('last_used_at', { withTimezone: true }),

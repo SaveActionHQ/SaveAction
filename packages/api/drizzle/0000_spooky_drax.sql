@@ -28,6 +28,7 @@ CREATE TABLE "api_tokens" (
 	"token_prefix" varchar(20) NOT NULL,
 	"token_suffix" varchar(8) NOT NULL,
 	"scopes" text DEFAULT '[]' NOT NULL,
+	"project_ids" text DEFAULT '["*"]' NOT NULL,
 	"last_used_at" timestamp with time zone,
 	"last_used_ip" varchar(45),
 	"use_count" varchar(20) DEFAULT '0' NOT NULL,

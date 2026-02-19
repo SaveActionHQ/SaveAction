@@ -311,6 +311,12 @@ export interface UpdateTestRequest {
 
 // API Token Types
 export const API_TOKEN_SCOPES = [
+  'projects:read',
+  'projects:write',
+  'suites:read',
+  'suites:write',
+  'tests:read',
+  'tests:write',
   'recordings:read',
   'recordings:write',
   'runs:read',
@@ -323,12 +329,16 @@ export const API_TOKEN_SCOPES = [
 
 export type ApiTokenScope = (typeof API_TOKEN_SCOPES)[number];
 
+/** Wildcard value meaning the token can access all projects */
+export const PROJECT_ACCESS_ALL = '*';
+
 export interface ApiToken {
   id: string;
   name: string;
   tokenPrefix: string;
   tokenSuffix: string;
   scopes: string[];
+  projectIds: string[]; // ['*'] = all projects, or specific project UUIDs
   lastUsedAt?: string | null;
   useCount: number;
   expiresAt?: string | null;
@@ -344,6 +354,7 @@ export interface CreateTokenResponse {
   tokenPrefix: string;
   tokenSuffix: string;
   scopes: string[];
+  projectIds: string[];
   expiresAt?: string | null;
   createdAt: string;
 }
@@ -1316,6 +1327,7 @@ class ApiClient {
   async createApiToken(data: {
     name: string;
     scopes: string[];
+    projectIds?: string[];
     expiresAt?: string | null;
   }): Promise<CreateTokenResponse> {
     return this.request<CreateTokenResponse>('/api/v1/tokens', {
