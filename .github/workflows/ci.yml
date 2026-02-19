@@ -179,7 +179,7 @@ jobs:
         run: pnpm build
 
       - name: Run database migrations
-        run: cd packages/api && pnpm db:push
+        run: cd packages/api && pnpm db:migrate:run
         env:
           DATABASE_URL: postgresql://saveaction:saveaction_test@localhost:5432/saveaction_test
 

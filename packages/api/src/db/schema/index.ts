@@ -9,7 +9,15 @@
 export { users, type User, type NewUser } from './users.js';
 
 // Projects
-export { projects, DEFAULT_PROJECT_NAME, type Project, type NewProject } from './projects.js';
+export {
+  projects,
+  DEFAULT_PROJECT_NAME,
+  DEFAULT_PROJECT_SLUG,
+  generateSlug,
+  SLUG_REGEX,
+  type Project,
+  type NewProject,
+} from './projects.js';
 
 // API Tokens
 export { apiTokens, type ApiToken, type NewApiToken } from './api-tokens.js';

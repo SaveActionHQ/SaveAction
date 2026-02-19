@@ -26,6 +26,7 @@
     "lint": "eslint src --ext .ts",
     "db:generate": "tsx node_modules/drizzle-kit/bin.cjs generate",
     "db:migrate": "tsx node_modules/drizzle-kit/bin.cjs migrate",
+    "db:migrate:run": "tsx scripts/migrate.ts",
     "db:push": "tsx node_modules/drizzle-kit/bin.cjs push",
     "db:studio": "drizzle-kit studio",
     "db:drop": "drizzle-kit drop"

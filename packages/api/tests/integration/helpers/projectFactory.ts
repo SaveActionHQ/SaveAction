@@ -9,6 +9,8 @@ import {
   type Project,
   type NewProject,
   DEFAULT_PROJECT_NAME,
+  DEFAULT_PROJECT_SLUG,
+  generateSlug,
 } from '../../../src/db/schema/index.js';
 import { getTestDb } from './database.js';
 
@@ -17,6 +19,7 @@ let projectCounter = 0;
 export interface CreateProjectOptions {
   userId: string;
   name?: string;
+  slug?: string;
   description?: string;
   color?: string;
   isDefault?: boolean;
@@ -29,9 +32,12 @@ export async function createProject(options: CreateProjectOptions): Promise<Proj
   projectCounter++;
   const db = await getTestDb();
 
+  const name = options.name || `Test Project ${projectCounter}`;
+
   const projectData: NewProject = {
     userId: options.userId,
-    name: options.name || `Test Project ${projectCounter}`,
+    name,
+    slug: options.slug || generateSlug(name),
     description: options.description || 'Test project for integration tests',
     color: options.color || '#3B82F6',
     isDefault: options.isDefault ?? false,
@@ -48,6 +54,7 @@ export async function createDefaultProject(userId: string): Promise<Project> {
   return createProject({
     userId,
     name: DEFAULT_PROJECT_NAME,
+    slug: DEFAULT_PROJECT_SLUG,
     description: 'Your default project for test recordings',
     isDefault: true,
   });
