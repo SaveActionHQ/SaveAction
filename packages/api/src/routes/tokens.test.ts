@@ -57,6 +57,19 @@ describe('API Token Routes', () => {
     });
     app.decorateRequest('user', null);
 
+    // Mock authenticate decorator (dual-auth: JWT + API tokens)
+    app.decorate('authenticate', async function (request: any, reply: any) {
+      try {
+        await request.jwtVerify();
+        request.jwtPayload = request.user;
+      } catch {
+        return reply.status(401).send({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+        });
+      }
+    });
+
     // Import routes dynamically after mocks are set up
     const { default: apiTokenRoutes } = await import('./tokens.js');
 
@@ -340,6 +353,19 @@ describe('API Token Routes', () => {
         throw new Error('Unauthorized');
       });
       unauthApp.decorateRequest('user', null);
+
+      // Mock authenticate decorator
+      unauthApp.decorate('authenticate', async function (request: any, reply: any) {
+        try {
+          await request.jwtVerify();
+          request.jwtPayload = request.user;
+        } catch {
+          return reply.status(401).send({
+            success: false,
+            error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          });
+        }
+      });
 
       const { default: apiTokenRoutes } = await import('./tokens.js');
       await unauthApp.register(apiTokenRoutes, {

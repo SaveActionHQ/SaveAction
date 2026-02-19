@@ -80,6 +80,19 @@ describe('Project Routes', () => {
       (this as any).user = { sub: 'user-123', email: 'test@example.com' };
     });
 
+    // Mock authenticate decorator (dual-auth: JWT + API tokens)
+    app.decorate('authenticate', async function (request: any, reply: any) {
+      try {
+        await request.jwtVerify();
+        request.jwtPayload = request.user;
+      } catch {
+        return reply.status(401).send({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+        });
+      }
+    });
+
     // Register routes
     await app.register(projectRoutes, {
       prefix: '/api/projects',
@@ -158,6 +171,19 @@ describe('Project Routes', () => {
       unauthApp.decorate('jwt', {} as any);
       unauthApp.decorateRequest('jwtVerify', async function () {
         throw new Error('Unauthorized');
+      });
+
+      // Mock authenticate decorator
+      unauthApp.decorate('authenticate', async function (request: any, reply: any) {
+        try {
+          await request.jwtVerify();
+          request.jwtPayload = request.user;
+        } catch {
+          return reply.status(401).send({
+            success: false,
+            error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          });
+        }
       });
 
       await unauthApp.register(projectRoutes, {

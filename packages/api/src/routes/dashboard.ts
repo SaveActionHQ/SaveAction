@@ -38,19 +38,10 @@ const dashboardRoutes: FastifyPluginAsync<DashboardRoutesOptions> = async (fasti
   const { db } = options;
   const dashboardService = new DashboardService(db);
 
-  // All routes require authentication
+  // All routes require authentication (JWT or API token)
+  // Dashboard is read-only; no specific scope required (any authenticated user/token can view)
   fastify.addHook('onRequest', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required',
-        },
-      });
-    }
+    await fastify.authenticate(request, reply);
   });
 
   /**

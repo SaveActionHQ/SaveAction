@@ -257,6 +257,19 @@ describe('Run Routes', () => {
       (this as any).user = { sub: 'user-123', email: 'test@example.com' };
     });
 
+    // Mock authenticate decorator (dual-auth: JWT + API tokens)
+    app.decorate('authenticate', async function (request: any, reply: any) {
+      try {
+        await request.jwtVerify();
+        request.jwtPayload = request.user;
+      } catch {
+        return reply.status(401).send({
+          success: false,
+          error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+        });
+      }
+    });
+
     // Register routes with mock db (not used since service is mocked)
     await app.register(runRoutes, {
       prefix: '/api/runs',
@@ -873,6 +886,19 @@ describe('Run Routes', () => {
         (this as any).user = { sub: 'user-123', email: 'test@example.com' };
       });
 
+      // Mock authenticate decorator
+      app.decorate('authenticate', async function (request: any, reply: any) {
+        try {
+          await request.jwtVerify();
+          request.jwtPayload = request.user;
+        } catch {
+          return reply.status(401).send({
+            success: false,
+            error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          });
+        }
+      });
+
       // Recreate mocks for new app
       (RunnerService as unknown as ReturnType<typeof vi.fn>).mockImplementation(() => mockService);
       (RunRepository as unknown as ReturnType<typeof vi.fn>).mockImplementation(
@@ -909,6 +935,19 @@ describe('Run Routes', () => {
         throw new Error('Missing auth');
       });
 
+      // Mock authenticate decorator
+      app.decorate('authenticate', async function (request: any, reply: any) {
+        try {
+          await request.jwtVerify();
+          request.jwtPayload = request.user;
+        } catch {
+          return reply.status(401).send({
+            success: false,
+            error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          });
+        }
+      });
+
       await app.register(runRoutes, {
         prefix: '/api/runs',
         db: {} as any,
@@ -935,6 +974,20 @@ describe('Run Routes', () => {
       app.decorateRequest('jwtVerify', async function () {
         throw new Error('Invalid token');
       });
+
+      // Mock authenticate decorator
+      app.decorate('authenticate', async function (request: any, reply: any) {
+        try {
+          await request.jwtVerify();
+          request.jwtPayload = request.user;
+        } catch {
+          return reply.status(401).send({
+            success: false,
+            error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          });
+        }
+      });
+
       await app.register(runRoutes, {
         prefix: '/api/runs',
         db: {} as any,
@@ -960,6 +1013,20 @@ describe('Run Routes', () => {
       app.decorateRequest('jwtVerify', async function () {
         throw new Error('Missing authorization');
       });
+
+      // Mock authenticate decorator
+      app.decorate('authenticate', async function (request: any, reply: any) {
+        try {
+          await request.jwtVerify();
+          request.jwtPayload = request.user;
+        } catch {
+          return reply.status(401).send({
+            success: false,
+            error: { code: 'UNAUTHORIZED', message: 'Authentication required' },
+          });
+        }
+      });
+
       await app.register(runRoutes, {
         prefix: '/api/runs',
         db: {} as any,

@@ -15,6 +15,7 @@ import {
 } from '../services/ProjectService.js';
 import { ProjectRepository } from '../repositories/ProjectRepository.js';
 import type { Database } from '../db/index.js';
+import { requireScopes } from '../plugins/jwt.js';
 import { z } from 'zod';
 
 /**
@@ -74,18 +75,15 @@ const projectRoutes: FastifyPluginAsync<ProjectRoutesOptions> = async (fastify, 
     maxProjectsPerUser,
   });
 
-  // All routes require authentication
+  // All routes require authentication (JWT or API token)
   fastify.addHook('onRequest', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required',
-        },
-      });
+    await fastify.authenticate(request, reply);
+
+    // Scope enforcement for API token users
+    if (request.apiToken) {
+      const isRead = request.method === 'GET' || request.method === 'HEAD';
+      const scope = isRead ? 'projects:read' : 'projects:write';
+      if (!requireScopes(request, reply, [scope as 'projects:read' | 'projects:write'])) return;
     }
   });
 

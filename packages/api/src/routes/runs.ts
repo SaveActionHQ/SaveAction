@@ -25,6 +25,7 @@ import { RunBrowserResultRepository } from '../repositories/RunBrowserResultRepo
 import type { Database } from '../db/index.js';
 import type { JobQueueManager } from '../queues/JobQueueManager.js';
 import { subscribeToRunProgress, type RunProgressEvent } from '../services/RunProgressService.js';
+import { requireScopes } from '../plugins/jwt.js';
 import { z } from 'zod';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
@@ -110,16 +111,14 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
       return;
     }
 
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required',
-        },
-      });
+    await fastify.authenticate(request, reply);
+
+    // Scope enforcement for API token users
+    if (request.apiToken) {
+      const isWrite = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method);
+      // POST to create a run requires runs:execute, not runs:write
+      const scope = isWrite ? 'runs:execute' : 'runs:read';
+      if (!requireScopes(request, reply, [scope as 'runs:execute' | 'runs:read'])) return;
     }
   });
 
@@ -493,18 +492,8 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
             });
           }
         } else {
-          // Fall back to standard auth header
-          try {
-            await request.jwtVerify();
-          } catch {
-            return reply.status(401).send({
-              success: false,
-              error: {
-                code: 'UNAUTHORIZED',
-                message: 'Authentication required',
-              },
-            });
-          }
+          // Fall back to standard auth (JWT or API token)
+          await fastify.authenticate(request, reply);
         }
       },
       schema: {
@@ -625,18 +614,8 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
             });
           }
         } else {
-          // Fall back to standard auth header
-          try {
-            await request.jwtVerify();
-          } catch {
-            return reply.status(401).send({
-              success: false,
-              error: {
-                code: 'UNAUTHORIZED',
-                message: 'Authentication required',
-              },
-            });
-          }
+          // Fall back to standard auth (JWT or API token)
+          await fastify.authenticate(request, reply);
         }
       },
       schema: {

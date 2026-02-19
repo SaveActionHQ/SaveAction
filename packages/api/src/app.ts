@@ -26,6 +26,8 @@ import dashboardRoutes from './routes/dashboard.js';
 import suiteRoutes from './routes/suites.js';
 import testRoutes from './routes/tests.js';
 import { EmailService } from './services/EmailService.js';
+import { ApiTokenService } from './services/ApiTokenService.js';
+import { ApiTokenRepository } from './repositories/ApiTokenRepository.js';
 import type { Env } from './config/index.js';
 
 export interface AppOptions {
@@ -188,6 +190,11 @@ export async function buildApp(options: AppOptions): Promise<FastifyInstance> {
 
     // Register auth routes (requires both database and JWT)
     if (!skipDatabase && app.db) {
+      // Initialize API token service for dual-auth support
+      // This allows routes to authenticate with both JWT and API tokens (sa_live_*/sa_test_*)
+      const apiTokenRepository = new ApiTokenRepository(app.db);
+      app.apiTokenService = new ApiTokenService(apiTokenRepository);
+
       // Register all v1 API routes under /api/v1 prefix
       await app.register(
         async (v1App) => {

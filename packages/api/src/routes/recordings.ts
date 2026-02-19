@@ -16,6 +16,7 @@ import {
 import { RecordingRepository } from '../repositories/RecordingRepository.js';
 import { ProjectRepository } from '../repositories/ProjectRepository.js';
 import type { Database } from '../db/index.js';
+import { requireScopes } from '../plugins/jwt.js';
 import { z } from 'zod';
 
 /**
@@ -78,18 +79,15 @@ const recordingRoutes: FastifyPluginAsync<RecordingRoutesOptions> = async (fasti
     maxRecordingsPerUser,
   });
 
-  // All routes require authentication
+  // All routes require authentication (JWT or API token)
   fastify.addHook('onRequest', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
-        success: false,
-        error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required',
-        },
-      });
+    await fastify.authenticate(request, reply);
+
+    // Scope enforcement for API token users (JWT users have full access)
+    if (request.apiToken) {
+      const isRead = request.method === 'GET' || request.method === 'HEAD';
+      const scope = isRead ? 'recordings:read' : 'recordings:write';
+      if (!requireScopes(request, reply, [scope as 'recordings:read' | 'recordings:write'])) return;
     }
   });
 

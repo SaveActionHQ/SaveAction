@@ -60,16 +60,18 @@ const apiTokenRoutes: FastifyPluginAsync<ApiTokenRoutesOptions> = async (fastify
   const tokenRepository = new ApiTokenRepository(db);
   const tokenService = new ApiTokenService(tokenRepository, { maxTokensPerUser });
 
-  // All routes require authentication
+  // All routes require JWT authentication only
+  // API tokens cannot manage other API tokens (prevents token escalation)
   fastify.addHook('onRequest', async (request, reply) => {
-    try {
-      await request.jwtVerify();
-    } catch {
-      return reply.status(401).send({
+    await fastify.authenticate(request, reply);
+
+    // Block API token auth for token management routes
+    if (request.apiToken) {
+      return reply.status(403).send({
         success: false,
         error: {
-          code: 'UNAUTHORIZED',
-          message: 'Authentication required',
+          code: 'JWT_REQUIRED',
+          message: 'API token management requires JWT authentication (login session)',
         },
       });
     }
