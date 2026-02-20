@@ -439,7 +439,9 @@ export interface PaginatedResponse<T> {
 }
 
 // API Client Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// In production behind Nginx, NEXT_PUBLIC_API_URL is "" (empty) so requests use relative URLs
+// In development, it defaults to http://localhost:3001
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 // Session expired callback type
 type SessionExpiredCallback = () => void;

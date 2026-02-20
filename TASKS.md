@@ -680,19 +680,21 @@ When ready to implement, detailed tasks will be extracted from the plan document
 
 ## Phase 5: Docker Deployment
 
-### ⏳ TODO - Dockerfiles
+### ✅ DONE - Dockerfiles
 
 - **Package:** deployment
 - **Priority:** P1
 - **Labels:** `devops`
 - **Description:** Create Dockerfile for API and Web packages. Multi-stage builds for optimization. Include Playwright browsers in API image.
+- **Implementation:** Multi-stage Dockerfiles: `docker/api/Dockerfile` (5 stages: base, deps, builder, prod-deps, runtime) with pnpm workspace support, bcrypt native builds, Playwright Chromium browsers. `docker/web/Dockerfile` (4 stages) with Next.js standalone output. `.dockerignore` for build context optimization. Both images build and verified: API ~1GB, Web ~82MB.
 
-### ⏳ TODO - Production Docker Compose
+### ✅ DONE - Production Docker Compose
 
 - **Package:** deployment
 - **Priority:** P1
 - **Labels:** `devops`
 - **Description:** Create docker-compose.yml for production deployment with: PostgreSQL 16, Redis 7, API server (built from Dockerfile), Web app (built from Dockerfile), Nginx reverse proxy. All services containerized (unlike dev setup). Configure resource limits, restart policies, and production environment variables.
+- **Implementation:** `docker-compose.yml` with 6 services: postgres (16-alpine), redis (7-alpine with auth), api (Fastify server), worker (BullMQ + Playwright, scalable with `--scale worker=N`), web (Next.js standalone), nginx (reverse proxy with SSE support). Nginx config at `docker/nginx/nginx.conf`. `.env.production.example` template. Resource limits, health checks, depends_on conditions, named volumes, bridge network.
 
 ### ⏳ TODO - Self-Hosting Documentation
 
@@ -855,12 +857,12 @@ When ready to implement, detailed tasks will be extracted from the plan document
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
 | Phase 4: Web                     | 10     | 9      | 0       | 1      |
 | Phase 4.5: Projects & Org        | -      | -      | -       | -      |
-| Phase 5: Docker                  | 5      | 0      | 0       | 5      |
+| Phase 5: Docker                  | 5      | 2      | 0       | 3      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **91** | **66** | **2**   | **23** |
+| **TOTAL**                        | **91** | **68** | **2**   | **21** |
 
 ### Test Summary
 

@@ -58,6 +58,7 @@ export interface RunOptions {
   headless?: boolean; // Default: true
   browser?: 'chromium' | 'firefox' | 'webkit'; // Default: chromium
   video?: boolean; // Default: false
+  videoDir?: string; // Default: './videos'
   screenshot?: boolean; // Default: false - enable screenshot capture
   screenshotMode?: ScreenshotMode; // Default: 'on-failure'
   screenshotDir?: string; // Default: './screenshots'

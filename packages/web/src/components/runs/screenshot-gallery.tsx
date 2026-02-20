@@ -204,7 +204,7 @@ interface ScreenshotItem {
 
 // Build screenshot URL with JWT token for auth
 function getScreenshotUrl(runId: string, actionId: string, browser?: string): string {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
   const token = api.getAccessToken();
   let url = `${apiUrl}/api/v1/runs/${runId}/actions/${actionId}/screenshot?token=${token}`;
   if (browser) {
@@ -434,7 +434,7 @@ function Lightbox({ open, onClose, runId, items, initialIndex, browser }: Lightb
   const handleDownload = async () => {
     try {
       const token = api.getAccessToken();
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
       const screenshotUrl = `${apiUrl}/api/v1/runs/${runId}/actions/${currentItem.actionId}/screenshot${browser ? `?browser=${browser}` : ''}`;
       const response = await fetch(
         screenshotUrl,

@@ -173,7 +173,7 @@ export function VideoPlayer({ runId, browser, className }: VideoPlayerProps) {
   const [showControls, setShowControls] = useState(true);
 
   // Video URL
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
   const browserParam = browser ? `&browser=${browser}` : '';
   const videoUrl = `${apiUrl}/api/v1/runs/${runId}/video`;
 

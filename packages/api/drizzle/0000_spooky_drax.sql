@@ -100,6 +100,7 @@ CREATE TABLE "run_actions" (
 	"action_id" varchar(50) NOT NULL,
 	"action_type" varchar(50) NOT NULL,
 	"action_index" varchar(10) NOT NULL,
+	"browser" varchar(50),
 	"status" "action_status" NOT NULL,
 	"duration_ms" varchar(20),
 	"started_at" timestamp with time zone,

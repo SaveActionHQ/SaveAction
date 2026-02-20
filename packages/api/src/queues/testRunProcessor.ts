@@ -522,6 +522,7 @@ export function createTestRunProcessor(
       headless: params.headless,
       timeout: params.timeout,
       video: params.recordVideo,
+      videoDir: options.videoStoragePath ?? './storage/videos',
       screenshot: params.recordScreenshots,
       screenshotMode: params.screenshotMode,
       screenshotDir: options.screenshotStoragePath ?? './storage/screenshots',
