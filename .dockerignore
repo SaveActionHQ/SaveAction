@@ -1,0 +1,67 @@
+# Dependencies
+node_modules
+**/node_modules
+
+# Build outputs
+packages/*/dist
+packages/web/.next
+
+# Test files
+**/*.test.ts
+**/*.spec.ts
+**/coverage
+**/__tests__
+# Only exclude top-level test directories in packages (not component dirs like web/src/components/tests)
+packages/*/tests
+
+# Development configs
+docker-compose.dev.yml
+**/vitest.config*.ts
+**/.env
+**/.env.local
+**/.env.development
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Docs
+docs/
+*.md
+!README.md
+
+# CI
+.github/
+
+# Test recordings
+*.json
+!package.json
+!packages/*/package.json
+!pnpm-workspace.yaml
+!turbo.json
+!tsconfig.base.json
+!packages/*/tsconfig.json
+!packages/web/next.config.ts
+!packages/web/postcss.config.mjs
+!packages/web/eslint.config.mjs
+!packages/api/drizzle.config.ts
+!docker/pgadmin/servers.json
+
+# Storage data (runtime only)
+packages/api/storage/
+packages/api/videos/
+
+# Misc
+*.log
+npm-debug.log*
+pnpm-debug.log*

@@ -1,6 +1,25 @@
 import { z } from 'zod';
 
 /**
+ * Treat empty strings as undefined for optional env vars.
+ * Docker Compose defaults like `${VAR:-}` resolve to "" instead of undefined.
+ */
+const emptyToUndefined = z.preprocess(
+  (val) => (val === '' ? undefined : val),
+  z.string().optional()
+);
+
+const emptyToUndefinedEmail = z.preprocess(
+  (val) => (val === '' ? undefined : val),
+  z.string().email().optional()
+);
+
+const emptyToUndefinedUrl = z.preprocess(
+  (val) => (val === '' ? undefined : val),
+  z.string().url().optional()
+);
+
+/**
  * Environment variable schema with Zod validation.
  * Validates required environment variables on startup.
  */
@@ -11,14 +30,20 @@ const envSchema = z.object({
   API_HOST: z.string().default('0.0.0.0'),
 
   // Database (PostgreSQL)
-  DATABASE_URL: z.string().url().optional(),
+  DATABASE_URL: emptyToUndefinedUrl,
 
   // Redis
-  REDIS_URL: z.string().url().optional(),
+  REDIS_URL: emptyToUndefinedUrl,
 
   // JWT Secrets (required in production)
-  JWT_SECRET: z.string().min(32).optional(),
-  JWT_REFRESH_SECRET: z.string().min(32).optional(),
+  JWT_SECRET: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.string().min(32).optional()
+  ),
+  JWT_REFRESH_SECRET: z.preprocess(
+    (val) => (val === '' ? undefined : val),
+    z.string().min(32).optional()
+  ),
 
   // CORS
   CORS_ORIGIN: z.string().default('*'),
@@ -27,15 +52,15 @@ const envSchema = z.object({
   LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
 
   // Email (SMTP)
-  SMTP_HOST: z.string().optional(),
+  SMTP_HOST: emptyToUndefined,
   SMTP_PORT: z.coerce.number().default(587),
   SMTP_SECURE: z
     .string()
     .transform((val) => val === 'true')
     .default('false'),
-  SMTP_USER: z.string().optional(),
-  SMTP_PASS: z.string().optional(),
-  SMTP_FROM: z.string().email().optional(),
+  SMTP_USER: emptyToUndefined,
+  SMTP_PASS: emptyToUndefined,
+  SMTP_FROM: emptyToUndefinedEmail,
   SMTP_FROM_NAME: z.string().default('SaveAction'),
 
   // App URLs
@@ -43,7 +68,7 @@ const envSchema = z.object({
 
   // Worker configuration
   WORKER_CONCURRENCY: z.coerce.number().min(1).max(10).default(3),
-  WORKER_NAME: z.string().optional(),
+  WORKER_NAME: emptyToUndefined,
 
   // Storage paths
   VIDEO_STORAGE_PATH: z.string().default('./storage/videos'),

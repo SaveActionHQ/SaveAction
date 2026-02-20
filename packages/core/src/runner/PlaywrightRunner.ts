@@ -76,6 +76,7 @@ export class PlaywrightRunner {
       headless: options.headless ?? true,
       browser: options.browser ?? 'chromium',
       video: options.video ?? false,
+      videoDir: options.videoDir ?? './videos',
       screenshot: options.screenshot ?? false,
       screenshotMode: options.screenshotMode ?? 'on-failure',
       screenshotDir: options.screenshotDir ?? './screenshots',
@@ -288,7 +289,9 @@ export class PlaywrightRunner {
       const contextOptions: any = {
         viewport: effectiveViewport,
         userAgent: recording.userAgent,
-        recordVideo: this.options.video ? { dir: './videos' } : undefined,
+        recordVideo: this.options.video ? { dir: this.options.videoDir ?? './videos' } : undefined,
+        // WebKit (Safari) strictly rejects TLS certificate issues that Chromium/Firefox tolerate
+        ignoreHTTPSErrors: true,
       };
 
       // Add devicePixelRatio for high-DPI display emulation

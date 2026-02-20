@@ -291,7 +291,7 @@ function ActionTypeIcon({ type }: { type: string }) {
 
 // Build screenshot URL with JWT token
 function getScreenshotUrl(runId: string, actionId: string, browser?: string): string {
-  const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  const apiUrl = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
   const token = api.getAccessToken();
   let url = `${apiUrl}/api/v1/runs/${runId}/actions/${actionId}/screenshot?token=${token}`;
   if (browser) {

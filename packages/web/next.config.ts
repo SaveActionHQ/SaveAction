@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Enable standalone output for Docker deployment
+  // This bundles dependencies into the .next/standalone folder
+  output: "standalone",
+
   // Redirect old dashboard routes to new project-scoped routes
   async redirects() {
     return [
