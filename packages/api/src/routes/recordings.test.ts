@@ -190,6 +190,7 @@ describe('Recording Routes', () => {
         url: '/api/recordings',
         headers: { authorization: 'Bearer valid-token' },
         payload: {
+          projectId: '550e8400-e29b-41d4-a716-446655440999',
           name: 'My Recording',
           description: 'Test description',
           tags: ['smoke'],
@@ -244,6 +245,7 @@ describe('Recording Routes', () => {
         url: '/api/recordings',
         headers: { authorization: 'Bearer valid-token' },
         payload: {
+          projectId: '550e8400-e29b-41d4-a716-446655440999',
           data: sampleRecordingData,
         },
       });
@@ -259,6 +261,7 @@ describe('Recording Routes', () => {
         url: '/api/recordings',
         headers: { authorization: 'Bearer valid-token' },
         payload: {
+          projectId: '550e8400-e29b-41d4-a716-446655440999',
           data: { invalid: 'data' },
         },
       });
