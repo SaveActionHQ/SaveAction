@@ -788,19 +788,21 @@ When ready to implement, detailed tasks will be extracted from the plan document
 - **Labels:** `docs`
 - **Description:** Comprehensive API documentation in docs/API.md (1201 lines). Covers: getting started, environment variables, infrastructure (tech stack, architecture), database schema (all 8 tables), health endpoints, queue status, authentication (register, login, logout, refresh, change password, forgot/reset password), API tokens (CRUD, scopes, validation), Recordings API (all endpoints with examples). docs/API_PACKAGE.md (259 lines) provides package overview. OpenAPI/Swagger auto-generation is separate task.
 
-### ⏳ TODO - Architecture Documentation
+### ✅ DONE - Architecture Documentation
 
 - **Package:** docs
 - **Priority:** P2
 - **Labels:** `docs`
-- **Description:** Write ARCHITECTURE.md with system design, data flow diagrams, package dependency graph, technology choices rationale.
+- **Completed:** 2026-02-21
+- **Description:** Comprehensive architecture document at docs/ARCHITECTURE.md. Covers: system architecture (high-level component diagram, process model), package dependency graph with build order, data flow diagrams (recording upload, test execution, SSE streaming, multi-browser runs), deep dives into all 4 packages (core, cli, api, web) with directory structures, database architecture (ER diagram, 12 tables, indexes, migration strategy), job queue architecture (3 queue types, worker separation design), real-time SSE streaming architecture, dual authentication system (JWT + API tokens), security layer stack (7 layers), deployment architecture (Docker Compose diagram, container specs), technology choice rationale tables (Playwright vs Selenium, Fastify vs Express, Drizzle vs Prisma, BullMQ vs alternatives, Next.js vs Remix, pnpm+Turbo vs alternatives), design principles, and scaling considerations with playbook.
 
-### ⏳ TODO - CORS & Security Headers Documentation
+### ✅ DONE - CORS & Security Headers Documentation
 
 - **Package:** docs
 - **Priority:** P1
 - **Labels:** `docs`, `security`
-- **Description:** Document CORS configuration for production (allowed origins, credentials). Document cookie settings for refresh tokens (SameSite=Strict, Secure=true, HttpOnly=true). Document Content-Security-Policy headers for web app. Include examples for nginx and Fastify configuration.
+- **Completed:** 2026-02-21
+- **Description:** Comprehensive CORS and security documentation at docs/CORS_SECURITY.md. Covers: CORS configuration (development, production, multi-origin, credential handling, preflight caching), cookie configuration (refresh token cookie with HttpOnly/Secure/SameSite=Strict/Path, CSRF cookie attributes, full reference table), Content-Security-Policy (strict API CSP, relaxed Swagger CSP, web app CSP with Next.js config example), HSTS configuration, all security headers from Helmet with explanations, CSRF protection (double-submit cookie pattern, protected routes, API token exemption, client implementation examples), rate limiting tiers (100/200/20 per minute), Nginx configuration (basic reverse proxy, full HTTPS with SSL/TLS settings and OCSP stapling, SSE support, security headers), Fastify configuration reference, Next.js security headers, 5 common deployment scenarios (same domain, separate domains, cloud LB, Docker dev, CI/CD), and troubleshooting guide (CORS errors, cookie issues, CSRF problems, rate limits, SSE, header duplication).
 
 ---
 
@@ -863,9 +865,9 @@ When ready to implement, detailed tasks will be extracted from the plan document
 | Phase 5: Docker                  | 5      | 5      | 0       | 0      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
-| Documentation                    | 4      | 2      | 0       | 2      |
+| Documentation                    | 4      | 4      | 0       | 0      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **91** | **71** | **2**   | **18** |
+| **TOTAL**                        | **91** | **73** | **2**   | **16** |
 
 ### Test Summary
 
