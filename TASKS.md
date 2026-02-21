@@ -696,26 +696,29 @@ When ready to implement, detailed tasks will be extracted from the plan document
 - **Description:** Create docker-compose.yml for production deployment with: PostgreSQL 16, Redis 7, API server (built from Dockerfile), Web app (built from Dockerfile), Nginx reverse proxy. All services containerized (unlike dev setup). Configure resource limits, restart policies, and production environment variables.
 - **Implementation:** `docker-compose.yml` with 6 services: postgres (16-alpine), redis (7-alpine with auth), api (Fastify server), worker (BullMQ + Playwright, scalable with `--scale worker=N`), web (Next.js standalone), nginx (reverse proxy with SSE support). Nginx config at `docker/nginx/nginx.conf`. `.env.production.example` template. Resource limits, health checks, depends_on conditions, named volumes, bridge network.
 
-### ⏳ TODO - Self-Hosting Documentation
+### ✅ DONE - Self-Hosting Documentation
 
 - **Package:** docs
 - **Priority:** P1
 - **Labels:** `docs`
-- **Description:** Write SELF_HOSTING.md guide with deployment instructions, environment configuration, backup procedures, troubleshooting.
+- **Completed:** 2026-02-21
+- **Description:** Comprehensive self-hosting guide at docs/SELF_HOSTING.md. Covers: system requirements (minimum/recommended/production specs), deployment options (Docker Compose, manual, Kubernetes), quick start walkthrough, full environment configuration reference, TLS/HTTPS setup (Caddy, Certbot+Nginx, cloud LB), database management, backup & restore (manual + automated daily script with retention), scaling guide with capacity planning table, monitoring & observability (health endpoints, log aggregation, metrics to watch), security hardening checklist (network isolation, firewall, CORS, non-root containers), upgrade procedures (standard + rolling + rollback), disaster recovery, resource planning, manual installation without Docker (PM2), FAQ, and troubleshooting.
 
-### ⏳ TODO - TLS/HTTPS Configuration
+### ✅ DONE - TLS/HTTPS Configuration
 
 - **Package:** deployment
 - **Priority:** P1
 - **Labels:** `security`, `devops`
-- **Description:** Document and configure TLS termination. Options: Let's Encrypt with Certbot auto-renewal, or nginx reverse proxy with custom certificates. Ensure API tokens are never transmitted over plaintext HTTP.
+- **Completed:** 2026-02-21
+- **Description:** Documented 3 TLS options in docs/SELF_HOSTING.md: (A) Caddy with automatic Let's Encrypt (simplest), (B) Certbot + Nginx with full SSL config (ssl_protocols TLSv1.2/1.3, HSTS, ciphers, session cache) and auto-renewal cron, (C) Cloud load balancer (AWS/GCP/Azure). Includes complete Nginx HTTPS config with SSE support, certificate mounting in docker-compose.yml, and HTTP→HTTPS redirect.
 
-### ⏳ TODO - Database Backup Strategy
+### ✅ DONE - Database Backup Strategy
 
 - **Package:** deployment
 - **Priority:** P1
 - **Labels:** `devops`, `data`
-- **Description:** Add pg_dump backup script to docker-compose (daily cron). Configure backup retention (e.g., 7 days). Document restore procedure. Optional: backup to S3/external storage.
+- **Completed:** 2026-02-21
+- **Description:** Documented in docs/SELF_HOSTING.md. Includes: manual pg_dump commands (full + partial table backup), automated daily backup script (/opt/saveaction/backup.sh) with pg_dump + storage volume tar, 7-day retention with find cleanup, crontab setup (daily at 2 AM), database restore procedure, storage volume restore, and backup verification process (restore to temporary container and validate counts).
 
 ---
 
@@ -857,12 +860,12 @@ When ready to implement, detailed tasks will be extracted from the plan document
 | Phase 3.5: CLI Platform (CI/CD)  | 5      | 3      | 0       | 2      |
 | Phase 4: Web                     | 10     | 9      | 0       | 1      |
 | Phase 4.5: Projects & Org        | -      | -      | -       | -      |
-| Phase 5: Docker                  | 5      | 2      | 0       | 3      |
+| Phase 5: Docker                  | 5      | 5      | 0       | 0      |
 | Phase 6: Extension               | 3      | 1      | 0       | 2      |
 | Infrastructure                   | 3      | 2      | 0       | 1      |
 | Documentation                    | 4      | 2      | 0       | 2      |
 | Backlog                          | 6      | 0      | 0       | 6      |
-| **TOTAL**                        | **91** | **68** | **2**   | **21** |
+| **TOTAL**                        | **91** | **71** | **2**   | **18** |
 
 ### Test Summary
 
