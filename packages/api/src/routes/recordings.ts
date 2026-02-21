@@ -100,12 +100,12 @@ const recordingRoutes: FastifyPluginAsync<RecordingRoutesOptions> = async (fasti
       schema: {
         body: {
           type: 'object',
-          required: ['data'],
+          required: ['projectId', 'data'],
           properties: {
+            projectId: { type: 'string', format: 'uuid' },
             name: { type: 'string', minLength: 1, maxLength: 255 },
             description: { type: 'string', maxLength: 2000, nullable: true },
             tags: { type: 'array', items: { type: 'string' }, maxItems: 20 },
-            projectId: { type: 'string', format: 'uuid' },
             data: { type: 'object' },
           },
         },
