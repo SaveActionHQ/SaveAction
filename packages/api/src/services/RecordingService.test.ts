@@ -40,7 +40,7 @@ const sampleRecordingData: RecordingData = {
 };
 
 const sampleProject: SafeProject = {
-  id: 'proj-123',
+  id: '00000000-0000-0000-0000-000000000001',
   userId: 'user-123',
   name: 'Default Project',
   slug: 'default-project',
@@ -55,7 +55,7 @@ const sampleProject: SafeProject = {
 const sampleSafeRecording: SafeRecording = {
   id: 'rec-uuid-123',
   userId: 'user-123',
-  projectId: 'proj-123',
+  projectId: '00000000-0000-0000-0000-000000000001',
   name: 'Test Recording',
   url: 'https://example.com',
   description: 'Test description',
@@ -74,7 +74,7 @@ const sampleSafeRecording: SafeRecording = {
 const sampleSummary: RecordingSummary = {
   id: 'rec-uuid-123',
   userId: 'user-123',
-  projectId: 'proj-123',
+  projectId: '00000000-0000-0000-0000-000000000001',
   name: 'Test Recording',
   url: 'https://example.com',
   description: 'Test description',
@@ -185,6 +185,7 @@ describe('RecordingService', () => {
     describe('createRecordingSchema', () => {
       it('should validate valid create request', () => {
         const request = {
+          projectId: '00000000-0000-0000-0000-000000000001',
           name: 'My Recording',
           description: 'Test',
           tags: ['smoke'],
@@ -196,14 +197,24 @@ describe('RecordingService', () => {
 
       it('should use data.testName as default name', () => {
         const request = {
+          projectId: '00000000-0000-0000-0000-000000000001',
           data: sampleRecordingData,
         };
         const result = createRecordingSchema.safeParse(request);
         expect(result.success).toBe(true);
       });
 
+      it('should require projectId', () => {
+        const request = {
+          data: sampleRecordingData,
+        };
+        const result = createRecordingSchema.safeParse(request);
+        expect(result.success).toBe(false);
+      });
+
       it('should reject too many tags', () => {
         const request = {
+          projectId: '00000000-0000-0000-0000-000000000001',
           data: sampleRecordingData,
           tags: Array(25).fill('tag'),
         };
@@ -213,6 +224,7 @@ describe('RecordingService', () => {
 
       it('should reject empty tag names', () => {
         const request = {
+          projectId: '00000000-0000-0000-0000-000000000001',
           data: sampleRecordingData,
           tags: ['valid', ''],
         };
@@ -294,6 +306,7 @@ describe('RecordingService', () => {
   describe('createRecording', () => {
     it('should create a recording successfully', async () => {
       const request: CreateRecordingRequest = {
+        projectId: '00000000-0000-0000-0000-000000000001',
         name: 'My Recording',
         description: 'Test description',
         tags: ['smoke'],
@@ -315,6 +328,7 @@ describe('RecordingService', () => {
 
     it('should use testName as default name', async () => {
       const request: CreateRecordingRequest = {
+        projectId: '00000000-0000-0000-0000-000000000001',
         tags: [],
         data: sampleRecordingData as CreateRecordingRequest['data'],
       };
@@ -332,6 +346,7 @@ describe('RecordingService', () => {
       mockRepository.findByOriginalId.mockResolvedValue(sampleSafeRecording);
 
       const request: CreateRecordingRequest = {
+        projectId: '00000000-0000-0000-0000-000000000001',
         tags: [],
         data: sampleRecordingData as CreateRecordingRequest['data'],
       };
@@ -351,6 +366,7 @@ describe('RecordingService', () => {
       );
 
       const request: CreateRecordingRequest = {
+        projectId: '00000000-0000-0000-0000-000000000001',
         tags: [],
         data: sampleRecordingData as CreateRecordingRequest['data'],
       };
@@ -371,6 +387,7 @@ describe('RecordingService', () => {
       mockRepository.countByUserId.mockResolvedValue(5);
 
       const request: CreateRecordingRequest = {
+        projectId: '00000000-0000-0000-0000-000000000001',
         tags: [],
         data: sampleRecordingData as CreateRecordingRequest['data'],
       };
@@ -382,6 +399,7 @@ describe('RecordingService', () => {
 
     it('should handle validation errors', async () => {
       const invalidRequest = {
+        projectId: '00000000-0000-0000-0000-000000000001',
         data: { ...sampleRecordingData, url: 'not-a-url' },
       };
 

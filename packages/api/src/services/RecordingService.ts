@@ -115,7 +115,7 @@ export const recordingDataSchema = z
  * Create recording request schema
  */
 export const createRecordingSchema = z.object({
-  projectId: z.string().uuid().optional(),
+  projectId: z.string().uuid(),
   name: z.string().min(1).max(255).optional(),
   description: z.string().max(2000).optional().nullable(),
   tags: z.array(z.string().min(1).max(50)).max(20).optional().default([]),
@@ -262,20 +262,11 @@ export class RecordingService {
       throw RecordingErrors.TOO_LARGE;
     }
 
-    // Determine project ID - use provided or get/create default project
-    let projectId = validatedData.projectId;
-    if (!projectId) {
-      let defaultProject = await this.projectRepository.findDefaultProject(userId);
-      if (!defaultProject) {
-        defaultProject = await this.projectRepository.createDefaultProject(userId);
-      }
-      projectId = defaultProject.id;
-    } else {
-      // Verify user has access to the specified project
-      const project = await this.projectRepository.findByIdAndUser(projectId, userId);
-      if (!project) {
-        throw new RecordingError('Project not found or not accessible', 'PROJECT_NOT_FOUND', 404);
-      }
+    // Verify user has access to the specified project
+    const projectId = validatedData.projectId;
+    const project = await this.projectRepository.findByIdAndUser(projectId, userId);
+    if (!project) {
+      throw new RecordingError('Project not found or not accessible', 'PROJECT_NOT_FOUND', 404);
     }
 
     // Check recording limit
