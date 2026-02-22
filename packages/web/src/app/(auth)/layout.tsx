@@ -32,7 +32,7 @@ export default function AuthLayout({ children }: AuthLayoutProps) {
 
       {/* Footer */}
       <footer className="p-4 text-center text-sm text-muted-foreground border-t border-border">
-        © {new Date().getFullYear()} SaveAction. Open source under MIT license.
+        © {new Date().getFullYear()} SaveAction.
       </footer>
     </div>
   );
