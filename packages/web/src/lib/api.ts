@@ -512,8 +512,13 @@ class ApiClient {
 
   /**
    * Make an API request with automatic token refresh
+   * @param skipSessionExpiry - If true, don't treat 401 as session expiry (for login/register)
    */
-  private async request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+  private async request<T>(
+    endpoint: string,
+    options: RequestInit = {},
+    skipSessionExpiry = false
+  ): Promise<T> {
     const url = `${API_BASE_URL}${endpoint}`;
 
     const headers: HeadersInit = {
@@ -537,6 +542,20 @@ class ApiClient {
 
     // Handle 401 - try to refresh token
     if (response.status === 401) {
+      // For login/register, don't treat as session expiry - just throw the error
+      if (skipSessionExpiry) {
+        const errorData = await response.json().catch(() => ({
+          error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
+        }));
+        if (errorData.error) {
+          throw new ApiClientError(errorData.error);
+        }
+        throw new ApiClientError({
+          code: 'INVALID_CREDENTIALS',
+          message: 'Invalid email or password',
+        });
+      }
+
       // If we have no access token, session is already expired
       if (!this.accessToken) {
         this.notifySessionExpired();
@@ -675,10 +694,14 @@ class ApiClient {
    * Login with email and password
    */
   async login(data: { email: string; password: string }): Promise<AuthResponse> {
-    const response = await this.request<AuthResponse>('/api/v1/auth/login', {
-      method: 'POST',
-      body: JSON.stringify(data),
-    });
+    const response = await this.request<AuthResponse>(
+      '/api/v1/auth/login',
+      {
+        method: 'POST',
+        body: JSON.stringify(data),
+      },
+      true // Skip session expiry handling for login
+    );
     // Token is already set in cookie by server, also store accessToken for API calls
     this.setAccessToken(response.tokens.accessToken);
     return response;

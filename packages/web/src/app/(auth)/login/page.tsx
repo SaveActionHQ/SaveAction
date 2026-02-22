@@ -16,7 +16,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { useAuth } from '@/components/providers/auth-provider';
-import { ApiClientError } from '@/lib/api';
+import { useToast } from '@/components/providers/toast-provider';
 import { Skeleton } from '@/components/ui/skeleton';
 
 function LoginFormSkeleton() {
@@ -39,6 +39,7 @@ function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login } = useAuth();
+  const { error: showError } = useToast();
   const [showPassword, setShowPassword] = React.useState(false);
   const [isLoading, setIsLoading] = React.useState(false);
   const [formData, setFormData] = React.useState({
@@ -76,24 +77,29 @@ function LoginForm() {
       await login(formData.email, formData.password);
       router.push(redirectUrl);
     } catch (error) {
-      if (error instanceof ApiClientError) {
+      // Check for API error with code property (more reliable than instanceof)
+      const apiError = error as { code?: string; message?: string };
+      let errorMessage = 'An unexpected error occurred. Please try again.';
+
+      if (apiError.code) {
         // Handle specific error codes
-        switch (error.code) {
+        switch (apiError.code) {
           case 'INVALID_CREDENTIALS':
-            setErrors({ form: 'Invalid email or password' });
+            errorMessage = 'Invalid email or password';
             break;
           case 'ACCOUNT_LOCKED':
-            setErrors({ form: 'Account is locked. Please try again later.' });
+            errorMessage = 'Account is locked. Please try again later.';
             break;
           case 'USER_NOT_FOUND':
-            setErrors({ form: 'No account found with this email' });
+            errorMessage = 'No account found with this email';
             break;
           default:
-            setErrors({ form: error.message || 'Login failed. Please try again.' });
+            errorMessage = apiError.message || 'Login failed. Please try again.';
         }
-      } else {
-        setErrors({ form: 'An unexpected error occurred. Please try again.' });
       }
+
+      setErrors({ form: errorMessage });
+      showError(errorMessage);
     } finally {
       setIsLoading(false);
     }

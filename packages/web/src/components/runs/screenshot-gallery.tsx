@@ -350,6 +350,7 @@ function Lightbox({ open, onClose, runId, items, initialIndex, browser }: Lightb
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [imageUrl, setImageUrl] = useState('');
   const imgRef = useRef<HTMLImageElement>(null);
 
   const currentItem = items[currentIndex];
@@ -363,13 +364,52 @@ function Lightbox({ open, onClose, runId, items, initialIndex, browser }: Lightb
     setHasError(false);
   }, [initialIndex, open]);
 
-  // Reset loading state when changing images
+  // Load image properly when index changes
   useEffect(() => {
+    if (!open || !currentItem) return;
+
     setIsLoading(true);
     setHasError(false);
     setZoom(1);
     setPosition({ x: 0, y: 0 });
-  }, [currentIndex]);
+
+    const url = getScreenshotUrl(runId, currentItem.actionId, browser);
+    setImageUrl(url);
+
+    // Create a new Image to preload and detect errors
+    const img = new Image();
+    let timeoutId: NodeJS.Timeout;
+
+    img.onload = () => {
+      clearTimeout(timeoutId);
+      setIsLoading(false);
+      setHasError(false);
+    };
+    img.onerror = () => {
+      clearTimeout(timeoutId);
+      setIsLoading(false);
+      setHasError(true);
+    };
+    img.src = url;
+
+    // Timeout fallback in case image never loads or errors
+    timeoutId = setTimeout(() => {
+      if (img.complete && img.naturalWidth > 0) {
+        setIsLoading(false);
+        setHasError(false);
+      } else {
+        setIsLoading(false);
+        setHasError(true);
+      }
+    }, 10000); // 10 second timeout
+
+    // Cleanup
+    return () => {
+      clearTimeout(timeoutId);
+      img.onload = null;
+      img.onerror = null;
+    };
+  }, [currentIndex, open, runId, currentItem?.actionId, browser]);
 
   // Handle keyboard navigation
   useEffect(() => {
@@ -592,7 +632,7 @@ function Lightbox({ open, onClose, runId, items, initialIndex, browser }: Lightb
 
           {/* Loading state */}
           {isLoading && !hasError && (
-            <div className="absolute inset-0 flex items-center justify-center">
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
               <div className="animate-pulse text-white flex flex-col items-center gap-2">
                 <ImageIcon className="h-12 w-12 text-white/50" />
                 <span>Loading screenshot...</span>
@@ -602,18 +642,22 @@ function Lightbox({ open, onClose, runId, items, initialIndex, browser }: Lightb
 
           {/* Error state */}
           {hasError && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center text-white">
+            <div 
+              className="absolute inset-0 flex flex-col items-center justify-center text-white cursor-pointer"
+              onClick={onClose}
+            >
               <AlertCircleIcon className="h-12 w-12 text-destructive mb-3" />
               <p className="text-lg font-medium">Failed to load screenshot</p>
               <p className="text-sm text-white/70 mt-1">The screenshot may not be available</p>
+              <p className="text-xs text-white/50 mt-4">Click anywhere to close</p>
             </div>
           )}
 
           {/* Image */}
-          {!hasError && (
+          {!hasError && imageUrl && (
             <img
               ref={imgRef}
-              src={getScreenshotUrl(runId, currentItem.actionId, browser)}
+              src={imageUrl}
               alt={`Screenshot for ${currentItem.actionType} action #${currentItem.actionIndex + 1}`}
               className={cn(
                 'max-h-[calc(100vh-160px)] max-w-[calc(100vw-100px)] object-contain transition-all duration-200',
