@@ -10,6 +10,7 @@ import {
   createUser,
   createRecording,
   createSampleRecordingData,
+  createProject,
   type TestApp,
 } from './helpers/index.js';
 
@@ -42,6 +43,7 @@ describe('Recordings Routes Integration', () => {
     it('should create a recording successfully', async () => {
       const user = await createUser({ email: 'create-rec@example.com' });
       const token = await getAuthToken(user.email, user.plainPassword);
+      const project = await createProject({ userId: user.id, name: 'Test Project' });
       const recordingData = createSampleRecordingData();
 
       const response = await testApp.app.inject({
@@ -52,6 +54,7 @@ describe('Recordings Routes Integration', () => {
           'Authorization': `Bearer ${token}`,
         },
         payload: {
+          projectId: project.id,
           name: 'My Test Recording',
           description: 'A test recording',
           tags: ['smoke', 'login'],
