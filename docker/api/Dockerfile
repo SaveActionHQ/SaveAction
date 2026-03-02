@@ -132,9 +132,9 @@ RUN cd /app/packages/core && npx playwright install --with-deps chromium firefox
     echo "All browsers installed successfully" && \
     rm -rf /var/lib/apt/lists/*
 
-# Create storage directories
+# Create storage directories (only chown storage, not all of /app — saves minutes)
 RUN mkdir -p /app/storage/videos /app/storage/screenshots && \
-    chown -R saveaction:saveaction /app
+    chown -R saveaction:saveaction /app/storage
 
 # Set default environment
 ENV NODE_ENV=production
