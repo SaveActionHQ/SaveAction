@@ -14,8 +14,8 @@
 # ---------------------------------------------------------------------------
 FROM node:22-slim AS base
 
-# Install pnpm globally
-RUN corepack enable && corepack prepare pnpm@8.10.0 --activate
+# Install pnpm globally via npm (more reliable than corepack)
+RUN npm install -g pnpm@8.10.0
 
 WORKDIR /app
 
