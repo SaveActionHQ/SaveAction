@@ -135,6 +135,9 @@ services:
   # Scale with: docker compose up -d --scale worker=4
   # ---------------------------------------------------------------------------
   worker:
+    build:
+      context: .
+      dockerfile: docker/api/Dockerfile
     image: saveaction-api:latest
     restart: unless-stopped
     command: ["node", "packages/api/dist/worker.js"]
