@@ -65,35 +65,163 @@ Every real E2E tool (Cypress, Playwright Test, Selenium) has **assertions** — 
 
 ## Steps to Complete
 
-### Step 1: Implicit Assertions via CheckpointAction ⭐ HIGHEST PRIORITY
+### Step 1: Assertions via CheckpointAction ⭐ HIGHEST PRIORITY
 
-**Why:** This is the #1 gap. Makes SaveAction go from "did it crash?" to "did it work?" — with zero extra effort from the user.
+**Why:** This is the #1 gap. Makes SaveAction go from "did it crash?" to "did it work?". Without assertions, a test "passes" even if the page shows an error message, blank screen, or wrong data.
 
-**Key Insight:** The `CheckpointAction` type already exists in both the extension and core types:
+**Two-Part Strategy: Manual Assertions + Auto-Assertions**
+
+The `CheckpointAction` type already exists in both the extension and core types but **nobody generates them** and **nobody verifies them**:
 ```typescript
 interface CheckpointAction extends BaseAction {
   type: 'checkpoint';
-  checkType: 'urlMatch' | 'elementVisible' | 'elementText' | 'pageLoad';
+  checkType: 'urlMatch' | 'elementVisible' | 'elementText' | 'pageLoad' | 'elementHasValue' | 'containsText' | 'pageTitle';
+  selector?: SelectorStrategy;
   expectedUrl?: string;
   expectedValue?: string;
   actualValue?: string;
   passed: boolean;
 }
 ```
-But **nobody generates them** and **nobody verifies them**.
 
-**What to build:**
+---
 
-| # | Change | Package | Details |
-|---|--------|---------|---------|
-| 1a | Auto-generate CheckpointActions | Extension (`event-listener.ts`) | After navigation → emit checkpoint with `expectedUrl`. After click on text element → emit checkpoint with `expectedValue = text`. After input → emit checkpoint verifying field value. |
-| 1b | Capture `document.title` per action | Extension (`event-listener.ts`) | Add `pageTitle: document.title` to `BaseAction` — enables title assertion |
-| 1c | Verify checkpoints during replay | Core (`PlaywrightRunner.ts`) | When encountering a `checkpoint` action, call `page.url()`, `page.title()`, `locator.textContent()` and compare against expected values |
-| 1d | Store assertion results | API (`run_actions` table) | Add `assertion_passed`, `assertion_expected`, `assertion_actual` columns |
-| 1e | Display assertion results | Web (run detail page) | Show green checkmark / red X per assertion in actions table, show expected vs actual on failure |
+#### Part A: "Add Assertion" Button — Manual Assertions (Extension)
 
-**Estimated effort:** 2-3 days
-**Lines of code:** ~400 across 4 packages
+**UX Flow:**
+
+1. User is recording normally. They click the **"Add Assertion"** button in the extension popup toolbar.
+2. Recording **pauses**. A blue semi-transparent overlay appears on the page with a message: _"Click any element to add an assertion, or press Escape to cancel"_.
+3. As user hovers over elements, they are **highlighted** with a blue outline + tooltip showing the element tag and text (similar to Chrome DevTools inspect mode).
+4. User **clicks** an element → a small **assertion panel** appears near the clicked element (floating popover).
+5. The panel shows assertion options based on the element type:
+
+| Assertion Type | When Shown | What It Verifies During Replay |
+|---|---|---|
+| **Text Equals** | Element has `textContent` | `locator.textContent() === expectedValue` |
+| **Text Contains** | Element has `textContent` | `locator.textContent().includes(expectedValue)` |
+| **Is Visible** | Any element | `locator.isVisible() === true` |
+| **Has Value** | `<input>`, `<select>`, `<textarea>` | `locator.inputValue() === expectedValue` |
+| **URL Contains** | Always (page-level, no element selection needed) | `page.url().includes(expectedValue)` |
+| **Page Title** | Always (page-level, no element selection needed) | `page.title() === expectedValue` |
+
+6. User selects an assertion type. For text/value assertions, the current value is pre-filled (editable).
+7. User clicks **"Add"** → a `CheckpointAction` is appended to the recording's `actions[]` array.
+8. The overlay dismisses, recording **resumes** automatically.
+
+**Multiple Assertions:** User can click "Add Assertion" multiple times at any point during recording. Each creates a separate `CheckpointAction` in the actions array.
+
+**What the recorded CheckpointAction looks like:**
+```json
+{
+  "id": "act_007",
+  "type": "checkpoint",
+  "timestamp": 1709654400000,
+  "url": "https://app.example.com/dashboard",
+  "checkType": "elementText",
+  "selector": {
+    "id": "welcome-message",
+    "css": "#welcome-message",
+    "xpath": "//*[@id='welcome-message']"
+  },
+  "expectedValue": "Welcome, John!",
+  "actualValue": "Welcome, John!",
+  "passed": true
+}
+```
+
+**Extension Implementation Details:**
+
+| # | Change | File | Details |
+|---|--------|------|---------|
+| 1a | Add "Add Assertion" button | Extension (popup UI) | New button in the recording toolbar, only visible while recording is active |
+| 1b | Implement inspect mode | Extension (`content-script`) | Inject overlay + hover highlight + click handler into page. Use `document.elementFromPoint()` for hover detection. Blue outline via `outline: 2px solid #3b82f6` on hovered element. |
+| 1c | Build assertion panel | Extension (`content-script`) | Floating popover near clicked element. Show assertion type dropdown + pre-filled expected value (editable). "Add" and "Cancel" buttons. |
+| 1d | Determine available assertions | Extension (`content-script`) | Inspect clicked element: if has `textContent` → show Text Equals/Contains. If is `input/select/textarea` → show Has Value. Always show Is Visible. |
+| 1e | Generate CheckpointAction | Extension (`event-listener.ts`) | On "Add" click: build `CheckpointAction` with selectors (same multi-strategy as other actions), `checkType`, `expectedValue`, `actualValue`. Append to `actions[]`. |
+| 1f | Page-level assertions | Extension (popup UI) | In the assertion panel, add "URL Contains" and "Page Title" options that don't require an element selection — available directly from the "Add Assertion" button as a dropdown. |
+
+---
+
+#### Part B: Auto-Assertions — Zero-Effort Implicit Checkpoints (Extension)
+
+On top of manual assertions, the extension automatically inserts checkpoint actions at key moments without any user interaction:
+
+| Trigger | Auto-Generated CheckpointAction | Why |
+|---|---|---|
+| **After navigation** (URL changes) | `checkType: 'urlMatch'`, `expectedUrl: window.location.href` | Catches broken redirects, 404s, wrong routes |
+| **After form submit** | `checkType: 'urlMatch'`, `expectedUrl: window.location.href` | After submit, user typically lands on a new page — verify it |
+
+These auto-checkpoints are **non-intrusive** — they appear as regular actions in the recording but are clearly marked as auto-generated (`"auto": true`). Users can delete them from the recording if unwanted.
+
+| # | Change | File | Details |
+|---|--------|------|---------|
+| 1g | Auto URL checkpoint after navigation | Extension (`event-listener.ts`) | After detecting URL change (already tracked), emit `CheckpointAction` with `checkType: 'urlMatch'` and `expectedUrl: window.location.href`, `auto: true` |
+| 1h | Auto URL checkpoint after form submit | Extension (`event-listener.ts`) | After `submit` action, wait 500ms for navigation to settle, then emit URL checkpoint if URL changed |
+
+---
+
+#### Part C: Checkpoint Verification in Runner (Platform — Core)
+
+When the runner encounters a `checkpoint` action during replay, it verifies the assertion:
+
+```typescript
+// In PlaywrightRunner.executeAction()
+case 'checkpoint':
+  const actual = await this.evaluateCheckpoint(page, action);
+  const passed = this.compareCheckpointResult(action, actual);
+  return { passed, expected: action.expectedValue, actual };
+```
+
+**Verification logic per `checkType`:**
+
+| checkType | How Runner Verifies |
+|---|---|
+| `urlMatch` | `page.url() === action.expectedUrl` |
+| `elementText` | `locator.textContent() === action.expectedValue` |
+| `containsText` | `locator.textContent().includes(action.expectedValue)` |
+| `elementVisible` | `locator.isVisible() === true` |
+| `elementHasValue` | `locator.inputValue() === action.expectedValue` |
+| `pageTitle` | `page.title() === action.expectedValue` |
+| `pageLoad` | `page.waitForLoadState('domcontentloaded')` succeeds |
+
+**On checkpoint failure:**
+- The action result is marked as `failed` with `assertion_passed: false`
+- `assertion_expected` and `assertion_actual` are stored for debugging
+- If `continueOnError` is false (default), the run stops immediately
+- If `continueOnError` is true, the run continues but the overall result is `failed`
+- A screenshot is captured showing the page state at failure
+
+| # | Change | File | Details |
+|---|--------|------|---------|
+| 1i | Add `executeCheckpoint()` method | Core (`PlaywrightRunner.ts`) | ~80 lines: find element via selector, get actual value based on `checkType`, compare against expected |
+| 1j | Handle checkpoint in `executeAction()` | Core (`PlaywrightRunner.ts`) | Add `case 'checkpoint'` to the action type switch, call `executeCheckpoint()` |
+| 1k | Add checkpoint to Zod schema | Core (`RecordingParser.ts`) | Validate `checkpoint` actions during parsing with proper schema |
+
+---
+
+#### Part D: Store Assertion Results (Platform — API)
+
+| # | Change | File | Details |
+|---|--------|------|---------|
+| 1l | Add assertion columns to `run_actions` | API (`run_actions` schema) | Add `assertion_passed: boolean \| null`, `assertion_expected: text \| null`, `assertion_actual: text \| null` columns |
+| 1m | Generate migration | API (drizzle) | `pnpm db:generate` → `pnpm db:migrate` |
+| 1n | Update action persistence | API (`testRunProcessor.ts`) | When saving checkpoint action results, include assertion fields |
+
+---
+
+#### Part E: Display Assertion Results (Platform — Web UI)
+
+| # | Change | File | Details |
+|---|--------|------|---------|
+| 1o | Assertion badge in actions table | Web (run detail page) | For checkpoint actions: green ✅ badge if `assertion_passed === true`, red ❌ badge if `false`. Show `checkType` as label (e.g., "Text Equals", "URL Match") |
+| 1p | Expected vs Actual diff | Web (run detail page) | On failed assertions: expandable row showing `Expected: "Welcome, John!"` vs `Actual: "Error: Unauthorized"` with red highlight on differences |
+| 1q | Assertion summary in run header | Web (run detail page) | Show "Assertions: 5/6 passed" in the run summary bar alongside existing duration/actions count |
+
+---
+
+**Estimated effort:** 4-5 days (2-3 days extension, 0.5 day core, 0.5 day API, 0.5-1 day web)
+**Lines of code:** ~800 across extension + 3 platform packages
 
 ---
 
@@ -289,7 +417,7 @@ But **nobody generates them** and **nobody verifies them**.
 
 | Priority | Step | Impact | Effort | Why First |
 |----------|------|--------|--------|-----------|
-| **P0** | Step 1: Implicit Assertions | 🔴 Critical | 2-3 days | Without this, tests don't actually verify anything |
+| **P0** | Step 1: Assertions (Manual + Auto) | 🔴 Critical | 4-5 days | Without this, tests don't actually verify anything |
 | **P0** | Step 2: Wire Up Wait Conditions | 🟠 High | 1 day | Data already captured, just needs wiring |
 | **P1** | Step 3: Visual Regression | 🟠 High | 3 days | Screenshots already captured, adds visual verification |
 | **P1** | Step 6: Test Data / Parameterization | 🟠 High | 1-2 days | Variable syntax already exists, just extend it |
@@ -301,7 +429,7 @@ But **nobody generates them** and **nobody verifies them**.
 | **P3** | Step 8: Drag & Drop | 🟢 Low | 1-2 days | Niche but important for some apps |
 | **P3** | Step 11: Team Support | 🟢 Low | 5-7 days | Needed for enterprise but not for platform correctness |
 
-**Total estimated effort:** ~22-32 days for all steps
+**Total estimated effort:** ~24-35 days for all steps
 
 ---
 
@@ -320,7 +448,7 @@ But **nobody generates them** and **nobody verifies them**.
 
 | Step | Status | Branch | Date |
 |------|--------|--------|------|
-| Step 1: Implicit Assertions | ⏳ TODO | — | — |
+| Step 1: Assertions (Manual + Auto) | ⏳ TODO | — | — |
 | Step 2: Wire Up Wait Conditions | ⏳ TODO | — | — |
 | Step 3: Visual Regression | ⏳ TODO | — | — |
 | Step 4: iframe Support | ⏳ TODO | — | — |
