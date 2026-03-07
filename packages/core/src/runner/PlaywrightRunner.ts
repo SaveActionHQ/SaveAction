@@ -16,6 +16,7 @@ import type {
   ScrollAction,
   HoverAction,
   SelectAction,
+  CheckpointAction,
   SelectorStrategy,
   ModalLifecycleAction,
 } from '../types/index.js';
@@ -31,6 +32,7 @@ import {
   isHoverAction,
   isSelectAction,
   isModalLifecycleAction,
+  isCheckpointAction,
 } from '../types/index.js';
 
 /**
@@ -71,6 +73,9 @@ export class PlaywrightRunner {
   // Screenshot tracking
   private capturedScreenshots: string[] = [];
 
+  // Variables for input substitution
+  private variables: Record<string, string>;
+
   constructor(options: RunOptions = {}, reporter?: Reporter) {
     this.options = {
       headless: options.headless ?? true,
@@ -86,13 +91,36 @@ export class PlaywrightRunner {
       speedMultiplier: options.speedMultiplier ?? 1.0,
       maxActionDelay: options.maxActionDelay ?? 30000,
       continueOnError: options.continueOnError ?? false, // Phase 2
+      variables: options.variables ?? {},
       runId: options.runId,
     };
     this.abortSignal = options.abortSignal;
+    this.variables = options.variables ?? {};
     this.elementLocator = new ElementLocator();
     this.navigationHistory = new NavigationHistoryManager();
     this.navigationAnalyzer = new NavigationAnalyzer();
     this.reporter = reporter;
+  }
+
+  /**
+   * Resolve variable placeholders in a value string.
+   * Replaces ${VAR_NAME} patterns with values from the variables map.
+   * If a variable has a variableName and a matching variable exists, use the variable value.
+   */
+  private resolveValue(value: string, variableName?: string): string {
+    // If there's a variableName and we have a value for it, use that directly
+    if (variableName && this.variables[variableName] !== undefined) {
+      return this.variables[variableName];
+    }
+
+    // Also resolve ${VAR} patterns in the value string
+    return value.replace(/\$\{([^}]+)\}/g, (_match, varName: string) => {
+      if (this.variables[varName] !== undefined) {
+        return this.variables[varName];
+      }
+      // Return original placeholder if no variable found
+      return _match;
+    });
   }
 
   /**
@@ -272,6 +300,9 @@ export class PlaywrightRunner {
       errors: [],
       skippedActions: [], // Phase 2
       screenshots: [], // Screenshot capture feature
+      assertionsPassed: 0,
+      assertionsFailed: 0,
+      assertionsTotal: 0,
     };
 
     try {
@@ -578,6 +609,12 @@ export class PlaywrightRunner {
           result.actionsExecuted++;
           this.reporter?.onActionSuccess(action, i + 1, actionDuration);
 
+          // Track checkpoint assertion results
+          if (isCheckpointAction(action)) {
+            result.assertionsTotal!++;
+            result.assertionsPassed!++;
+          }
+
           // Capture screenshot if 'always' mode is enabled
           if (this.shouldCaptureScreenshot(false)) {
             await this.captureScreenshot(page, action, i + 1, 'always');
@@ -627,6 +664,12 @@ export class PlaywrightRunner {
           }
 
           const severity = this.classifyError(error as Error);
+
+          // Track failed checkpoint assertions
+          if (isCheckpointAction(action)) {
+            result.assertionsTotal!++;
+            result.assertionsFailed!++;
+          }
 
           // Capture screenshot on failure
           let screenshotPath: string | undefined;
@@ -1116,6 +1159,12 @@ export class PlaywrightRunner {
     // Phase 2: Handle modal lifecycle events
     if (isModalLifecycleAction(action)) {
       await this.handleModalLifecycle(page, action);
+    } else if (isCheckpointAction(action)) {
+      if (action.auto) {
+        // Skip auto-assertions — only manual checkpoints are verified
+        return;
+      }
+      await this.executeCheckpoint(page, action);
     } else if (isClickAction(action)) {
       await this.executeClick(page, action);
     } else if (isInputAction(action)) {
@@ -2130,16 +2179,19 @@ export class PlaywrightRunner {
     // Clear existing value
     await element.clear();
 
+    // Resolve variables in the input value
+    const resolvedValue = this.resolveValue(action.value, action.variableName);
+
     // Type value with realistic delay if captured
     if (action.typingDelay && action.typingDelay > 0) {
       // Use recorded typing delay for realistic simulation
-      await element.type(action.value, { delay: action.typingDelay });
+      await element.type(resolvedValue, { delay: action.typingDelay });
     } else if (action.simulationType === 'type') {
       // Default typing delay if simulationType is 'type' but no delay recorded
-      await element.type(action.value, { delay: 100 });
+      await element.type(resolvedValue, { delay: 100 });
     } else {
       // Instant fill for setValue simulation type
-      await element.fill(action.value);
+      await element.fill(resolvedValue);
     }
 
     // Wait for autocomplete dropdowns or suggestions to appear
@@ -2171,6 +2223,140 @@ export class PlaywrightRunner {
 
     // Wait for any UI updates after selection
     await page.waitForTimeout(300);
+  }
+
+  /**
+   * Execute checkpoint assertion action
+   * Verifies page state matches expected values recorded during browser session
+   */
+  private async executeCheckpoint(page: Page, action: CheckpointAction): Promise<void> {
+    const checkLabel = action.auto ? 'Auto-checkpoint' : 'Checkpoint';
+    let passed = false;
+    let actualValue: string | undefined;
+
+    switch (action.checkType) {
+      case 'urlMatch': {
+        actualValue = page.url();
+        passed = actualValue === action.expectedUrl;
+        console.log(`   🔍 ${checkLabel}: URL match`);
+        console.log(`      Expected: ${action.expectedUrl}`);
+        console.log(`      Actual:   ${actualValue}`);
+        break;
+      }
+      case 'urlContains': {
+        actualValue = page.url();
+        const expected = action.expectedUrl ?? action.expectedValue ?? '';
+        passed = actualValue.includes(expected);
+        console.log(`   🔍 ${checkLabel}: URL contains "${expected}"`);
+        console.log(`      Actual: ${actualValue}`);
+        break;
+      }
+      case 'elementVisible': {
+        if (!action.selector) {
+          throw new Error(`Checkpoint ${action.id}: elementVisible requires a selector`);
+        }
+        const expectVisible = action.expectedValue !== 'false';
+        try {
+          const element = await this.elementLocator.findElement(page, action.selector);
+          const isVisible = await element.isVisible();
+          actualValue = String(isVisible);
+          passed = isVisible === expectVisible;
+        } catch {
+          // Element not found = not visible
+          actualValue = 'false';
+          passed = !expectVisible;
+        }
+        console.log(`   🔍 ${checkLabel}: Element visible`);
+        console.log(`      Result: ${actualValue}`);
+        break;
+      }
+      case 'elementText': {
+        if (!action.selector) {
+          throw new Error(`Checkpoint ${action.id}: elementText requires a selector`);
+        }
+        try {
+          const element = await this.elementLocator.findElement(page, action.selector);
+          actualValue = (await element.textContent()) ?? '';
+          actualValue = actualValue.trim();
+          const expected = (action.expectedValue ?? '').trim();
+          passed = actualValue === expected;
+        } catch {
+          passed = false;
+          actualValue = 'element not found';
+        }
+        console.log(`   🔍 ${checkLabel}: Element text`);
+        console.log(`      Expected: "${action.expectedValue}"`);
+        console.log(`      Actual:   "${actualValue}"`);
+        break;
+      }
+      case 'containsText': {
+        if (!action.selector) {
+          throw new Error(`Checkpoint ${action.id}: containsText requires a selector`);
+        }
+        try {
+          const element = await this.elementLocator.findElement(page, action.selector);
+          actualValue = (await element.textContent()) ?? '';
+          const expected = action.expectedValue ?? '';
+          passed = actualValue.includes(expected);
+        } catch {
+          passed = false;
+          actualValue = 'element not found';
+        }
+        console.log(`   🔍 ${checkLabel}: Contains text "${action.expectedValue}"`);
+        console.log(`      Actual: "${actualValue}"`);
+        break;
+      }
+      case 'elementHasValue': {
+        if (!action.selector) {
+          throw new Error(`Checkpoint ${action.id}: elementHasValue requires a selector`);
+        }
+        try {
+          const element = await this.elementLocator.findElement(page, action.selector);
+          actualValue = await element.inputValue();
+          const expected = action.expectedValue ?? '';
+          passed = actualValue === expected;
+        } catch {
+          passed = false;
+          actualValue = 'element not found';
+        }
+        console.log(`   🔍 ${checkLabel}: Element value`);
+        console.log(`      Expected: "${action.expectedValue}"`);
+        console.log(`      Actual:   "${actualValue}"`);
+        break;
+      }
+      case 'pageTitle': {
+        actualValue = await page.title();
+        const expected = action.expectedValue ?? '';
+        passed = actualValue.includes(expected);
+        console.log(`   🔍 ${checkLabel}: Page title contains "${expected}"`);
+        console.log(`      Actual: "${actualValue}"`);
+        break;
+      }
+      case 'pageLoad': {
+        try {
+          await page.waitForLoadState('load', { timeout: this.options.timeout });
+          passed = true;
+          actualValue = 'loaded';
+        } catch {
+          passed = false;
+          actualValue = 'timeout';
+        }
+        console.log(`   🔍 ${checkLabel}: Page load`);
+        console.log(`      Result: ${actualValue}`);
+        break;
+      }
+      default:
+        console.warn(`   ⚠️ Unknown checkpoint type: ${action.checkType}`);
+        passed = false;
+    }
+
+    if (passed) {
+      console.log(`   ✅ ${checkLabel} PASSED`);
+    } else {
+      const errorMsg = `${checkLabel} FAILED: ${action.checkType} — expected "${action.expectedValue ?? action.expectedUrl ?? ''}", got "${actualValue ?? ''}"`;
+      console.log(`   ❌ ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
   }
 
   /**

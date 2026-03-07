@@ -276,6 +276,33 @@ describe('ScheduleService', () => {
       expect(mockScheduleRepository.create).toHaveBeenCalled();
     });
 
+    it('should throw when test has empty variable values', async () => {
+      mockTestRepository.findByIdAndUser.mockResolvedValue({
+        id: 'test-123',
+        name: 'Sample Test',
+        suiteId: 'suite-123',
+        recordingId: 'rec-123',
+        recordingData: {},
+        config: { headless: true },
+        browsers: ['chromium'],
+        variables: { EMAIL: 'user@test.com', PASSWORD: '' },
+      });
+
+      const request = {
+        targetType: 'test' as const,
+        suiteId: 'suite-123',
+        testId: 'test-123',
+        projectId: 'proj-123',
+        name: 'Test Schedule',
+        cronExpression: '0 9 * * *',
+      };
+
+      await expect(service.createSchedule('user-123', request)).rejects.toThrow(ScheduleError);
+      await expect(service.createSchedule('user-123', request)).rejects.toThrow(
+        'Test has variables with empty values'
+      );
+    });
+
     it('should throw when suite not found', async () => {
       mockTestSuiteRepository.findByIdAndUser.mockResolvedValue(null);
 

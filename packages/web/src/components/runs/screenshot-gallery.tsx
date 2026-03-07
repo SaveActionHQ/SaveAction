@@ -8,6 +8,17 @@ import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import type { RunAction } from './run-actions-table';
 
+// Human-readable action type labels
+function getActionLabel(type: string): string {
+  switch (type.toLowerCase()) {
+    case 'checkpoint': return 'Assertion';
+    case 'keypress': return 'Key Press';
+    case 'navigation':
+    case 'navigate': return 'Navigate';
+    default: return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+}
+
 // Icons
 function CameraIcon({ className }: { className?: string }) {
   return (
@@ -306,7 +317,7 @@ function Thumbnail({ runId, item, onClick, isSelected, browser }: ThumbnailProps
         <img
           ref={imgRef}
           src={getScreenshotUrl(runId, item.actionId, browser)}
-          alt={`Screenshot for ${item.actionType} action #${item.actionIndex + 1}`}
+          alt={`Screenshot for ${getActionLabel(item.actionType)} action #${item.actionIndex + 1}`}
           className={cn(
             'w-full h-full object-cover transition-opacity duration-300',
             isLoading ? 'opacity-0' : 'opacity-100'
@@ -320,7 +331,7 @@ function Thumbnail({ runId, item, onClick, isSelected, browser }: ThumbnailProps
       {/* Action badge overlay */}
       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-2">
         <div className="flex items-center justify-between text-white text-xs">
-          <span className="font-medium capitalize">#{item.actionIndex + 1} {item.actionType}</span>
+          <span className="font-medium capitalize">#{item.actionIndex + 1} {getActionLabel(item.actionType)}</span>
           {item.status === 'failed' && (
             <span className="bg-destructive/90 px-1.5 py-0.5 rounded text-[10px] uppercase font-semibold">
               Failed
@@ -543,7 +554,7 @@ function Lightbox({ open, onClose, runId, items, initialIndex, browser }: Lightb
               {currentIndex + 1} / {items.length}
             </span>
             <span className="text-sm text-white/70">
-              #{currentItem.actionIndex + 1} {currentItem.actionType}
+              #{currentItem.actionIndex + 1} {getActionLabel(currentItem.actionType)}
               {currentItem.status === 'failed' && (
                 <span className="ml-2 text-destructive">Failed</span>
               )}
@@ -658,7 +669,7 @@ function Lightbox({ open, onClose, runId, items, initialIndex, browser }: Lightb
             <img
               ref={imgRef}
               src={imageUrl}
-              alt={`Screenshot for ${currentItem.actionType} action #${currentItem.actionIndex + 1}`}
+              alt={`Screenshot for ${getActionLabel(currentItem.actionType)} action #${currentItem.actionIndex + 1}`}
               className={cn(
                 'max-h-[calc(100vh-160px)] max-w-[calc(100vw-100px)] object-contain transition-all duration-200',
                 isLoading && 'opacity-0'

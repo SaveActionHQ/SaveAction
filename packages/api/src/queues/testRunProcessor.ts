@@ -23,10 +23,12 @@ import { ScheduleService } from '../services/ScheduleService.js';
 import { RunProgressPublisher } from '../services/RunProgressService.js';
 import {
   PlaywrightRunner,
+  isCheckpointAction,
   type RunOptions,
   type Reporter,
   type RunResult,
   type Action,
+  type CheckpointAction,
   type Recording,
 } from '@saveaction/core';
 
@@ -142,6 +144,10 @@ class ProgressTrackingReporter implements Reporter {
     const actionId = action.id ?? `act_${index.toString().padStart(3, '0')}`;
     const actionIndex = index - 1; // Convert to 0-based
 
+    // Extract assertion data for checkpoint actions
+    const isCheckpoint = isCheckpointAction(action);
+    const checkpoint = isCheckpoint ? (action as CheckpointAction) : null;
+
     this.actionResults.push({
       actionId,
       actionType: action.type,
@@ -172,6 +178,10 @@ class ProgressTrackingReporter implements Reporter {
         elementFound: true,
         elementVisible: true,
         pageUrl: this.pageUrl,
+        assertionPassed: checkpoint ? true : undefined,
+        assertionExpected: checkpoint?.expectedValue ?? checkpoint?.expectedUrl ?? undefined,
+        assertionActual: checkpoint?.actualValue ?? checkpoint?.actualUrl ?? undefined,
+        assertionCheckType: checkpoint?.checkType ?? undefined,
       })
       .catch((err) => {
         console.error(`[Worker] Failed to persist action ${actionId}:`, err);
@@ -201,6 +211,10 @@ class ProgressTrackingReporter implements Reporter {
     const selector = this.extractSelector(action);
     const actionId = action.id ?? `act_${index.toString().padStart(3, '0')}`;
     const actionIndex = index - 1; // Convert to 0-based
+
+    // Extract assertion data for checkpoint actions
+    const isCheckpoint = isCheckpointAction(action);
+    const checkpoint = isCheckpoint ? (action as CheckpointAction) : null;
 
     this.actionResults.push({
       actionId,
@@ -236,6 +250,10 @@ class ProgressTrackingReporter implements Reporter {
         elementFound: false,
         elementVisible: false,
         pageUrl: this.pageUrl,
+        assertionPassed: checkpoint ? false : undefined,
+        assertionExpected: checkpoint?.expectedValue ?? checkpoint?.expectedUrl ?? undefined,
+        assertionActual: checkpoint?.actualValue ?? checkpoint?.actualUrl ?? undefined,
+        assertionCheckType: checkpoint?.checkType ?? undefined,
       })
       .catch((err) => {
         console.error(`[Worker] Failed to persist action ${actionId}:`, err);
@@ -407,6 +425,9 @@ export function createTestRunProcessor(
       let totalActionsExecuted = 0;
       let totalActionsFailed = 0;
       let totalActionsSkipped = 0;
+      let totalAssertionsTotal = 0;
+      let totalAssertionsPassed = 0;
+      let totalAssertionsFailed = 0;
       const errors: string[] = [];
 
       for (const child of children) {
@@ -415,6 +436,9 @@ export function createTestRunProcessor(
         totalActionsExecuted += child.actionsExecuted ? parseInt(child.actionsExecuted, 10) : 0;
         totalActionsFailed += child.actionsFailed ? parseInt(child.actionsFailed, 10) : 0;
         totalActionsSkipped += child.actionsSkipped ? parseInt(child.actionsSkipped, 10) : 0;
+        totalAssertionsTotal += (child as any).assertionsTotal ? parseInt((child as any).assertionsTotal, 10) : 0;
+        totalAssertionsPassed += (child as any).assertionsPassed ? parseInt((child as any).assertionsPassed, 10) : 0;
+        totalAssertionsFailed += (child as any).assertionsFailed ? parseInt((child as any).assertionsFailed, 10) : 0;
         if (child.errorMessage) errors.push(child.errorMessage);
       }
 
@@ -426,6 +450,9 @@ export function createTestRunProcessor(
         actionsExecuted: totalActionsExecuted,
         actionsFailed: totalActionsFailed,
         actionsSkipped: totalActionsSkipped,
+        assertionsTotal: totalAssertionsTotal,
+        assertionsPassed: totalAssertionsPassed,
+        assertionsFailed: totalAssertionsFailed,
         errorMessage: errors.length > 0 ? errors.join('; ') : undefined,
       });
 
@@ -465,12 +492,16 @@ export function createTestRunProcessor(
     abortSignal: AbortSignal;
     recordingId?: string;
     recordingName?: string | null;
+    variables?: Record<string, string>;
   }): Promise<{
     status: 'passed' | 'failed' | 'cancelled';
     duration: number;
     actionsExecuted: number;
     actionsFailed: number;
     actionsSkipped: number;
+    assertionsTotal: number;
+    assertionsPassed: number;
+    assertionsFailed: number;
     videoPath?: string;
     screenshotPaths?: string[];
     errorMessage?: string;
@@ -528,6 +559,7 @@ export function createTestRunProcessor(
       screenshotDir: options.screenshotStoragePath ?? './storage/screenshots',
       runId: params.runId,
       abortSignal: params.abortSignal,
+      variables: params.variables,
     };
 
     // Execute
@@ -576,6 +608,9 @@ export function createTestRunProcessor(
       actionsExecuted,
       actionsFailed,
       actionsSkipped: params.actionCount - actionsExecuted,
+      assertionsTotal: result.assertionsTotal ?? 0,
+      assertionsPassed: result.assertionsPassed ?? 0,
+      assertionsFailed: result.assertionsFailed ?? 0,
       videoPath: result.video,
       screenshotPaths: result.screenshots,
       errorMessage: result.errors?.[0]?.error,
@@ -658,6 +693,9 @@ export function createTestRunProcessor(
         actionsExecuted: result.actionsExecuted,
         actionsFailed: result.actionsFailed,
         actionsSkipped: result.actionsSkipped,
+        assertionsTotal: result.assertionsTotal,
+        assertionsPassed: result.assertionsPassed,
+        assertionsFailed: result.assertionsFailed,
         videoPath: result.videoPath,
         errorMessage: result.errorMessage,
         errorStack: undefined,
@@ -809,6 +847,7 @@ export function createTestRunProcessor(
 
       const recordingData = testRecord.recordingData as unknown as Recording;
       const actionCount = testRecord.actionCount ?? recordingData.actions?.length ?? 0;
+      const testVariables = (testRecord.variables as Record<string, string> | null) ?? {};
 
       await job.updateProgress(10);
 
@@ -863,6 +902,7 @@ export function createTestRunProcessor(
             screenshotMode: screenshotMode ?? 'on-failure',
             abortSignal: abortController.signal,
             recordingName: testRecord.name,
+            variables: testVariables,
           });
 
           // Track action results for this browser
@@ -912,6 +952,9 @@ export function createTestRunProcessor(
             duration: result.duration,
             actionsExecuted: result.actionsExecuted,
             actionsFailed: result.actionsFailed,
+            assertionsTotal: result.assertionsTotal,
+            assertionsPassed: result.assertionsPassed,
+            assertionsFailed: result.assertionsFailed,
             errorMessage: result.errorMessage,
             videoPath: result.videoPath,
             screenshotPaths: result.screenshotPaths,
@@ -960,6 +1003,9 @@ export function createTestRunProcessor(
       const anyCancelled = browserRunResults.some((r) => r.status === 'cancelled');
       const totalActionsExecuted = browserRunResults.reduce((sum, r) => sum + r.actionsExecuted, 0);
       const totalActionsFailed = browserRunResults.reduce((sum, r) => sum + r.actionsFailed, 0);
+      const totalAssertionsTotal = browserRunResults.reduce((sum, r) => sum + (r.assertionsTotal ?? 0), 0);
+      const totalAssertionsPassed = browserRunResults.reduce((sum, r) => sum + (r.assertionsPassed ?? 0), 0);
+      const totalAssertionsFailed = browserRunResults.reduce((sum, r) => sum + (r.assertionsFailed ?? 0), 0);
 
       let overallStatus: 'passed' | 'failed' | 'cancelled';
       if (anyCancelled) {
@@ -981,6 +1027,9 @@ export function createTestRunProcessor(
         actionsExecuted: totalActionsExecuted,
         actionsFailed: totalActionsFailed,
         actionsSkipped: actionCount * browsersToRun.length - totalActionsExecuted,
+        assertionsTotal: totalAssertionsTotal,
+        assertionsPassed: totalAssertionsPassed,
+        assertionsFailed: totalAssertionsFailed,
         errorMessage: firstError?.errorMessage,
         videoPath: browserRunResults.find((r) => r.videoPath)?.videoPath,
         screenshotPaths: browserRunResults.flatMap((r) => r.screenshotPaths ?? []),

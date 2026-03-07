@@ -114,6 +114,9 @@ export const tests = pgTable(
     // Saved test configuration (JSONB for extensibility)
     config: jsonb('config').$type<TestConfig>().notNull().default(DEFAULT_TEST_CONFIG),
 
+    // Variables for input substitution (e.g., { EMAIL: "test@example.com", PASSWORD: "secret" })
+    variables: jsonb('variables').$type<Record<string, string>>().default({}),
+
     // Display ordering within suite
     displayOrder: integer('display_order').notNull().default(0),
 

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Upload, Library, FileJson } from 'lucide-react';
+import { ArrowLeft, Upload, Library, FileJson, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -46,6 +46,7 @@ export default function EditTestPage() {
   const [description, setDescription] = React.useState('');
   const [browsers, setBrowsers] = React.useState<TestBrowser[]>(['chromium']);
   const [config, setConfig] = React.useState<Partial<TestConfig>>({});
+  const [variables, setVariables] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
@@ -55,6 +56,9 @@ export default function EditTestPage() {
   const [libraryRecording, setLibraryRecording] = React.useState<SelectedRecording | null>(null);
   const [libraryRecordingData, setLibraryRecordingData] = React.useState<Record<string, unknown> | null>(null);
   const [isLoadingRecording, setIsLoadingRecording] = React.useState(false);
+
+  const hasVariables = Object.keys(variables).length > 0;
+  const hasEmptyVariables = hasVariables && Object.values(variables).some((v) => !v || !v.trim());
 
   // Load test data
   React.useEffect(() => {
@@ -68,6 +72,7 @@ export default function EditTestPage() {
         setDescription(data.description || '');
         setBrowsers(data.browsers);
         setConfig(data.config);
+        setVariables(data.variables || {});
       } catch (err) {
         setLoadError(err instanceof Error ? err.message : 'Failed to load test');
       } finally {
@@ -110,6 +115,11 @@ export default function EditTestPage() {
       return;
     }
 
+    if (hasEmptyVariables) {
+      setError('All variables must have non-empty values');
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
 
@@ -119,6 +129,7 @@ export default function EditTestPage() {
         description: description.trim() || undefined,
         browsers,
         config: config as Partial<TestConfig>,
+        variables,
       };
 
       // Include recording change if user swapped
@@ -388,6 +399,42 @@ export default function EditTestPage() {
             </CardContent>
           </Card>
 
+          {/* Variables */}
+          {hasVariables && (
+            <Card className={hasEmptyVariables ? 'border-destructive' : ''}>
+              <CardHeader>
+                <CardTitle className="text-base flex items-center gap-2">
+                  Variables
+                  {hasEmptyVariables && (
+                    <span className="flex items-center gap-1 text-xs font-normal text-destructive">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      All values required
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-xs text-muted-foreground">
+                  Set values for variables used in input actions. These replace {'${VAR}'} placeholders during execution.
+                </p>
+                {Object.entries(variables).map(([varName]) => (
+                  <div key={varName} className="space-y-1">
+                    <label className="text-sm font-medium font-mono">{varName}</label>
+                    <Input
+                      value={variables[varName] || ''}
+                      onChange={(e) =>
+                        setVariables((prev) => ({ ...prev, [varName]: e.target.value }))
+                      }
+                      placeholder={`Enter value for ${varName}`}
+                      disabled={isSubmitting}
+                      className={!variables[varName]?.trim() ? 'border-destructive' : ''}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Submit */}
           <div className="flex justify-end gap-3">
             <Button
@@ -398,7 +445,7 @@ export default function EditTestPage() {
             >
               Cancel
             </Button>
-            <Button type="submit" isLoading={isSubmitting} disabled={isLoadingRecording}>
+            <Button type="submit" isLoading={isSubmitting} disabled={isLoadingRecording || hasEmptyVariables}>
               Save Changes
             </Button>
           </div>

@@ -1,6 +1,19 @@
 'use client';
 
 import * as React from 'react';
+import {
+  MousePointer2,
+  Keyboard,
+  Navigation,
+  ArrowUpDown,
+  Hand,
+  ChevronDown as ChevronDownLucide,
+  KeyRound,
+  Send,
+  CheckCircle2,
+  Layout,
+  Circle,
+} from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
@@ -35,6 +48,10 @@ export interface RunAction {
   pageUrl?: string;
   pageTitle?: string;
   browser?: string;
+  assertionPassed?: boolean | null;
+  assertionExpected?: string | null;
+  assertionActual?: string | null;
+  assertionCheckType?: string | null;
 }
 
 // Grouped action — one entry per unique actionId
@@ -45,6 +62,90 @@ interface GroupedAction {
   selectorUsed?: string;
   selectorValue?: string;
   browsers: RunAction[]; // one per browser
+}
+
+// Human-readable action type labels
+function getActionLabel(type: string): string {
+  switch (type.toLowerCase()) {
+    case 'checkpoint': return 'Assertion';
+    case 'keypress': return 'Key Press';
+    case 'navigation':
+    case 'navigate': return 'Navigate';
+    default: return type.charAt(0).toUpperCase() + type.slice(1);
+  }
+}
+
+// Truncate a string with ellipsis
+function truncateStr(str: string, max: number): string {
+  return str.length > max ? str.slice(0, max) + '\u2026' : str;
+}
+
+// Human-readable assertion check type labels
+function getCheckTypeLabel(checkType: string): string {
+  switch (checkType) {
+    case 'elementVisible': return 'Element is visible';
+    case 'elementText': return 'Text equals';
+    case 'containsText': return 'Text contains';
+    case 'elementHasValue': return 'Input value equals';
+    case 'pageTitle': return 'Page title equals';
+    case 'urlMatch': return 'URL equals';
+    case 'urlContains': return 'URL contains';
+    case 'pageLoad': return 'Page loaded';
+    default: return checkType;
+  }
+}
+
+// Build action description from available data
+function getActionDescription(group: GroupedAction): string {
+  const representative = group.browsers[0];
+  const type = group.actionType.toLowerCase();
+
+  if (type === 'checkpoint') {
+    const checkType = representative?.assertionCheckType;
+    if (checkType) {
+      const label = getCheckTypeLabel(checkType);
+      // For checks with an expected value, show it
+      if (representative?.assertionExpected && checkType !== 'elementVisible' && checkType !== 'pageLoad') {
+        return `${label}: "${truncateStr(representative.assertionExpected, 40)}"`;
+      }
+      return label;
+    }
+    // Fallback for old data without checkType
+    if (representative?.assertionExpected) {
+      return `Expected: ${truncateStr(representative.assertionExpected, 50)}`;
+    }
+    return 'Assertion check';
+  }
+
+  if (type === 'navigation' || type === 'navigate') {
+    if (representative?.pageUrl) {
+      try {
+        const url = new URL(representative.pageUrl);
+        return truncateStr(url.pathname + url.search, 50);
+      } catch {
+        return truncateStr(representative.pageUrl, 50);
+      }
+    }
+    return 'Page navigation';
+  }
+
+  // For click, input, hover, select, etc.
+  const parts: string[] = [];
+  if (representative?.elementTagName) {
+    parts.push(`<${representative.elementTagName}>`);
+  }
+  if (group.selectorValue) {
+    parts.push(truncateStr(group.selectorValue, 40));
+  }
+
+  return parts.length > 0 ? parts.join(' ') : '\u2013';
+}
+
+// Compute aggregate assertion result across browsers
+function aggregateAssertionResult(browsers: RunAction[]): boolean | null {
+  if (browsers.some((a) => a.assertionPassed === false)) return false;
+  if (browsers.every((a) => a.assertionPassed === true)) return true;
+  return null;
 }
 
 // Icons
@@ -232,61 +333,26 @@ function StatusBadge({ status }: { status: RunAction['status'] }) {
   );
 }
 
-// Action type icon
+// Action type icon + color config (matches recording detail page)
+const ACTION_TYPE_ICONS: Record<string, { icon: React.ComponentType<{ className?: string }>; color: string }> = {
+  click: { icon: MousePointer2, color: 'text-blue-500' },
+  input: { icon: Keyboard, color: 'text-green-500' },
+  type: { icon: Keyboard, color: 'text-green-500' },
+  navigation: { icon: Navigation, color: 'text-purple-500' },
+  navigate: { icon: Navigation, color: 'text-purple-500' },
+  scroll: { icon: ArrowUpDown, color: 'text-orange-500' },
+  hover: { icon: Hand, color: 'text-yellow-500' },
+  select: { icon: ChevronDownLucide, color: 'text-teal-500' },
+  keypress: { icon: KeyRound, color: 'text-pink-500' },
+  submit: { icon: Send, color: 'text-indigo-500' },
+  checkpoint: { icon: CheckCircle2, color: 'text-emerald-500' },
+  'modal-lifecycle': { icon: Layout, color: 'text-slate-500' },
+};
+
 function ActionTypeIcon({ type }: { type: string }) {
-  const iconColor = 'text-muted-foreground';
-  
-  switch (type.toLowerCase()) {
-    case 'click':
-      return (
-        <svg className={cn('h-4 w-4', iconColor)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M9 9l10 10m0-10v10h-10" />
-        </svg>
-      );
-    case 'input':
-    case 'type':
-      return (
-        <svg className={cn('h-4 w-4', iconColor)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M4 7V4h16v3" />
-          <path d="M9 20h6" />
-          <path d="M12 4v16" />
-        </svg>
-      );
-    case 'navigation':
-    case 'navigate':
-      return (
-        <svg className={cn('h-4 w-4', iconColor)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
-          <path d="M3 3v5h5" />
-        </svg>
-      );
-    case 'scroll':
-      return (
-        <svg className={cn('h-4 w-4', iconColor)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 3v18" />
-          <path d="m8 6 4-3 4 3" />
-          <path d="m8 18 4 3 4-3" />
-        </svg>
-      );
-    case 'select':
-      return (
-        <svg className={cn('h-4 w-4', iconColor)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="m3 9 9 9 9-9" />
-        </svg>
-      );
-    case 'hover':
-      return (
-        <svg className={cn('h-4 w-4', iconColor)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M12 3v2m0 14v2m9-9h-2M5 12H3m15.36-5.64-1.42 1.42M7.06 16.94l-1.42 1.42m12.72 0-1.42-1.42M7.06 7.06 5.64 5.64" />
-        </svg>
-      );
-    default:
-      return (
-        <svg className={cn('h-4 w-4', iconColor)} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-      );
-  }
+  const config = ACTION_TYPE_ICONS[type.toLowerCase()] ?? { icon: Circle, color: 'text-muted-foreground' };
+  const Icon = config.icon;
+  return <Icon className={cn('h-4 w-4', config.color)} />;
 }
 
 // Build screenshot URL with JWT token
@@ -380,6 +446,19 @@ function GroupedActionDetails({
                   {action.errorMessage}
                 </pre>
               )}
+              {action.assertionPassed !== null && action.assertionPassed !== undefined && (
+                <div className="ml-6 text-xs space-y-1">
+                  <p className={action.assertionPassed ? 'text-emerald-600 dark:text-emerald-400 font-medium' : 'text-destructive font-medium'}>
+                    {action.assertionCheckType ? getCheckTypeLabel(action.assertionCheckType) : 'Assertion'}: {action.assertionPassed ? 'Passed' : 'Failed'}
+                  </p>
+                  {action.assertionExpected && action.assertionCheckType !== 'elementVisible' && action.assertionCheckType !== 'pageLoad' && (
+                    <p className="text-muted-foreground">Expected: <code className="bg-secondary px-1 py-0.5 rounded">{action.assertionExpected}</code></p>
+                  )}
+                  {action.assertionActual && (
+                    <p className="text-muted-foreground">Actual: <code className="bg-secondary px-1 py-0.5 rounded">{action.assertionActual}</code></p>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -391,6 +470,19 @@ function GroupedActionDetails({
               <pre className="text-xs text-destructive bg-destructive/10 p-2 rounded-md whitespace-pre-wrap font-mono overflow-x-auto">
                 {representative.errorMessage}
               </pre>
+            </div>
+          )}
+          {representative?.assertionPassed !== null && representative?.assertionPassed !== undefined && (
+            <div className="space-y-1">
+              <p className={cn('text-sm font-medium', representative.assertionPassed ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive')}>
+                {representative.assertionCheckType ? getCheckTypeLabel(representative.assertionCheckType) : 'Assertion'}: {representative.assertionPassed ? 'Passed' : 'Failed'}
+              </p>
+              {representative.assertionExpected && representative.assertionCheckType !== 'elementVisible' && representative.assertionCheckType !== 'pageLoad' && (
+                <p className="text-xs text-muted-foreground">Expected: <code className="bg-secondary px-1 py-0.5 rounded">{representative.assertionExpected}</code></p>
+              )}
+              {representative.assertionActual && (
+                <p className="text-xs text-muted-foreground">Actual: <code className="bg-secondary px-1 py-0.5 rounded">{representative.assertionActual}</code></p>
+              )}
             </div>
           )}
         </>
@@ -575,7 +667,7 @@ export function RunActionsTable({ actions, isLoading, runId, onScreenshotClick }
             <TableHead>Action</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Duration</TableHead>
-            <TableHead>Selector</TableHead>
+            <TableHead>Details</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -606,7 +698,7 @@ export function RunActionsTable({ actions, isLoading, runId, onScreenshotClick }
             <TableHead>Action</TableHead>
             <TableHead>{isMultiBrowser ? 'Browsers' : 'Status'}</TableHead>
             <TableHead>Duration</TableHead>
-            <TableHead>Selector</TableHead>
+            <TableHead>Details</TableHead>
             <TableHead className="w-12"></TableHead>
           </TableRow>
         </TableHeader>
@@ -620,6 +712,9 @@ export function RunActionsTable({ actions, isLoading, runId, onScreenshotClick }
               0
             );
             const hasAnyFailed = group.browsers.some((a) => a.status === 'failed');
+            const isAssertion = group.actionType.toLowerCase() === 'checkpoint';
+            const assertionResult = isAssertion ? aggregateAssertionResult(group.browsers) : null;
+            const actionDescription = getActionDescription(group);
 
             return (
               <React.Fragment key={group.actionId}>
@@ -627,6 +722,7 @@ export function RunActionsTable({ actions, isLoading, runId, onScreenshotClick }
                   className={cn(
                     'cursor-pointer',
                     hasAnyFailed && 'bg-destructive/5',
+                    isAssertion && !hasAnyFailed && 'bg-primary/5',
                     isExpanded && 'border-b-0'
                   )}
                   onClick={() => toggleRow(group.actionId)}
@@ -637,7 +733,15 @@ export function RunActionsTable({ actions, isLoading, runId, onScreenshotClick }
                   <TableCell>
                     <div className="flex items-center gap-2">
                       <ActionTypeIcon type={group.actionType} />
-                      <span className="font-medium capitalize">{group.actionType}</span>
+                      <span className="font-medium">{getActionLabel(group.actionType)}</span>
+                      {isAssertion && assertionResult !== null && (
+                        <Badge
+                          variant={assertionResult ? 'success-soft' : 'destructive-soft'}
+                          className="text-[10px] px-1.5 py-0 leading-tight"
+                        >
+                          {assertionResult ? '✓ Pass' : '✗ Fail'}
+                        </Badge>
+                      )}
                     </div>
                   </TableCell>
                   <TableCell>
@@ -679,13 +783,12 @@ export function RunActionsTable({ actions, isLoading, runId, onScreenshotClick }
                     )}
                   </TableCell>
                   <TableCell>
-                    {group.selectorUsed ? (
-                      <Badge variant="secondary" className="text-xs">
-                        {group.selectorUsed}
-                      </Badge>
-                    ) : (
-                      <span className="text-muted-foreground">-</span>
-                    )}
+                    <span
+                      className="text-xs text-muted-foreground truncate max-w-[250px] block"
+                      title={actionDescription}
+                    >
+                      {actionDescription}
+                    </span>
                   </TableCell>
                   <TableCell>
                     <ChevronDownIcon

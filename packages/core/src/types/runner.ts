@@ -19,6 +19,9 @@ export interface RunResult {
   screenshots?: string[]; // paths to screenshot files
   timingEnabled?: boolean; // Whether timing delays were used
   skippedActions?: SkippedAction[]; // Phase 2: Track skipped optional actions
+  assertionsPassed?: number; // Number of checkpoints that passed
+  assertionsFailed?: number; // Number of checkpoints that failed
+  assertionsTotal?: number; // Total number of checkpoints
 }
 
 /**
@@ -78,6 +81,9 @@ export interface RunOptions {
 
   // Run identification (for screenshot naming)
   runId?: string; // Unique run identifier for screenshot filenames
+
+  // Variables for input substitution (e.g., { EMAIL: "test@example.com", PASSWORD: "secret" })
+  variables?: Record<string, string>;
 }
 
 /**

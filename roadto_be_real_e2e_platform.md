@@ -134,12 +134,12 @@ interface CheckpointAction extends BaseAction {
 
 | # | Change | File | Details |
 |---|--------|------|---------|
-| 1a | Add "Add Assertion" button | Extension (popup UI) | New button in the recording toolbar, only visible while recording is active |
-| 1b | Implement inspect mode | Extension (`content-script`) | Inject overlay + hover highlight + click handler into page. Use `document.elementFromPoint()` for hover detection. Blue outline via `outline: 2px solid #3b82f6` on hovered element. |
-| 1c | Build assertion panel | Extension (`content-script`) | Floating popover near clicked element. Show assertion type dropdown + pre-filled expected value (editable). "Add" and "Cancel" buttons. |
-| 1d | Determine available assertions | Extension (`content-script`) | Inspect clicked element: if has `textContent` → show Text Equals/Contains. If is `input/select/textarea` → show Has Value. Always show Is Visible. |
-| 1e | Generate CheckpointAction | Extension (`event-listener.ts`) | On "Add" click: build `CheckpointAction` with selectors (same multi-strategy as other actions), `checkType`, `expectedValue`, `actualValue`. Append to `actions[]`. |
-| 1f | Page-level assertions | Extension (popup UI) | In the assertion panel, add "URL Contains" and "Page Title" options that don't require an element selection — available directly from the "Add Assertion" button as a dropdown. |
+| 1a | ✅ Add "Add Assertion" button | Extension (popup UI) | New button in the recording toolbar, only visible while recording is active |
+| 1b | ✅ Implement inspect mode | Extension (`content-script`) | Inject overlay + hover highlight + click handler into page. Use `document.elementFromPoint()` for hover detection. Blue outline via `outline: 2px solid #3b82f6` on hovered element. |
+| 1c | ✅ Build assertion panel | Extension (`content-script`) | Floating popover near clicked element. Show assertion type dropdown + pre-filled expected value (editable). "Add" and "Cancel" buttons. |
+| 1d | ✅ Determine available assertions | Extension (`content-script`) | Inspect clicked element: if has `textContent` → show Text Equals/Contains. If is `input/select/textarea` → show Has Value. Always show Is Visible. |
+| 1e | ✅ Generate CheckpointAction | Extension (`event-listener.ts`) | On "Add" click: build `CheckpointAction` with selectors (same multi-strategy as other actions), `checkType`, `expectedValue`, `actualValue`. Append to `actions[]`. |
+| 1f | ✅ Page-level assertions | Extension (popup UI) | In the assertion panel, add "URL Contains" and "Page Title" options that don't require an element selection — available directly from the "Add Assertion" button as a dropdown. |
 
 ---
 
@@ -156,8 +156,8 @@ These auto-checkpoints are **non-intrusive** — they appear as regular actions 
 
 | # | Change | File | Details |
 |---|--------|------|---------|
-| 1g | Auto URL checkpoint after navigation | Extension (`event-listener.ts`) | After detecting URL change (already tracked), emit `CheckpointAction` with `checkType: 'urlMatch'` and `expectedUrl: window.location.href`, `auto: true` |
-| 1h | Auto URL checkpoint after form submit | Extension (`event-listener.ts`) | After `submit` action, wait 500ms for navigation to settle, then emit URL checkpoint if URL changed |
+| 1g | ✅ Auto URL checkpoint after navigation | Extension (`event-listener.ts`) | After detecting URL change (already tracked), emit `CheckpointAction` with `checkType: 'urlContains'` and `expectedUrl` (pathname only), `auto: true` |
+| 1h | ✅ Auto URL checkpoint after form submit | Extension (`event-listener.ts`) | After `submit` action, wait 500ms for navigation to settle, then emit URL checkpoint if URL changed |
 
 ---
 
@@ -194,9 +194,9 @@ case 'checkpoint':
 
 | # | Change | File | Details |
 |---|--------|------|---------|
-| 1i | Add `executeCheckpoint()` method | Core (`PlaywrightRunner.ts`) | ~80 lines: find element via selector, get actual value based on `checkType`, compare against expected |
-| 1j | Handle checkpoint in `executeAction()` | Core (`PlaywrightRunner.ts`) | Add `case 'checkpoint'` to the action type switch, call `executeCheckpoint()` |
-| 1k | Add checkpoint to Zod schema | Core (`RecordingParser.ts`) | Validate `checkpoint` actions during parsing with proper schema |
+| 1i | ✅ Add `executeCheckpoint()` method | Core (`PlaywrightRunner.ts`) | ~80 lines: find element via selector, get actual value based on `checkType`, compare against expected |
+| 1j | ✅ Handle checkpoint in `executeAction()` | Core (`PlaywrightRunner.ts`) | Add `case 'checkpoint'` to the action type switch, call `executeCheckpoint()` |
+| 1k | ✅ Add checkpoint to Zod schema | Core (`RecordingParser.ts`) | Validate `checkpoint` actions during parsing with proper schema |
 
 ---
 
@@ -204,9 +204,9 @@ case 'checkpoint':
 
 | # | Change | File | Details |
 |---|--------|------|---------|
-| 1l | Add assertion columns to `run_actions` | API (`run_actions` schema) | Add `assertion_passed: boolean \| null`, `assertion_expected: text \| null`, `assertion_actual: text \| null` columns |
-| 1m | Generate migration | API (drizzle) | `pnpm db:generate` → `pnpm db:migrate` |
-| 1n | Update action persistence | API (`testRunProcessor.ts`) | When saving checkpoint action results, include assertion fields |
+| 1l | ✅ Add assertion columns to `run_actions` | API (`run_actions` schema) | Add `assertion_passed: boolean \| null`, `assertion_expected: text \| null`, `assertion_actual: text \| null` columns. Also added `assertionsTotal`, `assertionsPassed`, `assertionsFailed` to `runs` table. |
+| 1m | ✅ Generate migration | API (drizzle) | `pnpm db:generate` → `pnpm db:migrate` |
+| 1n | ✅ Update action persistence | API (`testRunProcessor.ts`) | When saving checkpoint action results, include assertion fields |
 
 ---
 
@@ -214,14 +214,16 @@ case 'checkpoint':
 
 | # | Change | File | Details |
 |---|--------|------|---------|
-| 1o | Assertion badge in actions table | Web (run detail page) | For checkpoint actions: green ✅ badge if `assertion_passed === true`, red ❌ badge if `false`. Show `checkType` as label (e.g., "Text Equals", "URL Match") |
-| 1p | Expected vs Actual diff | Web (run detail page) | On failed assertions: expandable row showing `Expected: "Welcome, John!"` vs `Actual: "Error: Unauthorized"` with red highlight on differences |
-| 1q | Assertion summary in run header | Web (run detail page) | Show "Assertions: 5/6 passed" in the run summary bar alongside existing duration/actions count |
+| 1o | ✅ Assertion badge in actions table | Web (run detail page) | For checkpoint actions: green ✅ badge if `assertion_passed === true`, red ❌ badge if `false`. Show `checkType` as label (e.g., "Text Equals", "URL Match") |
+| 1p | ✅ Expected vs Actual diff | Web (run detail page) | On failed assertions: expandable row showing `Expected: "Welcome, John!"` vs `Actual: "Error: Unauthorized"` with red highlight on differences |
+| 1q | ✅ Assertion summary in run header | Web (run detail page) | Show "Assertions: 5/6 passed" in the run summary bar alongside existing duration/actions count |
 
 ---
 
 **Estimated effort:** 4-5 days (2-3 days extension, 0.5 day core, 0.5 day API, 0.5-1 day web)
 **Lines of code:** ~800 across extension + 3 platform packages
+
+> **✅ STEP 1 FULLY COMPLETED** — March 6-8, 2026. All sub-items (1a–1q) implemented across extension, core, API, and web.
 
 ---
 
@@ -306,23 +308,115 @@ case 'checkpoint':
 
 ---
 
-### Step 6: Test Data / Parameterization
+### Step 6: Variables & Test Data / Parameterization ⭐ CRITICAL
 
-**Why:** Run the same test with different data — different users, different products, different inputs. Essential for data-driven testing.
+**Why:** The extension already records `${PASSWORD}` in password fields — but the runner has **zero variable resolution**. It would type the literal string `${PASSWORD}` into the field. That means **any recording with a login flow is broken during replay**. This is a P0 blocker.
 
-**Key Insight:** The extension already has `${VARIABLE}` syntax for passwords. Extend this to any field.
+Beyond fixing passwords, a generic variable system enables running the same test with different data — different users, different environments, different inputs.
 
-**What to build:**
+**Key Insight:** The `${VARIABLE}` syntax already exists for passwords. We need to:
+1. **Make the runner actually resolve variables** (currently nobody does)
+2. **Extend to any input field** (not just passwords)
+3. **Provide a way to supply variable values** (UI, CLI, API)
 
-| # | Change | Package | Details |
-|---|--------|---------|---------|
-| 6a | Generic variable support | Extension (`event-listener.ts`) | Allow users to mark any input as a variable (not just passwords) |
-| 6b | Variable resolution at runtime | Core (`PlaywrightRunner.ts`) | Replace `${VAR_NAME}` with values from environment variables or a variables JSON file |
-| 6c | Variables UI | Web (test config) | Define variable sets (e.g., "staging-admin", "production-readonly") with key-value pairs |
-| 6d | `--variables` CLI option | CLI (`run` command) | `--variables vars.json` or `--var USERNAME=admin` |
+---
 
-**Estimated effort:** 1-2 days
-**Lines of code:** ~250
+#### Part A: Variable Resolution in Runner (Platform — Core) ⭐ MUST DO FIRST
+
+This is the most critical piece — without it, `${PASSWORD}` recordings fail.
+
+**How it works:**
+1. Before executing an `input` action, scan `action.value` for `${VAR_NAME}` patterns
+2. Replace each variable with its value from the provided variables map
+3. If a variable is not found, throw a clear error: `Variable "PASSWORD" is not defined`
+
+```typescript
+// In PlaywrightRunner, before typing into input
+const resolvedValue = this.resolveVariables(action.value, this.variables);
+await locator.fill(resolvedValue);
+
+// resolveVariables('Hello ${USERNAME}, your pass is ${PASSWORD}', vars)
+// → 'Hello admin, your pass is secret123'
+```
+
+**Variable sources (priority order):**
+1. Variables passed directly via `RunOptions.variables` (from API/CLI)
+2. Environment variables (`process.env.SAVEACTION_VAR_PASSWORD`)
+3. `.env` file in project root (optional)
+
+| # | Change | File | Details |
+|---|--------|------|----------|
+| 6a | ✅ Add `variables` to `RunOptions` | Core (`runner.ts` types) | `variables?: Record<string, string>` — key-value map |
+| 6b | ✅ Add `resolveVariables()` method | Core (`PlaywrightRunner.ts`) | Regex scan for `\${VAR_NAME}`, replace with value from variables map. Error if variable undefined. |
+| 6c | ✅ Call resolver before `input` actions | Core (`PlaywrightRunner.ts`) | In `executeInputAction()`, resolve `action.value` before typing. Also resolve in `executeSelectAction()` for select values. |
+| 6d | 🔜 DEFERRED | Core (`PlaywrightRunner.ts`) | Env var fallback (`SAVEACTION_VAR_*`). Not needed now — variables flow through test config → worker → runner. |
+
+---
+
+#### Part B: Generic Variable Marking in Extension
+
+Currently only password fields get `${PASSWORD}`. Let users mark any input as a variable.
+
+**UX Flow:**
+1. During recording, when user types into an input field, the extension shows a small icon/button near the field: **"Mark as Variable"**
+2. User clicks it → prompt asks for variable name (pre-filled with field name, e.g., `EMAIL`, `USERNAME`)
+3. The recorded action's `value` becomes `${EMAIL}` instead of the actual typed value
+4. Existing `${PASSWORD}` auto-detection continues to work for password fields
+
+| # | Change | File | Details |
+|---|--------|------|----------|
+| 6e | ✅ "Mark as Variable" button | Extension (`content-script`) | HTML popup with inline naming (replaced window.prompt). Pre-fills with inferred name. Enter/Escape keyboard support. Click-outside dismiss. |
+| 6f | ✅ Replace value with variable | Extension (`event-listener.ts`) | `variableName` field on input actions. `backfillVariableNames()` at stop time. Store Credentials toggle to control password sanitization. |
+| 6g | ✅ Variable list in popup | Extension (popup UI) | Variables button shows popup with marked variables. UNMARK_VARIABLE message flow. Remove Variable button (red-themed). |
+
+---
+
+#### Part C: Variables Storage & API (Platform — API)
+
+| # | Change | File | Details |
+|---|--------|------|----------|
+| 6h | ✅ Add `variables` column to `tests` | API (`tests` schema) | `variables: jsonb` — stores `Record<string, string>` default values per test |
+| 6i | 🔜 DEFERRED | API (`runs` schema) | `variable_overrides: jsonb` — audit trail only. Runs already execute with correct variables. |
+| 6j | ✅ Pass variables to worker | API (`testRunProcessor.ts`) | Load test's `variables`, merge with any run-specific overrides, pass to runner |
+| 6k | ✅ Variables API endpoint | API (test routes) | Variables accepted in test POST/PUT body (part of test CRUD, no dedicated endpoint needed) |
+
+---
+
+#### Part D: Variables UI (Platform — Web)
+
+| # | Change | File | Details |
+|---|--------|------|----------|
+| 6l | ✅ Variables editor in test config | Web (test edit page) | Variables input in test edit form, loaded/saved as part of test CRUD |
+| 6m | 🔜 DEFERRED | Web (run dialog) | Override variables per-run. Edge case — 99% of runs use test defaults. |
+| 6n | 🔜 DEFERRED | Web (run detail page) | Show variables used in run. Depends on 6i. Pure display feature. |
+
+---
+
+#### Part E: CLI Variables Support
+
+| # | Change | File | Details |
+|---|--------|------|----------|
+| 6o | 🔜 DEFERRED | CLI (`run` command) | `--var KEY=VALUE` — inline variable definition. CLI runs recordings directly, not API tests. |
+| 6p | 🔜 DEFERRED | CLI (`run` command) | `--variables vars.json` — load from file. Low priority. |
+| 6q | 🔜 DEFERRED | CLI (`run` command) | `--env-prefix SAVEACTION_VAR_` — env var prefix. Low priority. |
+
+**CLI usage examples:**
+```bash
+# Inline variables
+saveaction run recording.json --var PASSWORD=secret123 --var EMAIL=admin@test.com
+
+# From JSON file
+saveaction run recording.json --variables vars.json
+
+# From environment variables (auto: SAVEACTION_VAR_PASSWORD, SAVEACTION_VAR_EMAIL)
+export SAVEACTION_VAR_PASSWORD=secret123
+saveaction run recording.json
+```
+
+---
+
+**Estimated effort:** 3-4 days (0.5 day core, 1 day extension, 1 day API, 0.5 day web, 0.5 day CLI)
+**Lines of code:** ~600 across 4 platform packages + extension
 
 ---
 
@@ -360,42 +454,60 @@ case 'checkpoint':
 
 ---
 
-### Step 9: Flaky Test Detection & Auto-Retry
+### Step 9: Browser Dialog Handling
+
+**Why:** The runner hangs when the page triggers `alert()`, `confirm()`, or `prompt()` dialogs. These are common in real apps (delete confirmations, form validation alerts, session timeout prompts). Without handling, the test just times out.
+
+**What to build:**
+
+| # | Change | Package | Details |
+|---|--------|---------|---------|---|
+| 9a | Auto-dismiss dialogs by default | Core (`PlaywrightRunner.ts`) | Register `page.on('dialog')` handler — auto-accept `alert`, auto-accept `confirm`, auto-dismiss `prompt` |
+| 9b | Detect dialog events in extension | Extension (`event-listener.ts`) | Capture `alert`/`confirm`/`prompt` interactions during recording |
+| 9c | Define `DialogAction` type | Extension + Core (`actions.ts`) | `dialogType`, `message`, `response` (accept/dismiss), `promptValue` |
+| 9d | Replay dialog response | Core (`PlaywrightRunner.ts`) | Use `page.on('dialog')` to match and respond per recorded action |
+
+**Estimated effort:** 1 day
+**Lines of code:** ~150
+
+---
+
+### Step 10: Flaky Test Detection & Auto-Retry
 
 **Why:** E2E tests are inherently flaky. A platform must handle this gracefully.
 
 **What to build:**
 
 | # | Change | Package | Details |
-|---|--------|---------|---------|
-| 9a | Auto-retry on failure | Core (`PlaywrightRunner.ts`) | `retryCount: 2` — re-run the entire test on failure |
-| 9b | Flaky test marking | API (`tests` table) | Track pass/fail ratio over last N runs, flag as flaky if ratio < threshold |
-| 9c | Flaky badge in UI | Web (test list, run results) | Show "Flaky" badge on tests with inconsistent results |
-| 9d | Retry in worker | API (`testRunProcessor.ts`) | On failure, re-queue the job up to N times automatically |
+|---|--------|---------|---------|---|
+| 10a | Auto-retry on failure | Core (`PlaywrightRunner.ts`) | `retryCount: 2` — re-run the entire test on failure |
+| 10b | Flaky test marking | API (`tests` table) | Track pass/fail ratio over last N runs, flag as flaky if ratio < threshold |
+| 10c | Flaky badge in UI | Web (test list, run results) | Show "Flaky" badge on tests with inconsistent results |
+| 10d | Retry in worker | API (`testRunProcessor.ts`) | On failure, re-queue the job up to N times automatically |
 
 **Estimated effort:** 2 days
 **Lines of code:** ~300
 
 ---
 
-### Step 10: Webhooks (Already Planned)
+### Step 11: Webhooks (Already Planned)
 
 **Why:** Notify external systems (Slack, email, PagerDuty) on test failure.
 
 **What to build:**
 
 | # | Change | Package | Details |
-|---|--------|---------|---------|
-| 10a | Webhook delivery service | API (`WebhookService.ts`) | Send POST with HMAC signature on events |
-| 10b | Webhook routes | API (`webhooks.ts` routes) | CRUD for webhook config |
-| 10c | Webhook management UI | Web (settings) | Configure webhook URLs, events, secrets |
-| 10d | Delivery logs | API + Web | Show delivery history with retry |
+|---|--------|---------|---------|---|
+| 11a | Webhook delivery service | API (`WebhookService.ts`) | Send POST with HMAC signature on events |
+| 11b | Webhook routes | API (`webhooks.ts` routes) | CRUD for webhook config |
+| 11c | Webhook management UI | Web (settings) | Configure webhook URLs, events, secrets |
+| 11d | Delivery logs | API + Web | Show delivery history with retry |
 
 **Estimated effort:** 2-3 days (schema already exists)
 
 ---
 
-### Step 11: Team / Organization Support
+### Step 12: Team / Organization Support
 
 **Why:** Real companies need multiple users sharing projects, tests, and results.
 
@@ -403,11 +515,11 @@ case 'checkpoint':
 
 | # | Change | Package | Details |
 |---|--------|---------|---------|
-| 11a | Organizations table | API (schema) | `organizations` with owner, plan |
-| 11b | Organization membership | API (schema) | `org_members` with roles (owner, admin, member, viewer) |
-| 11c | Invite flow | API (routes) + Web | Invite by email, accept/decline |
-| 11d | Permission checks | API (middleware) | Check user role before every operation |
-| 11e | Org switcher | Web (layout) | Switch between personal and org workspaces |
+| 12a | Organizations table | API (schema) | `organizations` with owner, plan |
+| 12b | Organization membership | API (schema) | `org_members` with roles (owner, admin, member, viewer) |
+| 12c | Invite flow | API (routes) + Web | Invite by email, accept/decline |
+| 12d | Permission checks | API (middleware) | Check user role before every operation |
+| 12e | Org switcher | Web (layout) | Switch between personal and org workspaces |
 
 **Estimated effort:** 5-7 days
 
@@ -415,21 +527,22 @@ case 'checkpoint':
 
 ## Priority Order
 
-| Priority | Step | Impact | Effort | Why First |
-|----------|------|--------|--------|-----------|
-| **P0** | Step 1: Assertions (Manual + Auto) | 🔴 Critical | 4-5 days | Without this, tests don't actually verify anything |
-| **P0** | Step 2: Wire Up Wait Conditions | 🟠 High | 1 day | Data already captured, just needs wiring |
-| **P1** | Step 3: Visual Regression | 🟠 High | 3 days | Screenshots already captured, adds visual verification |
-| **P1** | Step 6: Test Data / Parameterization | 🟠 High | 1-2 days | Variable syntax already exists, just extend it |
-| **P1** | Step 9: Flaky Test Detection | 🟡 Medium | 2 days | Essential for real-world reliability |
-| **P2** | Step 4: iframe Support | 🟡 Medium | 1 day | Types already exist |
-| **P2** | Step 5: File Upload | 🟡 Medium | 2 days | Common in real apps |
-| **P2** | Step 7: Multi-Tab | 🟡 Medium | 2 days | OAuth, payment flows need this |
-| **P2** | Step 10: Webhooks | 🟡 Medium | 2-3 days | Schema already exists |
-| **P3** | Step 8: Drag & Drop | 🟢 Low | 1-2 days | Niche but important for some apps |
-| **P3** | Step 11: Team Support | 🟢 Low | 5-7 days | Needed for enterprise but not for platform correctness |
+| Priority | Step | Impact | Effort | Status |
+|----------|------|--------|--------|--------|
+| **P0** | Step 1: Assertions (Manual + Auto) | 🔴 Critical | 4-5 days | ✅ DONE |
+| **P0** | Step 6: Variables & Test Data | 🔴 Critical | 3-4 days | ✅ DONE (Core + API + editor; remaining items deferred) |
+| **P0** | Step 2: Wire Up Wait Conditions | 🟠 High | 1 day | ⏳ TODO |
+| **P1** | Step 3: Visual Regression | 🟠 High | 3 days | ⏳ TODO |
+| **P1** | Step 9: Browser Dialog Handling | 🟠 High | 1 day | ⏳ TODO — runner hangs on alert/confirm/prompt |
+| **P1** | Step 10: Flaky Test Detection | 🟡 Medium | 2 days | ⏳ TODO |
+| **P2** | Step 4: iframe Support | 🟡 Medium | 1 day | ⏳ TODO |
+| **P2** | Step 5: File Upload | 🟡 Medium | 2 days | ⏳ TODO |
+| **P2** | Step 7: Multi-Tab | 🟡 Medium | 2 days | ⏳ TODO |
+| **P2** | Step 11: Webhooks | 🟡 Medium | 2-3 days | ⏳ TODO — schema exists, no routes |
+| **P3** | Step 8: Drag & Drop | 🟢 Low | 1-2 days | ⏳ TODO |
+| **P3** | Step 12: Team Support | 🟢 Low | 5-7 days | ⏳ TODO |
 
-**Total estimated effort:** ~24-35 days for all steps
+**Total estimated effort:** ~27-39 days for all steps (~9-10 days already done)
 
 ---
 
@@ -446,16 +559,25 @@ case 'checkpoint':
 
 ## Progress Tracker
 
-| Step | Status | Branch | Date |
-|------|--------|--------|------|
-| Step 1: Assertions (Manual + Auto) | ⏳ TODO | — | — |
-| Step 2: Wire Up Wait Conditions | ⏳ TODO | — | — |
-| Step 3: Visual Regression | ⏳ TODO | — | — |
-| Step 4: iframe Support | ⏳ TODO | — | — |
-| Step 5: File Upload | ⏳ TODO | — | — |
-| Step 6: Test Data / Parameterization | ⏳ TODO | — | — |
-| Step 7: Multi-Tab Support | ⏳ TODO | — | — |
-| Step 8: Drag & Drop | ⏳ TODO | — | — |
-| Step 9: Flaky Test Detection | ⏳ TODO | — | — |
-| Step 10: Webhooks | ⏳ TODO | — | — |
-| Step 11: Team Support | ⏳ TODO | — | — |
+| Step | Status | Date |
+|------|--------|------|
+| Step 1: Assertions — Extension (1a–1h) | ✅ DONE | March 6-7, 2026 |
+| Step 1: Assertions — Core (1i–1k) | ✅ DONE | March 7-8, 2026 |
+| Step 1: Assertions — API (1l–1n) | ✅ DONE | March 7-8, 2026 |
+| Step 1: Assertions — Web UI (1o–1q) | ✅ DONE | March 7-8, 2026 |
+| Step 2: Wire Up Wait Conditions | ⏳ TODO | — |
+| Step 3: Visual Regression | ⏳ TODO | — |
+| Step 4: iframe Support | ⏳ TODO | — |
+| Step 5: File Upload | ⏳ TODO | — |
+| Step 6: Variables — Extension (6e–6g) | ✅ DONE | March 6-7, 2026 |
+| Step 6: Variables — Core (6a–6c) | ✅ DONE | March 7-8, 2026 |
+| Step 6: Variables — API (6h, 6j) | ✅ DONE | March 7-8, 2026 |
+| Step 6: Variables — API (6k) | ✅ DONE | March 7-8, 2026 |
+| Step 6: Variables — Web UI (6l) | ✅ DONE | March 7-8, 2026 |
+| Step 6: Variables — Deferred (6d, 6i, 6m–6n, 6o–6q) | 🔜 DEFERRED | — |
+| Step 7: Multi-Tab Support | ⏳ TODO | — |
+| Step 8: Drag & Drop | ⏳ TODO | — |
+| Step 9: Browser Dialog Handling | ⏳ TODO | — |
+| Step 10: Flaky Test Detection | ⏳ TODO | — |
+| Step 11: Webhooks | ⏳ TODO | — |
+| Step 12: Team Support | ⏳ TODO | — |

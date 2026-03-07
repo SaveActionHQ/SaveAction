@@ -66,6 +66,11 @@ export const ScheduleErrors = {
     400
   ),
   BULLMQ_NOT_AVAILABLE: new ScheduleError('Job queue not available', 'BULLMQ_NOT_AVAILABLE', 503),
+  EMPTY_VARIABLES: new ScheduleError(
+    'Test has variables with empty values. Set all variable values before scheduling.',
+    'EMPTY_VARIABLES',
+    400
+  ),
 } as const;
 
 /**
@@ -266,6 +271,14 @@ export class ScheduleService {
       // Verify test belongs to the specified suite
       if (test.suiteId !== input.suiteId) {
         throw ScheduleErrors.INVALID_TARGET;
+      }
+      // Validate that all variables have non-empty values
+      const testVariables = test.variables as Record<string, string> | null;
+      if (testVariables && Object.keys(testVariables).length > 0) {
+        const hasEmpty = Object.values(testVariables).some((v) => !v || !v.trim());
+        if (hasEmpty) {
+          throw ScheduleErrors.EMPTY_VARIABLES;
+        }
       }
     }
 

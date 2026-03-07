@@ -16,6 +16,7 @@ import {
   FileText,
   ExternalLink,
   CalendarClock,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -84,8 +85,18 @@ export default function TestDetailPage() {
   const [isRunning, setIsRunning] = React.useState(false);
   const [showScheduleDialog, setShowScheduleDialog] = React.useState(false);
 
+  // Check if any variable values are empty
+  const hasEmptyVariables = React.useMemo(() => {
+    if (!test?.variables) return false;
+    return Object.values(test.variables).some((v) => !v);
+  }, [test?.variables]);
+
   const handleRunTest = React.useCallback(async () => {
     if (isRunning || !test) return;
+    if (hasEmptyVariables) {
+      toast.error('All variables must have values before running. Edit the test to set variable values.');
+      return;
+    }
     setIsRunning(true);
     try {
       const run = await api.runTest({
@@ -100,7 +111,7 @@ export default function TestDetailPage() {
     } finally {
       setIsRunning(false);
     }
-  }, [isRunning, test, testId, projectId, toast, router]);
+  }, [isRunning, test, testId, projectId, toast, router, hasEmptyVariables]);
 
   const loadTest = React.useCallback(async () => {
     try {
@@ -215,7 +226,17 @@ export default function TestDetailPage() {
         </div>
         {!isLoading && (
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setShowScheduleDialog(true)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                if (hasEmptyVariables) {
+                  toast.error('All variables must have values before scheduling. Edit the test to set variable values.');
+                  return;
+                }
+                setShowScheduleDialog(true);
+              }}
+              disabled={hasEmptyVariables}
+            >
               <CalendarClock className="mr-2 h-4 w-4" />
               Schedule
             </Button>
@@ -225,7 +246,7 @@ export default function TestDetailPage() {
                 Edit
               </Link>
             </Button>
-            <Button onClick={handleRunTest} disabled={isRunning}>
+            <Button onClick={handleRunTest} disabled={isRunning || hasEmptyVariables}>
               <Play className="mr-2 h-4 w-4" />
               {isRunning ? 'Starting...' : 'Run Now'}
             </Button>
@@ -328,6 +349,43 @@ export default function TestDetailPage() {
               </CardContent>
             </Card>
           </div>
+
+          {/* Variables (if any) */}
+          {test.variables && Object.keys(test.variables).length > 0 && (
+            <Card className={hasEmptyVariables ? 'border-destructive' : undefined}>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Variables</CardTitle>
+                <Badge variant={hasEmptyVariables ? 'destructive' : 'secondary'}>{Object.keys(test.variables).length}</Badge>
+              </CardHeader>
+              <CardContent>
+                {hasEmptyVariables && (
+                  <div className="flex items-center gap-2 text-destructive text-sm mb-3 bg-destructive/10 rounded-md px-3 py-2">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>All variables must have values before running the test. <Link href={`/projects/${projectSlug}/suites/${suiteId}/tests/${testId}/edit`} className="underline font-medium">Edit test</Link> to set values.</span>
+                  </div>
+                )}
+                <div className="space-y-2">
+                  {Object.entries(test.variables).map(([name, value]) => (
+                    <div
+                      key={name}
+                      className={cn(
+                        'flex items-center justify-between rounded-md border px-3 py-2',
+                        !value && 'border-destructive bg-destructive/5'
+                      )}
+                    >
+                      <code className="text-sm font-mono text-primary">{name}</code>
+                      <span className="text-sm text-muted-foreground">
+                        {value || <span className="italic text-destructive">not set</span>}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-muted-foreground mt-3">
+                  Variables are substituted into input actions during test execution
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Test info */}
           <div className="grid gap-6 md:grid-cols-3">

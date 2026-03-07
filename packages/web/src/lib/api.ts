@@ -112,6 +112,9 @@ export interface Run {
   actionsExecuted?: number;
   actionsFailed?: number;
   actionsSkipped?: number;
+  assertionsTotal?: number;
+  assertionsPassed?: number;
+  assertionsFailed?: number;
   errorMessage?: string;
   errorActionId?: string;
   triggeredBy?: string;
@@ -165,6 +168,10 @@ export interface RunAction {
   elementTagName?: string;
   pageUrl?: string;
   pageTitle?: string;
+  assertionPassed?: boolean | null;
+  assertionExpected?: string | null;
+  assertionActual?: string | null;
+  assertionCheckType?: string | null;
 }
 
 export interface Schedule {
@@ -279,6 +286,7 @@ export interface Test {
   actionCount: number;
   browsers: TestBrowser[];
   config: TestConfig;
+  variables?: Record<string, string>;
   status: 'active' | 'inactive' | 'archived';
   displayOrder: number;
   lastRunAt?: string | null;
@@ -298,6 +306,7 @@ export interface CreateTestRequest {
   actionCount?: number;
   browsers?: TestBrowser[];
   config?: Partial<TestConfig>;
+  variables?: Record<string, string>;
 }
 
 export interface UpdateTestRequest {
@@ -309,6 +318,7 @@ export interface UpdateTestRequest {
   actionCount?: number;
   browsers?: TestBrowser[];
   config?: Partial<TestConfig>;
+  variables?: Record<string, string>;
   status?: 'active' | 'inactive' | 'archived';
 }
 
@@ -931,6 +941,7 @@ class ApiClient {
     projectId: string,
     params?: {
       suiteId?: string;
+      recordingId?: string;
       page?: number;
       limit?: number;
       search?: string;
@@ -941,6 +952,7 @@ class ApiClient {
   ): Promise<PaginatedResponse<Test>> {
     const searchParams = new URLSearchParams();
     if (params?.suiteId) searchParams.set('suiteId', params.suiteId);
+    if (params?.recordingId) searchParams.set('recordingId', params.recordingId);
     if (params?.page) searchParams.set('page', params.page.toString());
     if (params?.limit) searchParams.set('limit', params.limit.toString());
     if (params?.search) searchParams.set('search', params.search);

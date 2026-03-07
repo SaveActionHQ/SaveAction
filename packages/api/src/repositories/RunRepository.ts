@@ -61,6 +61,9 @@ export interface RunUpdateData {
   actionsExecuted?: number;
   actionsFailed?: number;
   actionsSkipped?: number;
+  assertionsTotal?: number;
+  assertionsPassed?: number;
+  assertionsFailed?: number;
   durationMs?: number;
   startedAt?: Date;
   completedAt?: Date;
@@ -146,6 +149,9 @@ export interface SafeRun {
   actionsExecuted: number | null;
   actionsFailed: number | null;
   actionsSkipped: number | null;
+  assertionsTotal: number | null;
+  assertionsPassed: number | null;
+  assertionsFailed: number | null;
   durationMs: number | null;
   startedAt: Date | null;
   completedAt: Date | null;
@@ -221,6 +227,10 @@ export interface SafeRunAction {
   elementTagName: string | null;
   pageUrl: string | null;
   pageTitle: string | null;
+  assertionPassed: boolean | null;
+  assertionExpected: string | null;
+  assertionActual: string | null;
+  assertionCheckType: string | null;
   createdAt: Date;
 }
 
@@ -251,6 +261,10 @@ export interface RunActionCreateData {
   elementTagName?: string;
   pageUrl?: string;
   pageTitle?: string;
+  assertionPassed?: boolean;
+  assertionExpected?: string;
+  assertionActual?: string;
+  assertionCheckType?: string;
 }
 
 /**
@@ -285,6 +299,9 @@ function toSafeRun(run: Run, scheduleName?: string | null): SafeRun {
     actionsExecuted: run.actionsExecuted ? parseInt(run.actionsExecuted, 10) : null,
     actionsFailed: run.actionsFailed ? parseInt(run.actionsFailed, 10) : null,
     actionsSkipped: run.actionsSkipped ? parseInt(run.actionsSkipped, 10) : null,
+    assertionsTotal: (run as any).assertionsTotal ? parseInt((run as any).assertionsTotal, 10) : null,
+    assertionsPassed: (run as any).assertionsPassed ? parseInt((run as any).assertionsPassed, 10) : null,
+    assertionsFailed: (run as any).assertionsFailed ? parseInt((run as any).assertionsFailed, 10) : null,
     durationMs: run.durationMs ? parseInt(run.durationMs, 10) : null,
     startedAt: run.startedAt,
     completedAt: run.completedAt,
@@ -364,6 +381,13 @@ function toSafeRunAction(action: RunAction): SafeRunAction {
     elementTagName: action.elementTagName,
     pageUrl: action.pageUrl,
     pageTitle: action.pageTitle,
+    assertionPassed:
+      action.assertionPassed === null || action.assertionPassed === undefined
+        ? null
+        : action.assertionPassed !== 'false',
+    assertionExpected: action.assertionExpected ?? null,
+    assertionActual: action.assertionActual ?? null,
+    assertionCheckType: action.assertionCheckType ?? null,
     createdAt: action.createdAt,
   };
 }
@@ -598,6 +622,12 @@ export class RunRepository {
     if (data.actionsFailed !== undefined) updateValues.actionsFailed = String(data.actionsFailed);
     if (data.actionsSkipped !== undefined)
       updateValues.actionsSkipped = String(data.actionsSkipped);
+    if (data.assertionsTotal !== undefined)
+      (updateValues as any).assertionsTotal = String(data.assertionsTotal);
+    if (data.assertionsPassed !== undefined)
+      (updateValues as any).assertionsPassed = String(data.assertionsPassed);
+    if (data.assertionsFailed !== undefined)
+      (updateValues as any).assertionsFailed = String(data.assertionsFailed);
     if (data.durationMs !== undefined) updateValues.durationMs = String(data.durationMs);
     if (data.startedAt !== undefined) updateValues.startedAt = data.startedAt;
     if (data.completedAt !== undefined) updateValues.completedAt = data.completedAt;
@@ -762,6 +792,11 @@ export class RunRepository {
       elementTagName: action.elementTagName,
       pageUrl: action.pageUrl,
       pageTitle: action.pageTitle,
+      assertionPassed:
+        action.assertionPassed === undefined ? null : action.assertionPassed ? 'true' : 'false',
+      assertionExpected: action.assertionExpected ?? null,
+      assertionActual: action.assertionActual ?? null,
+      assertionCheckType: action.assertionCheckType ?? null,
     }));
 
     const result = await this.db.insert(runActions).values(values).returning();

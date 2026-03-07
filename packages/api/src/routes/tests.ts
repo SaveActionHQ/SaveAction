@@ -142,6 +142,10 @@ const testRoutes: FastifyPluginAsync<TestRoutesOptions> = async (fastify, option
                 },
               },
             },
+            variables: {
+              type: 'object',
+              additionalProperties: { type: 'string' },
+            },
           },
         },
       },
@@ -181,6 +185,7 @@ const testRoutes: FastifyPluginAsync<TestRoutesOptions> = async (fastify, option
             page: { type: 'integer', minimum: 1 },
             limit: { type: 'integer', minimum: 1, maximum: 100 },
             suiteId: { type: 'string', format: 'uuid' },
+            recordingId: { type: 'string', format: 'uuid' },
             search: { type: 'string', maxLength: 255 },
             status: { type: 'string' },
             sortBy: {
@@ -313,6 +318,10 @@ const testRoutes: FastifyPluginAsync<TestRoutesOptions> = async (fastify, option
               maxItems: 3,
             },
             config: { type: 'object' },
+            variables: {
+              type: 'object',
+              additionalProperties: { type: 'string' },
+            },
           },
         },
       },

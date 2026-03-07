@@ -1052,6 +1052,29 @@ describe('RunnerService', () => {
         expect.objectContaining({ status: 'failed' })
       );
     });
+
+    it('should throw when test has empty variable values', async () => {
+      mockTestRepository.findById.mockResolvedValue({
+        ...sampleTest,
+        variables: { EMAIL: 'user@test.com', PASSWORD: '' },
+      });
+
+      await expect(
+        service.queueTestRun('user-123', PROJECT_UUID, { testId: TEST_UUID })
+      ).rejects.toEqual(RunErrors.EMPTY_VARIABLES);
+    });
+
+    it('should allow running test with all variables filled', async () => {
+      mockTestRepository.findById.mockResolvedValue({
+        ...sampleTest,
+        variables: { EMAIL: 'user@test.com', PASSWORD: 'secret' },
+      });
+
+      const result = await service.queueTestRun('user-123', PROJECT_UUID, {
+        testId: TEST_UUID,
+      });
+      expect(result).toBeDefined();
+    });
   });
 
   describe('queueSuiteRun', () => {
