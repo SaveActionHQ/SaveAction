@@ -29,7 +29,6 @@ import {
   CheckCircle2,
   Layout,
   ExternalLink,
-  Pencil,
   Trash2,
   Play,
   TestTube2,
@@ -68,7 +67,7 @@ const ACTION_TYPE_CONFIG: Record<
   select: { icon: ChevronDown, label: 'Select', color: 'text-teal-500' },
   keypress: { icon: KeyRound, label: 'Keypress', color: 'text-pink-500' },
   submit: { icon: Send, label: 'Submit', color: 'text-indigo-500' },
-  checkpoint: { icon: CheckCircle2, label: 'Checkpoint', color: 'text-emerald-500' },
+  checkpoint: { icon: CheckCircle2, label: 'Assertion', color: 'text-emerald-500' },
   'modal-lifecycle': { icon: Layout, label: 'Modal', color: 'text-slate-500' },
 };
 
@@ -122,7 +121,7 @@ function getActionDescription(action: Record<string, unknown>): string {
     case 'checkpoint': {
       const checkType = action.checkType as string | undefined;
       const passed = action.passed as boolean | undefined;
-      return `Checkpoint: ${checkType || 'validation'} ${passed ? '✓' : '✗'}`;
+      return `Assertion: ${checkType || 'validation'} ${passed ? '✓' : '✗'}`;
     }
     case 'modal-lifecycle': {
       const event = action.event as string | undefined;
@@ -252,18 +251,16 @@ export default function RecordingDetailPage() {
       const rec = await api.getRecording(recordingId);
       setRecording(rec);
 
-      // Fetch linked tests (tests that use this recording) and recent runs in parallel
-      const [testsRes, runsRes] = await Promise.all([
-        api.listTests(projectId, { limit: 100 }).catch(() => ({ data: [], pagination: { page: 1, limit: 100, total: 0, totalPages: 0 } })),
-        api.listRuns({ projectId, recordingId, limit: 10 }).catch(() => ({ data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } })),
-      ]);
+      // Only fetch tests/runs once projectId is resolved
+      if (projectId) {
+        const [testsRes, runsRes] = await Promise.all([
+          api.listTests(projectId, { recordingId, limit: 100 }).catch(() => ({ data: [], pagination: { page: 1, limit: 100, total: 0, totalPages: 0 } })),
+          api.listRuns({ projectId, recordingId, limit: 10 }).catch(() => ({ data: [], pagination: { page: 1, limit: 10, total: 0, totalPages: 0 } })),
+        ]);
 
-      // Filter tests that use this recording
-      const linked = testsRes.data.filter(
-        (t: Test) => t.recordingId === recordingId
-      );
-      setLinkedTests(linked);
-      setRecentRuns(runsRes.data);
+        setLinkedTests(testsRes.data);
+        setRecentRuns(runsRes.data);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load recording');
     } finally {
@@ -385,16 +382,6 @@ export default function RecordingDetailPage() {
           >
             <TestTube2 className="h-4 w-4 mr-1.5" />
             Create Test
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              // TODO: Edit dialog
-            }}
-          >
-            <Pencil className="h-4 w-4 mr-1.5" />
-            Edit
           </Button>
           <Button
             variant="outline"

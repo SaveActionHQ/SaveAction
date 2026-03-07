@@ -29,8 +29,12 @@ export type {
   SelectAction,
   KeypressAction,
   SubmitAction,
+  CheckpointAction,
+  HoverAction,
   SelectorStrategy,
 } from './types/index.js';
+
+export { isCheckpointAction } from './types/index.js';
 
 export type { RunResult, RunOptions, Reporter } from './types/runner.js';
 

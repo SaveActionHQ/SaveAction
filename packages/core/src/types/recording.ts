@@ -25,12 +25,23 @@ export interface Recording {
   userAgent: string;
   actions: Action[];
   version: string; // Schema version (semantic versioning)
+  variables?: RecordingVariable[]; // Variables captured during recording
 }
 
 /**
  * Recording state (internal use)
  */
 export type RecordingState = 'idle' | 'recording' | 'paused' | 'stopped';
+
+/**
+ * Variable definition captured during recording
+ */
+export interface RecordingVariable {
+  name: string; // e.g., "EMAIL", "PASSWORD"
+  fieldType: string; // HTML input type: "email", "password", "text", etc.
+  selector: string; // CSS selector of the input field
+  placeholder: string; // e.g., "${EMAIL}"
+}
 
 /**
  * Recording session metadata

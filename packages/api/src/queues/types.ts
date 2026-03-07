@@ -103,6 +103,9 @@ export interface BrowserRunResult {
   duration: number;
   actionsExecuted: number;
   actionsFailed: number;
+  assertionsTotal?: number;
+  assertionsPassed?: number;
+  assertionsFailed?: number;
   errorMessage?: string;
   videoPath?: string;
   screenshotPaths?: string[];
@@ -117,6 +120,9 @@ export interface TestRunJobResult {
   duration: number;
   actionsExecuted: number;
   actionsFailed: number;
+  assertionsTotal?: number;
+  assertionsPassed?: number;
+  assertionsFailed?: number;
   errorMessage?: string;
   videoPath?: string;
   /** Paths to captured screenshots */

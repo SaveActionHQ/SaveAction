@@ -464,6 +464,41 @@ describe('TestService', () => {
       expect(result).not.toHaveProperty('userId');
       expect(result).not.toHaveProperty('deletedAt');
     });
+
+    it('should throw when variables have empty values', async () => {
+      const input: CreateTestRequest = {
+        name: 'Test with vars',
+        recordingData: {},
+        variables: { EMAIL: 'test@example.com', PASSWORD: '' },
+      };
+
+      await expect(service.createTest(USER_ID, PROJECT_ID, input)).rejects.toThrow(TestError);
+      await expect(service.createTest(USER_ID, PROJECT_ID, input)).rejects.toThrow(
+        'All variables must have non-empty values'
+      );
+    });
+
+    it('should throw when auto-extracted variables are all empty', async () => {
+      const input: CreateTestRequest = {
+        name: 'Test with recording vars',
+        recordingData: {
+          variables: [{ name: 'EMAIL' }, { name: 'PASSWORD' }],
+        },
+      };
+
+      await expect(service.createTest(USER_ID, PROJECT_ID, input)).rejects.toThrow(TestError);
+    });
+
+    it('should allow creating test with filled variables', async () => {
+      const input: CreateTestRequest = {
+        name: 'Test with vars',
+        recordingData: {},
+        variables: { EMAIL: 'test@example.com', PASSWORD: 'secret123' },
+      };
+
+      const result = await service.createTest(USER_ID, PROJECT_ID, input);
+      expect(result).toBeDefined();
+    });
   });
 
   describe('getTest', () => {
@@ -633,6 +668,36 @@ describe('TestService', () => {
 
       const input: UpdateTestRequest = { description: 'Updated' };
       await expect(service.updateTest(USER_ID, TEST_ID, input)).rejects.toThrow('Test not found');
+    });
+
+    it('should throw when updating with empty variable values', async () => {
+      const input: UpdateTestRequest = {
+        variables: { EMAIL: 'user@test.com', PASSWORD: '' },
+      };
+
+      await expect(service.updateTest(USER_ID, TEST_ID, input)).rejects.toThrow(TestError);
+      await expect(service.updateTest(USER_ID, TEST_ID, input)).rejects.toThrow(
+        'All variables must have non-empty values'
+      );
+    });
+
+    it('should throw when existing test has empty variables and update does not fix them', async () => {
+      mockTestRepo.findByIdAndUser.mockResolvedValue({
+        ...sampleTest,
+        variables: { EMAIL: '', PASSWORD: '' },
+      });
+
+      const input: UpdateTestRequest = { description: 'Updated desc' };
+      await expect(service.updateTest(USER_ID, TEST_ID, input)).rejects.toThrow(TestError);
+    });
+
+    it('should allow updating variables with all filled values', async () => {
+      const input: UpdateTestRequest = {
+        variables: { EMAIL: 'user@test.com', PASSWORD: 'secret' },
+      };
+
+      const result = await service.updateTest(USER_ID, TEST_ID, input);
+      expect(result).toBeDefined();
     });
   });
 

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, FileJson, Globe, Hash, Loader2 } from 'lucide-react';
+import { ArrowLeft, FileJson, Globe, Hash, Loader2, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,6 +40,10 @@ export default function NewTestFromRecordingPage() {
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
+  const [variables, setVariables] = React.useState<Record<string, string>>({});
+
+  const hasVariables = Object.keys(variables).length > 0;
+  const hasEmptyVariables = hasVariables && Object.values(variables).some((v) => !v || !v.trim());
 
   // Fetch recording and suites
   React.useEffect(() => {
@@ -58,6 +62,19 @@ export default function NewTestFromRecordingPage() {
         setRecording(rec);
         setSuites(suiteList);
         setName(rec.data?.testName || rec.name);
+
+        // Extract variables from recording data
+        const recData = rec.data as unknown as Record<string, unknown> | undefined;
+        if (recData) {
+          const recVars = recData.variables as Array<{ name: string }> | undefined;
+          if (Array.isArray(recVars) && recVars.length > 0) {
+            const vars: Record<string, string> = {};
+            for (const v of recVars) {
+              if (v.name) vars[v.name] = '';
+            }
+            setVariables(vars);
+          }
+        }
 
         // Auto-select default suite or first one
         const defaultSuite = suiteList.find((s) => s.isDefault);
@@ -88,6 +105,10 @@ export default function NewTestFromRecordingPage() {
       setSubmitError('Please select a test suite');
       return;
     }
+    if (hasEmptyVariables) {
+      setSubmitError('All variables must have values before creating the test');
+      return;
+    }
 
     setIsSubmitting(true);
     setSubmitError(null);
@@ -103,6 +124,7 @@ export default function NewTestFromRecordingPage() {
         actionCount: recording.actionCount,
         browsers,
         config: mergedConfig,
+        variables: hasVariables ? variables : undefined,
       });
       toast.success('Test created from recording');
       router.push(`/projects/${projectSlug}/suites/${selectedSuiteId}/tests/${test.id}`);
@@ -320,6 +342,42 @@ export default function NewTestFromRecordingPage() {
           )}
         </Card>
 
+        {/* Variables (shown when recording has variables) */}
+        {hasVariables && (
+          <Card className={hasEmptyVariables ? 'border-destructive' : ''}>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                Variables
+                {hasEmptyVariables && (
+                  <span className="flex items-center gap-1 text-xs font-normal text-destructive">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    All values required
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                This recording uses variables. Set values for each variable — they replace {'${VAR}'} placeholders during execution.
+              </p>
+              {Object.entries(variables).map(([varName]) => (
+                <div key={varName} className="space-y-1">
+                  <label className="text-sm font-medium font-mono">{varName}</label>
+                  <Input
+                    value={variables[varName] || ''}
+                    onChange={(e) =>
+                      setVariables((prev) => ({ ...prev, [varName]: e.target.value }))
+                    }
+                    placeholder={`Enter value for ${varName}`}
+                    disabled={isSubmitting}
+                    className={!variables[varName]?.trim() ? 'border-destructive' : ''}
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Submit */}
         <div className="flex justify-end gap-3">
           <Button
@@ -330,7 +388,7 @@ export default function NewTestFromRecordingPage() {
           >
             Cancel
           </Button>
-          <Button type="submit" isLoading={isSubmitting} disabled={suites.length === 0}>
+          <Button type="submit" isLoading={isSubmitting} disabled={suites.length === 0 || hasEmptyVariables}>
             Create Test
           </Button>
         </div>

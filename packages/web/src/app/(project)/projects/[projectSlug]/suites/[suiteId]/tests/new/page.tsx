@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Upload, Library } from 'lucide-react';
+import { ArrowLeft, Upload, Library, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -47,12 +47,32 @@ export default function NewTestPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [showAdvanced, setShowAdvanced] = React.useState(false);
   const [isLoadingRecording, setIsLoadingRecording] = React.useState(false);
+  const [variables, setVariables] = React.useState<Record<string, string>>({});
+
+  // Extract variables from recording data
+  const extractVariables = (data: Record<string, unknown>): Record<string, string> => {
+    const recVariables = data.variables as Array<{ name: string }> | undefined;
+    if (Array.isArray(recVariables) && recVariables.length > 0) {
+      const vars: Record<string, string> = {};
+      for (const v of recVariables) {
+        if (v.name) vars[v.name] = '';
+      }
+      return vars;
+    }
+    return {};
+  };
+
+  const hasVariables = Object.keys(variables).length > 0;
+  const hasEmptyVariables = hasVariables && Object.values(variables).some((v) => !v || !v.trim());
 
   // Auto-fill name from uploaded recording
   const handleUploadChange = (info: RecordingInfo | null) => {
     setUploadedRecording(info);
-    if (info && !name) {
-      setName(info.name);
+    if (info) {
+      if (!name) setName(info.name);
+      setVariables(extractVariables(info.data));
+    } else {
+      setVariables({});
     }
   };
 
@@ -60,6 +80,7 @@ export default function NewTestPage() {
   const handleLibraryChange = async (selected: SelectedRecording | null) => {
     setLibraryRecording(selected);
     setLibraryRecordingData(null);
+    setVariables({});
 
     if (selected) {
       // Auto-fill name
@@ -70,7 +91,9 @@ export default function NewTestPage() {
       setIsLoadingRecording(true);
       try {
         const full: Recording = await api.getRecording(selected.id);
-        setLibraryRecordingData(full.data as unknown as Record<string, unknown>);
+        const data = full.data as unknown as Record<string, unknown>;
+        setLibraryRecordingData(data);
+        setVariables(extractVariables(data));
       } catch {
         setError('Failed to load recording data from library');
         setLibraryRecording(null);
@@ -106,6 +129,10 @@ export default function NewTestPage() {
       setError('Test name is required');
       return;
     }
+    if (hasEmptyVariables) {
+      setError('All variables must have values before creating the test');
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -132,6 +159,7 @@ export default function NewTestPage() {
         actionCount,
         browsers,
         config: mergedConfig,
+        variables: hasVariables ? variables : undefined,
       });
       toast.success('Test created');
       router.push(`/projects/${projectSlug}/suites/${suiteId}/tests/${test.id}`);
@@ -304,6 +332,42 @@ export default function NewTestPage() {
           )}
         </Card>
 
+        {/* Step 5: Variables (shown when recording has variables) */}
+        {hasVariables && (
+          <Card className={hasEmptyVariables ? 'border-destructive' : ''}>
+            <CardHeader>
+              <CardTitle className="text-base flex items-center gap-2">
+                5. Variables
+                {hasEmptyVariables && (
+                  <span className="flex items-center gap-1 text-xs font-normal text-destructive">
+                    <AlertTriangle className="h-3.5 w-3.5" />
+                    All values required
+                  </span>
+                )}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-xs text-muted-foreground">
+                This recording uses variables. Set values for each variable — they replace {'${VAR}'} placeholders during execution.
+              </p>
+              {Object.entries(variables).map(([varName]) => (
+                <div key={varName} className="space-y-1">
+                  <label className="text-sm font-medium font-mono">{varName}</label>
+                  <Input
+                    value={variables[varName] || ''}
+                    onChange={(e) =>
+                      setVariables((prev) => ({ ...prev, [varName]: e.target.value }))
+                    }
+                    placeholder={`Enter value for ${varName}`}
+                    disabled={isSubmitting}
+                    className={!variables[varName]?.trim() ? 'border-destructive' : ''}
+                  />
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Submit */}
         <div className="flex justify-end gap-3">
           <Button
@@ -314,7 +378,7 @@ export default function NewTestPage() {
           >
             Cancel
           </Button>
-          <Button type="submit" isLoading={isSubmitting} disabled={isLoadingRecording}>
+          <Button type="submit" isLoading={isSubmitting} disabled={isLoadingRecording || hasEmptyVariables}>
             Create Test
           </Button>
         </div>

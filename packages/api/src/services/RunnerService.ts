@@ -56,6 +56,11 @@ export const RunErrors = {
   ALREADY_DELETED: new RunError('Run is already deleted', 'ALREADY_DELETED', 400),
   QUEUE_ERROR: new RunError('Failed to queue run', 'QUEUE_ERROR', 500),
   EXECUTION_ERROR: new RunError('Run execution failed', 'EXECUTION_ERROR', 500),
+  EMPTY_VARIABLES: new RunError(
+    'Test has variables with empty values. Set all variable values before running.',
+    'EMPTY_VARIABLES',
+    400
+  ),
 } as const;
 
 /**
@@ -315,6 +320,15 @@ export class RunnerService {
       throw RunErrors.NOT_AUTHORIZED;
     }
 
+    // Validate that all variables have non-empty values
+    const testVariables = test.variables as Record<string, string> | null;
+    if (testVariables && Object.keys(testVariables).length > 0) {
+      const hasEmpty = Object.values(testVariables).some((v) => !v || !v.trim());
+      if (hasEmpty) {
+        throw RunErrors.EMPTY_VARIABLES;
+      }
+    }
+
     // Determine browsers and config
     const browsers = validated.browsers ?? (test.browsers as Array<'chromium' | 'firefox' | 'webkit'>);
     const testConfig = test.config as { headless?: boolean; timeout?: number; video?: boolean; screenshot?: string; parallelBrowsers?: boolean } | null;
@@ -333,6 +347,7 @@ export class RunnerService {
       testId: test.id,
       suiteId: test.suiteId,
       parentRunId: options?.parentRunId ?? null,
+      recordingId: test.recordingId as string | null | undefined,
       testName: test.name,
       testSlug: test.slug,
       recordingUrl: test.recordingUrl,

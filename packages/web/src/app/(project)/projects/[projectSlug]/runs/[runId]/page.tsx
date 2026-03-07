@@ -20,6 +20,16 @@ import {
   Eye,
   Video,
   Settings2,
+  ShieldCheck,
+  ShieldX,
+  Shield,
+  Globe,
+  Calendar,
+  Play,
+  Headphones,
+  ExternalLink,
+  Hash,
+  User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -81,13 +91,38 @@ function StatCard({
   );
 }
 
-// ─── Config Row ─────────────────────────────────────────────────
+// ─── Meta Item (icon + label + value) ──────────────────────────
 
-function ConfigRow({ label, value }: { label: string; value: React.ReactNode }) {
+function MetaItem({
+  icon: Icon,
+  label,
+  value,
+  href,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string;
+  value: React.ReactNode;
+  href?: string;
+}) {
   return (
-    <div>
-      <p className="text-sm text-muted-foreground">{label}</p>
-      <p className="font-medium text-sm">{value}</p>
+    <div className="flex items-start gap-3 py-2">
+      <Icon className="h-4 w-4 mt-0.5 text-muted-foreground shrink-0" />
+      <div className="min-w-0">
+        <p className="text-xs text-muted-foreground">{label}</p>
+        {href ? (
+          <a
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-sm font-medium text-primary hover:underline inline-flex items-center gap-1 break-all"
+          >
+            {value}
+            <ExternalLink className="h-3 w-3 shrink-0" />
+          </a>
+        ) : (
+          <div className="text-sm font-medium break-all">{value}</div>
+        )}
+      </div>
     </div>
   );
 }
@@ -722,6 +757,29 @@ export default function RunDetailPage() {
         />
       </div>
 
+      {/* Assertion Stats (only shown when assertions exist) */}
+      {(run.assertionsTotal ?? 0) > 0 && (
+        <div className="grid grid-cols-3 gap-4">
+          <StatCard
+            title="Assertions"
+            value={run.assertionsTotal ?? 0}
+            icon={Shield}
+          />
+          <StatCard
+            title="Assertions Passed"
+            value={run.assertionsPassed ?? 0}
+            icon={ShieldCheck}
+            variant="success"
+          />
+          <StatCard
+            title="Assertions Failed"
+            value={run.assertionsFailed ?? 0}
+            icon={ShieldX}
+            variant={(run.assertionsFailed ?? 0) > 0 ? 'error' : 'default'}
+          />
+        </div>
+      )}
+
       {/* Error Message */}
       {run.errorMessage && (
         <Card className="border-destructive/50 bg-destructive/5">
@@ -758,8 +816,9 @@ export default function RunDetailPage() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <ConfigRow
+          <div className="grid gap-x-8 gap-y-1 sm:grid-cols-2 lg:grid-cols-3">
+            <MetaItem
+              icon={Monitor}
               label="Browser"
               value={
                 browserResults.length > 1 ? (
@@ -779,28 +838,49 @@ export default function RunDetailPage() {
                 )
               }
             />
-            <ConfigRow
+            <MetaItem
+              icon={Video}
               label="Video"
               value={run.videoEnabled ? 'Enabled' : 'Disabled'}
             />
-            <ConfigRow
+            <MetaItem
+              icon={Headphones}
+              label="Headless"
+              value={run.headless ? 'Yes' : 'No'}
+            />
+            <MetaItem
+              icon={Play}
               label="Triggered By"
               value={
                 <span className="capitalize">{run.triggeredBy || 'Manual'}</span>
               }
             />
+            {run.startedAt && (
+              <MetaItem
+                icon={Calendar}
+                label="Started"
+                value={new Date(run.startedAt).toLocaleString()}
+              />
+            )}
+            {run.completedAt && (
+              <MetaItem
+                icon={Calendar}
+                label="Completed"
+                value={new Date(run.completedAt).toLocaleString()}
+              />
+            )}
+            <MetaItem
+              icon={Hash}
+              label="Run ID"
+              value={run.id}
+            />
             {run.recordingUrl && (
-              <div className="col-span-2">
-                <p className="text-sm text-muted-foreground">URL</p>
-                <a
-                  href={run.recordingUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="font-medium text-sm text-primary hover:underline truncate block"
-                >
-                  {run.recordingUrl}
-                </a>
-              </div>
+              <MetaItem
+                icon={Globe}
+                label="Recording URL"
+                value={run.recordingUrl}
+                href={run.recordingUrl}
+              />
             )}
           </div>
         </CardContent>

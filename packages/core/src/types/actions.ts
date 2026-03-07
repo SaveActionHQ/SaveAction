@@ -134,6 +134,7 @@ export interface InputAction extends BaseAction {
   isSensitive: boolean; // True for passwords/cards
   simulationType: 'type' | 'setValue'; // Keystroke vs instant
   typingDelay?: number; // Delay between keystrokes (ms)
+  variableName?: string; // Variable name (e.g., "EMAIL", "PASSWORD") for variable resolution
 }
 
 /**
@@ -203,17 +204,27 @@ export interface SubmitAction extends BaseAction {
 }
 
 /**
- * Auto-generated checkpoint for validation
+ * Checkpoint action for assertions/validation
+ * Created manually by user or auto-generated during recording
  */
 export interface CheckpointAction extends BaseAction {
   type: 'checkpoint';
-  checkType: 'urlMatch' | 'elementVisible' | 'elementText' | 'pageLoad';
+  checkType:
+    | 'urlMatch'
+    | 'urlContains'
+    | 'elementVisible'
+    | 'elementText'
+    | 'containsText'
+    | 'elementHasValue'
+    | 'pageTitle'
+    | 'pageLoad';
   expectedUrl?: string;
   actualUrl?: string;
   selector?: SelectorStrategy;
   expectedValue?: string;
   actualValue?: string;
   passed: boolean;
+  auto?: boolean; // True if auto-generated during recording
 }
 
 /**
@@ -312,4 +323,11 @@ export function isSelectAction(action: Action): action is SelectAction {
  */
 export function isModalLifecycleAction(action: Action): action is ModalLifecycleAction {
   return action.type === 'modal-lifecycle';
+}
+
+/**
+ * Type guard for CheckpointAction
+ */
+export function isCheckpointAction(action: Action): action is CheckpointAction {
+  return action.type === 'checkpoint';
 }

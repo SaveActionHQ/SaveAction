@@ -77,6 +77,12 @@ export const runActions = pgTable(
     pageUrl: varchar('page_url', { length: 2048 }),
     pageTitle: varchar('page_title', { length: 500 }),
 
+    // Assertion/checkpoint results (for checkpoint actions)
+    assertionPassed: varchar('assertion_passed', { length: 10 }), // 'true' | 'false' | null
+    assertionExpected: text('assertion_expected'), // Expected value from checkpoint
+    assertionActual: text('assertion_actual'), // Actual value observed during execution
+    assertionCheckType: varchar('assertion_check_type', { length: 50 }), // elementVisible, elementText, etc.
+
     // Timestamps
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },

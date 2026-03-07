@@ -456,6 +456,9 @@ const runRoutes: FastifyPluginAsync<RunRoutesOptions> = async (fastify, options)
             elementTagName: action.elementTagName,
             pageUrl: action.pageUrl,
             pageTitle: action.pageTitle,
+            assertionPassed: action.assertionPassed,
+            assertionExpected: action.assertionExpected,
+            assertionActual: action.assertionActual,
           })),
         });
       } catch (error) {

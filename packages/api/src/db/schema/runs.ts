@@ -129,6 +129,11 @@ export const runs = pgTable(
     actionsFailed: varchar('actions_failed', { length: 10 }),
     actionsSkipped: varchar('actions_skipped', { length: 10 }),
 
+    // Assertion/checkpoint results
+    assertionsTotal: varchar('assertions_total', { length: 10 }),
+    assertionsPassed: varchar('assertions_passed', { length: 10 }),
+    assertionsFailed: varchar('assertions_failed', { length: 10 }),
+
     // Duration tracking
     durationMs: varchar('duration_ms', { length: 20 }),
     startedAt: timestamp('started_at', { withTimezone: true }),

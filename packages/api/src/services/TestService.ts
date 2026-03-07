@@ -58,6 +58,11 @@ export const TestErrors = {
     400
   ),
   INVALID_BROWSERS: new TestError('At least one browser must be selected', 'INVALID_BROWSERS', 400),
+  EMPTY_VARIABLES: new TestError(
+    'All variables must have non-empty values before saving',
+    'EMPTY_VARIABLES',
+    400
+  ),
 } as const;
 
 /**
@@ -96,6 +101,7 @@ export const createTestSchema = z.object({
   actionCount: z.number().int().min(0).optional(),
   browsers: z.array(browserTypeSchema).min(1).max(3).optional(),
   config: testConfigSchema.optional(),
+  variables: z.record(z.string()).optional(),
 });
 
 /**
@@ -111,6 +117,7 @@ export const updateTestSchema = z.object({
   actionCount: z.number().int().min(0).optional(),
   browsers: z.array(browserTypeSchema).min(1).max(3).optional(),
   config: testConfigSchema.optional(),
+  variables: z.record(z.string()).optional(),
 });
 
 /**
@@ -120,6 +127,7 @@ export const listTestsQuerySchema = z.object({
   page: z.coerce.number().int().positive().optional().default(1),
   limit: z.coerce.number().int().positive().max(100).optional().default(50),
   suiteId: z.string().uuid().optional(),
+  recordingId: z.string().uuid().optional(),
   search: z.string().max(255).optional(),
   status: z.string().optional(),
   sortBy: z
@@ -183,6 +191,7 @@ export interface TestResponse {
   lastRunId: string | null;
   lastRunAt: Date | null;
   lastRunStatus: string | null;
+  variables: Record<string, string>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -197,6 +206,7 @@ export interface TestSummaryResponse {
   suiteName: string | null;
   name: string;
   slug: string;
+  recordingId: string | null;
   recordingUrl: string | null;
   actionCount: number;
   browsers: BrowserType[];
@@ -228,6 +238,7 @@ function toResponse(test: SafeTest): TestResponse {
     lastRunId: test.lastRunId,
     lastRunAt: test.lastRunAt,
     lastRunStatus: test.lastRunStatus,
+    variables: test.variables,
     createdAt: test.createdAt,
     updatedAt: test.updatedAt,
   };
@@ -244,6 +255,7 @@ function toSummaryResponse(test: TestSummary): TestSummaryResponse {
     suiteName: test.suiteName,
     name: test.name,
     slug: test.slug,
+    recordingId: test.recordingId,
     recordingUrl: test.recordingUrl,
     actionCount: test.actionCount,
     browsers: test.browsers,
@@ -342,6 +354,31 @@ export class TestService {
       }
     }
 
+    // Auto-extract variables from recording data if not explicitly provided
+    let variables = validatedData.variables;
+    if (!variables) {
+      const recData = validatedData.recordingData as Record<string, unknown>;
+      const recVariables = recData.variables as
+        | Array<{ name: string; placeholder?: string }>
+        | undefined;
+      if (Array.isArray(recVariables) && recVariables.length > 0) {
+        variables = {};
+        for (const v of recVariables) {
+          if (v.name) {
+            variables[v.name] = '';
+          }
+        }
+      }
+    }
+
+    // Validate that all variables have non-empty values
+    if (variables && Object.keys(variables).length > 0) {
+      const hasEmpty = Object.values(variables).some((v) => !v || !v.trim());
+      if (hasEmpty) {
+        throw TestErrors.EMPTY_VARIABLES;
+      }
+    }
+
     const createData: TestCreateData = {
       userId,
       projectId,
@@ -354,6 +391,7 @@ export class TestService {
       actionCount: validatedData.actionCount ?? 0,
       browsers: validatedData.browsers as BrowserType[] | undefined,
       config: validatedData.config as Partial<TestConfig> | undefined,
+      variables,
     };
 
     const test = await this.testRepository.create(createData);
@@ -415,6 +453,7 @@ export class TestService {
       userId,
       projectId,
       suiteId: validatedQuery.suiteId,
+      recordingId: validatedQuery.recordingId,
       search: validatedQuery.search,
       status: validatedQuery.status,
       includeDeleted: validatedQuery.includeDeleted,
@@ -487,6 +526,16 @@ export class TestService {
       updateData.browsers = validatedData.browsers as BrowserType[];
     if (validatedData.config !== undefined)
       updateData.config = validatedData.config as Partial<TestConfig>;
+    if (validatedData.variables !== undefined) updateData.variables = validatedData.variables;
+
+    // Validate that all variables have non-empty values
+    const effectiveVariables = updateData.variables ?? (existing.variables as Record<string, string> | null);
+    if (effectiveVariables && Object.keys(effectiveVariables).length > 0) {
+      const hasEmpty = Object.values(effectiveVariables).some((v) => !v || !v.trim());
+      if (hasEmpty) {
+        throw TestErrors.EMPTY_VARIABLES;
+      }
+    }
 
     const updated = await this.testRepository.update(testId, userId, updateData);
     if (!updated) {

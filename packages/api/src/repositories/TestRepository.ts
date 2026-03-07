@@ -36,6 +36,7 @@ export interface TestCreateData {
   actionCount?: number;
   browsers?: BrowserType[];
   config?: Partial<TestConfig>;
+  variables?: Record<string, string>;
 }
 
 /**
@@ -53,6 +54,7 @@ export interface TestUpdateData {
   browsers?: BrowserType[];
   config?: Partial<TestConfig>;
   displayOrder?: number;
+  variables?: Record<string, string>;
 }
 
 /**
@@ -71,6 +73,7 @@ export interface TestListFilters {
   userId: string;
   projectId: string;
   suiteId?: string;
+  recordingId?: string;
   search?: string;
   status?: string; // Filter by lastRunStatus
   includeDeleted?: boolean;
@@ -118,6 +121,7 @@ export interface SafeTest {
   actionCount: number;
   browsers: BrowserType[];
   config: TestConfig;
+  variables: Record<string, string>;
   displayOrder: number;
   lastRunId: string | null;
   lastRunAt: Date | null;
@@ -138,6 +142,7 @@ export interface TestSummary {
   suiteName: string | null;
   name: string;
   slug: string;
+  recordingId: string | null;
   recordingUrl: string | null;
   actionCount: number;
   browsers: BrowserType[];
@@ -180,6 +185,7 @@ function toSafeTest(test: Test): SafeTest {
     actionCount: test.actionCount ?? 0,
     browsers: (test.browsers ?? ['chromium']) as BrowserType[],
     config: (test.config ?? DEFAULT_TEST_CONFIG) as TestConfig,
+    variables: (test.variables ?? {}) as Record<string, string>,
     displayOrder: test.displayOrder,
     lastRunId: test.lastRunId,
     lastRunAt: test.lastRunAt,
@@ -202,6 +208,7 @@ function toTestSummary(test: Partial<Test> & { suiteName?: string | null }): Tes
     suiteName: test.suiteName ?? null,
     name: test.name!,
     slug: test.slug!,
+    recordingId: test.recordingId ?? null,
     recordingUrl: test.recordingUrl ?? null,
     actionCount: test.actionCount ?? 0,
     browsers: (test.browsers ?? ['chromium']) as BrowserType[],
@@ -244,6 +251,7 @@ export class TestRepository {
       actionCount: data.actionCount ?? 0,
       browsers: data.browsers || ['chromium'],
       config,
+      variables: data.variables ?? {},
       displayOrder: 0,
     };
 
@@ -324,6 +332,10 @@ export class TestRepository {
       conditions.push(ilike(tests.name, `%${filters.search}%`));
     }
 
+    if (filters.recordingId) {
+      conditions.push(eq(tests.recordingId, filters.recordingId));
+    }
+
     if (filters.status) {
       conditions.push(eq(tests.lastRunStatus, filters.status));
     }
@@ -358,6 +370,7 @@ export class TestRepository {
         suiteName: testSuites.name,
         name: tests.name,
         slug: tests.slug,
+        recordingId: tests.recordingId,
         recordingUrl: tests.recordingUrl,
         actionCount: tests.actionCount,
         browsers: tests.browsers,
@@ -434,6 +447,7 @@ export class TestRepository {
     if (data.recordingUrl !== undefined) updateData.recordingUrl = data.recordingUrl;
     if (data.actionCount !== undefined) updateData.actionCount = data.actionCount;
     if (data.browsers !== undefined) updateData.browsers = data.browsers;
+    if (data.variables !== undefined) updateData.variables = data.variables;
     if (data.displayOrder !== undefined) updateData.displayOrder = data.displayOrder;
 
     if (data.config !== undefined) {
